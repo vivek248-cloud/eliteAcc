@@ -1,0 +1,257 @@
+{% extends "layout/base.html" %}
+{% block title %}Payments{% endblock %}
+
+{% block content %}
+
+<div class="alert alert-info fw-bold mb-2" style="position: sticky; top: 0; z-index: 10;">
+    Selected Total: ₹ <span id="selectedTotal">0.00</span>
+</div>
+
+<h4>Payments</h4>
+
+
+<form method="get" class="row g-3 mb-4 align-items-end">
+
+    <!-- 👤 CLIENT -->
+    <div class="col-md-3">
+        <label class="form-label">Client</label>
+        <select name="client" class="form-select">
+            <option value="">All Clients</option>
+            {% for c in clients %}
+                <option value="{{ c.id }}"
+                    {% if selected_client == c.id|stringformat:"s" %}selected{% endif %}>
+                    {{ c.name }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- 💳 PAYMENT MODE -->
+    <div class="col-md-2">
+        <label class="form-label">Payment Mode</label>
+        <select name="mode" class="form-select">
+            <option value="">All</option>
+            <option value="cash" {% if selected_mode == 'cash' %}selected{% endif %}>
+                Cash
+            </option>
+            <option value="cheque" {% if selected_mode == 'cheque' %}selected{% endif %}>
+                Cheque
+            </option>
+        </select>
+    </div>
+
+    <!-- 📅 START DATE -->
+    <div class="col-md-2">
+        <label class="form-label">Start Date</label>
+        <input type="date" name="start_date"
+               value="{{ start_date }}" class="form-control">
+    </div>
+
+    <!-- 📅 END DATE -->
+    <div class="col-md-2">
+        <label class="form-label">End Date</label>
+        <input type="date" name="end_date"
+               value="{{ end_date }}" class="form-control">
+    </div>
+
+    <!-- 🔘 ACTIONS -->
+    <div class="col-md-3 d-flex gap-2">
+        <button class="btn btn-primary w-100">Apply</button>
+        <a href="{% url 'payment_index' %}" class="btn btn-secondary w-100">
+            Reset
+        </a>
+    </div>
+
+</form>
+
+
+
+
+
+<a href="{% url 'payment_create' %}" class="btn btn-primary mb-3">
+    + Add Payment
+</a>
+
+
+<div class="table-responsive" style="max-height: 700px; overflow-y: auto;">
+<table class="table table-bordered table-hover align-middle">
+    <thead class="table-light">
+        <tr>
+            <th>#</th>
+            <th>Client</th>
+            <th>Source</th>
+            <th class="text-end">Amount</th>
+            <th>Mode</th>
+            <th>Date</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for p in payments %}
+        <tr>
+            <td>{{ forloop.counter }}</td>
+
+            <td>{{ p.client.name }}</td>
+
+            <!-- SOURCE -->
+            <td>
+                {% if p.bank %}
+                    {{ p.bank.name }}
+                {% else %}
+                    Cash
+                {% endif %}
+            </td>
+
+            <!-- AMOUNT -->
+            <td class="text-end selectable-amount highlight-cell" data-amount="{{ p.amount }}" data-col="amount">
+                ₹ {{ p.amount|floatformat:2 }}
+            </td>
+
+            <!-- MODE -->
+            <td>
+                <span class="badge
+                    {% if p.payment_mode == 'cash' %}
+                        bg-secondary
+                    {% else %}
+                        bg-primary
+                    {% endif %}
+                ">
+                    {{ p.payment_mode|title }}
+                </span>
+            </td>
+
+            <!-- DATE -->
+            <td>
+                {{ p.payment_date|date:"d M Y" }}
+            </td>
+
+            <!-- ACTION -->
+            <td class="d-flex gap-2">
+                <a href="{% url 'payment_update' p.id %}"
+                class="btn btn-sm btn-outline-warning">
+                Edit
+                </a>
+
+                <a href="{% url 'payment_delete' p.id %}"
+                class="btn btn-sm btn-outline-danger">
+                Delete
+                </a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="7" class="text-center text-muted">
+                No payments found
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+
+</table>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    let total = 0;
+    let isDragging = false;
+    let activeColumn = null;
+
+    const totalEl = document.getElementById('selectedTotal');
+
+    // 🧠 STACK FOR UNDO
+    const selectionStack = [];
+
+    function updateTotal(amount, add = true) {
+        total += add ? amount : -amount;
+        totalEl.textContent = total.toFixed(2);
+    }
+
+    function selectCell(cell) {
+        if (!cell.classList.contains('selected')) {
+            cell.classList.add('selected');
+
+            const amount = parseFloat(cell.dataset.amount || 0);
+            updateTotal(amount, true);
+
+            // 🧠 PUSH TO STACK
+            selectionStack.push(cell);
+        }
+    }
+
+    function unselectCell(cell) {
+        if (cell.classList.contains('selected')) {
+            cell.classList.remove('selected');
+
+            const amount = parseFloat(cell.dataset.amount || 0);
+            updateTotal(amount, false);
+        }
+    }
+
+    document.querySelectorAll('.selectable-amount').forEach(td => {
+
+        const column = td.dataset.col;
+
+        // ❌ Disable right-click menu
+        td.addEventListener('contextmenu', e => e.preventDefault());
+
+        td.addEventListener('mousedown', function (e) {
+
+            // ✅ CTRL + RIGHT CLICK → TOGGLE
+            if (e.ctrlKey && e.button === 2) {
+                e.preventDefault();
+
+                if (this.classList.contains('selected')) {
+                    unselectCell(this);
+
+                    // ❌ REMOVE FROM STACK
+                    const index = selectionStack.indexOf(this);
+                    if (index !== -1) selectionStack.splice(index, 1);
+
+                } else {
+                    selectCell(this);
+                }
+            }
+
+            // 🟢 LEFT CLICK START DRAG
+            if (e.button === 0) {
+                isDragging = true;
+                activeColumn = column;
+                selectCell(this);
+            }
+        });
+
+        // 🟢 DRAG OVER SAME COLUMN
+        td.addEventListener('mouseenter', function () {
+            if (isDragging && column === activeColumn) {
+                selectCell(this);
+            }
+        });
+
+    });
+
+    // 🔚 STOP DRAG
+    document.addEventListener('mouseup', function () {
+        isDragging = false;
+        activeColumn = null;
+    });
+
+    // ⌫ BACKSPACE → UNDO LAST SELECTION
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Backspace') {
+
+            // ❌ Prevent browser back navigation
+            e.preventDefault();
+
+            const lastCell = selectionStack.pop();
+            if (lastCell) {
+                unselectCell(lastCell);
+            }
+        }
+    });
+
+});
+</script>
+
+{% endblock %}

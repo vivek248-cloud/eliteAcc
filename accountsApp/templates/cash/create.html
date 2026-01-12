@@ -1,0 +1,57 @@
+{% extends "layout/base.html" %}
+{% block title %}Add Cash Entry{% endblock %}
+
+{% block content %}
+<h4>Add Cash Entry</h4>
+
+<form method="post">
+    {% csrf_token %}
+
+    <div class="mb-3">
+        <label class="form-label">Client</label>
+        <select name="client" class="form-select" required>
+            <option value="">-- Select Client --</option>
+            {% for client in clients %}
+                <option value="{{ client.id }}">{{ client.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Cash Type</label>
+        <select name="cash_type" class="form-select" required>
+            <option value="in">Cash In</option>
+            <option value="out">Cash Out</option>
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Amount</label>
+        <input type="number"
+               name="amount"
+               step="0.01"
+               class="form-control"
+               required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Cash Date</label>
+        <input type="date"
+               name="cash_date"
+               class="form-control"
+               required>
+    </div>
+
+    
+    <div class="mb-3">
+        <label class="form-label">Description</label>
+        <input type="text"
+               name="description"
+               class="form-control"
+               placeholder="Optional note">
+    </div>
+
+    <button class="btn btn-success">Save</button>
+    <a href="{% url 'cash_index' %}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

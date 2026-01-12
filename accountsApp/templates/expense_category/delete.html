@@ -1,0 +1,21 @@
+{% extends "layout/base.html" %}
+{% block title %}Delete Category{% endblock %}
+
+{% block content %}
+<h4 class="text-danger">Delete Category</h4>
+
+<div class="card p-4 shadow-sm">
+    <p>
+        Are you sure you want to delete
+        <strong>{{ category.name }}</strong>?
+    </p>
+
+    <form method="post">
+        {% csrf_token %}
+        <button class="btn btn-danger">Yes, Delete</button>
+        <a href="{% url 'expense_category_index' %}" class="btn btn-secondary">
+            Cancel
+        </a>
+    </form>
+</div>
+{% endblock %}

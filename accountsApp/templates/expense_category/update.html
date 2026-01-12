@@ -1,0 +1,24 @@
+{% extends "layout/base.html" %}
+{% block title %}Update Category{% endblock %}
+
+{% block content %}
+<h4>Update Expense Category</h4>
+
+<form method="post" class="card p-4 shadow-sm">
+    {% csrf_token %}
+
+    <div class="mb-3">
+        <label class="form-label">Category Name</label>
+        <input type="text"
+               name="name"
+               value="{{ category.name }}"
+               class="form-control"
+               required>
+    </div>
+
+    <button class="btn btn-primary">Update</button>
+    <a href="{% url 'expense_category_index' %}" class="btn btn-secondary">
+        Cancel
+    </a>
+</form>
+{% endblock %}

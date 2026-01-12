@@ -1,0 +1,245 @@
+{% extends "layout/base.html" %}
+{% block title %}All Clients Statement{% endblock %}
+
+{% block content %}
+<div class="space-y-4">
+
+<!-- HEADER -->
+<div class="flex justify-between items-center">
+    <h4 class="fw-bold">All Clients Statement</h4>
+
+    <a href="{% url 'all_client_info_pdf' %}?start_date={{ start_date }}&end_date={{ end_date }}&order={{ order }}"
+       class="btn btn-danger">
+        📄 Export PDF
+    </a>
+</div>
+
+<!-- FILTERS -->
+<form method="get" class="row g-2 mb-3 align-items-end">
+    <div class="col-md-3">
+        <label class="form-label">Type</label>
+        <select name="txn_type" class="form-select">
+            <option value="all" {% if txn_type == 'all' %}selected{% endif %}>All</option>
+            <option value="payment" {% if txn_type == 'payment' %}selected{% endif %}>Payments</option>
+            <option value="expense" {% if txn_type == 'expense' %}selected{% endif %}>Spend</option>
+        </select>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">Start Date</label>
+        <input type="date" name="start_date" value="{{ start_date }}" class="form-control">
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">End Date</label>
+        <input type="date" name="end_date" value="{{ end_date }}" class="form-control">
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">Order</label>
+        <select name="order" class="form-select">
+            <option value="new" {% if order == 'new' %}selected{% endif %}>New → Old</option>
+            <option value="old" {% if order == 'old' %}selected{% endif %}>Old → New</option>
+        </select>
+    </div>
+
+    <div class="col-md-3 d-flex gap-2">
+        <button class="btn btn-primary w-100">Apply</button>
+        <a href="{% url 'all_clients_statement' %}" class="btn btn-secondary w-100">Reset</a>
+    </div>
+</form>
+
+
+<div class="alert alert-info fw-bold mb-2">
+    Selected Total: ₹ <span id="selectedTotal">0.00</span>
+</div>
+
+
+<!-- TABLE -->
+<div class="table-responsive">
+<table class="table table-bordered table-sm align-middle">
+<thead class="table-light">
+<tr>
+    <th>Date</th>
+    <th>Client</th>
+    <th>Company</th>
+    <th>Project Value</th>
+
+    {% if txn_type != 'expense' %}
+        <th>Previously Paid</th>
+        <th>Paid Now</th>
+        <th>Yet To Pay</th>
+    {% endif %}
+
+    {% if txn_type != 'payment' %}
+        <th>Spend Details</th>
+        <th>Spend Amount</th>
+        <th>Balance</th>
+    {% endif %}
+</tr>
+</thead>
+
+
+<tbody>
+{% for r in rows %}
+<tr>
+    <td>{{ r.date }}</td>
+    <td>{{ r.client }}</td>
+    <td>{{ r.company }}</td>
+    <td class="text-end">₹ {{ r.budget|floatformat:2 }}</td>
+
+{% if txn_type != 'expense' %}
+<td class="text-end text-muted highlight-cell selectable-amount"
+    data-amount="{{ r.previous_paid }}" data-col="previous_paid">
+    ₹ {{ r.previous_paid|floatformat:2 }}
+</td>
+
+<td class="text-end text-success highlight-cell selectable-amount"
+    data-amount="{{ r.paid_now|default:0 }}" data-col="paid_now">
+    {% if r.paid_now %}₹ {{ r.paid_now|floatformat:2 }}{% else %}—{% endif %}
+</td>
+
+<td class="text-end text-danger highlight-cell selectable-amount"
+    data-amount="{{ r.yet_to_pay }}" data-col="yet_to_pay">
+    ₹ {{ r.yet_to_pay|floatformat:2 }}
+</td>
+{% endif %}
+
+{% if txn_type != 'payment' %}
+<td class="highlight-cell3">{{ r.spend_detail }}</td>
+
+<td class="text-end text-danger highlight-cell3 selectable-amount"
+    data-amount="{{ r.spend_amount|default:0 }}" data-col="spend_amount">
+    {% if r.spend_amount %}₹ {{ r.spend_amount|floatformat:2 }}{% else %}—{% endif %}
+</td>
+
+<td class="text-end fw-bold {% if r.balance < 0 %}text-danger{% else %}text-success{% endif %}
+    highlight-cell3 selectable-amount"
+    data-amount="{{ r.balance }}" data-col="balance">
+    ₹ {{ r.balance|floatformat:2 }}
+</td>
+{% endif %}
+
+</tr>
+{% empty %}
+<tr>
+    <td colspan="10" class="text-center text-muted">No data found</td>
+</tr>
+{% endfor %}
+</tbody>
+
+</table>
+</div>
+
+</div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    let total = 0;
+    let isDragging = false;
+    let activeColumn = null;
+
+    const totalEl = document.getElementById('selectedTotal');
+
+    // 🧠 STACK FOR UNDO
+    const selectionStack = [];
+
+    function updateTotal(amount, add = true) {
+        total += add ? amount : -amount;
+        totalEl.textContent = total.toFixed(2);
+    }
+
+    function selectCell(cell) {
+        if (!cell.classList.contains('selected')) {
+            cell.classList.add('selected');
+
+            const amount = parseFloat(cell.dataset.amount || 0);
+            updateTotal(amount, true);
+
+            // 🧠 PUSH TO STACK
+            selectionStack.push(cell);
+        }
+    }
+
+    function unselectCell(cell) {
+        if (cell.classList.contains('selected')) {
+            cell.classList.remove('selected');
+
+            const amount = parseFloat(cell.dataset.amount || 0);
+            updateTotal(amount, false);
+        }
+    }
+
+    document.querySelectorAll('.selectable-amount').forEach(td => {
+
+        const column = td.dataset.col;
+
+        // ❌ Disable right-click menu
+        td.addEventListener('contextmenu', e => e.preventDefault());
+
+        td.addEventListener('mousedown', function (e) {
+
+            // ✅ CTRL + RIGHT CLICK → TOGGLE
+            if (e.ctrlKey && e.button === 2) {
+                e.preventDefault();
+
+                if (this.classList.contains('selected')) {
+                    unselectCell(this);
+
+                    // ❌ REMOVE FROM STACK
+                    const index = selectionStack.indexOf(this);
+                    if (index !== -1) selectionStack.splice(index, 1);
+
+                } else {
+                    selectCell(this);
+                }
+            }
+
+            // 🟢 LEFT CLICK START DRAG
+            if (e.button === 0) {
+                isDragging = true;
+                activeColumn = column;
+                selectCell(this);
+            }
+        });
+
+        // 🟢 DRAG OVER SAME COLUMN
+        td.addEventListener('mouseenter', function () {
+            if (isDragging && column === activeColumn) {
+                selectCell(this);
+            }
+        });
+
+    });
+
+    // 🔚 STOP DRAG
+    document.addEventListener('mouseup', function () {
+        isDragging = false;
+        activeColumn = null;
+    });
+
+    // ⌫ BACKSPACE → UNDO LAST SELECTION
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Backspace') {
+
+            // ❌ Prevent browser back navigation
+            e.preventDefault();
+
+            const lastCell = selectionStack.pop();
+            if (lastCell) {
+                unselectCell(lastCell);
+            }
+        }
+    });
+
+});
+</script>
+
+
+
+
+
+
+{% endblock %}

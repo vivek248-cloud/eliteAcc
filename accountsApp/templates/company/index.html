@@ -1,0 +1,58 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Company List{% endblock %}
+
+{% block content %}
+<h4 class="mb-3">Company List</h4>
+
+<a href="{% url 'company_create' %}" class="btn btn-primary mb-3">
+    + Add Company
+</a>
+
+<table class="table table-bordered table-hover align-middle">
+    <thead class="table-light">
+        <tr>
+            <th>#</th>
+            <th>Company Name</th>
+            <th>Total Clients</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for company in companies %}
+        <tr>
+            <td>{{ forloop.counter }}</td>
+
+            <td>
+                <strong>{{ company.name }}</strong>
+            </td>
+
+            <td>
+                {{ company.clients.count }}
+            </td>
+
+            <td class="d-flex gap-2">
+                <a href="{% url 'company_update' company.id %}"
+                class="btn btn-sm btn-outline-warning">
+                    Edit
+                </a>
+
+                <a href="{% url 'company_delete' company.id %}"
+                class="btn btn-sm btn-outline-danger">
+                    Delete
+                </a>
+            </td>
+
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="4" class="text-center text-muted">
+                No companies found
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

@@ -1,0 +1,244 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<h4 class="mb-4">Dashboard</h4>
+
+<form method="get" class="mb-4">
+    <div class="row">
+        <div class="col-md-4">
+            <label class="form-label fw-semibold">Select Company</label>
+            <select name="company" class="form-select" onchange="this.form.submit()">
+                <option value="">-- Select Company --</option>
+                {% for company in companies %}
+                    <option value="{{ company.id }}"
+                        {% if company.id|stringformat:"s" == selected_company_id %}
+                            selected
+                        {% endif %}
+                    >
+                        {{ company.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+</form>
+
+
+
+{% if selected_company_id %}
+<div class="financial-dashboard">
+    <!-- Clients Card -->
+    <div class="dashboard-card clients-card">
+        <h3 class="card-title">Clients</h3>
+        <div class="card-value">{{ clients.count }}</div>
+        <p class="card-subtitle">Total Active Clients</p>
+    </div>
+
+    <!-- Bank Balance Card -->
+    <div class="dashboard-card balance-card">
+        <h3 class="card-title">
+            {% if selected_bank %}
+                {{ selected_bank.name }} Balance
+            {% else %}
+                Total Bank Balance
+            {% endif %}
+        </h3>
+        <div class="card-value">₹ {{ display_bank_balance|floatformat:2 }}</div>
+        <p class="card-subtitle">Current Balance</p>
+    </div>
+
+    <!-- All Banks List Card -->
+    <div class="dashboard-card banks-card">
+        <h3 class="card-title">All Banks</h3>
+        <ul class="banks-list">
+            {% for bank in banks %}
+                <li class="bank-item">{{ bank.name }}</li>
+            {% empty %}
+                <li class="bank-item text-muted">No banks available</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Yet To Receive Card -->
+    <div class="dashboard-card receivables-card">
+        <h3 class="card-title">Yet To Receive</h3>
+        <p class="card-subtitle">From all clients</p>
+        <div class="card-value warning">₹ {{ total_balance|floatformat:2 }}</div>
+    </div>
+</div>
+{% endif %}
+
+{% if selected_company_id %}
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light">
+        <strong>Recent Payments</strong>
+    </div>
+    <div class="card-body">
+        {% for p in recent_payments %}
+            <div class="d-flex justify-content-between border-bottom py-2">
+                <span>{{ p.client.name }}</span>
+                <strong>₹ {{ p.amount|floatformat:2 }}</strong>
+            </div>
+        {% empty %}
+            <p class="text-muted">No payments found</p>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+
+
+{% if selected_company_id %}
+<form method="get" class="row g-2 align-items-end mb-3">
+
+    <!-- keep company selection -->
+    <input type="hidden" name="company" value="{{ selected_company_id }}">
+
+    <div class="col-md-3">
+        <label class="form-label">Start Date</label>
+        <input type="date"
+               name="start_date"
+               value="{{ start_date }}"
+               class="form-control">
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label">End Date</label>
+        <input type="date"
+               name="end_date"
+               value="{{ end_date }}"
+               class="form-control">
+    </div>
+
+    <div class="col-md-3 d-flex gap-2">
+        <button class="btn btn-primary w-100">
+            Apply
+        </button>
+        <a href="?company={{ selected_company_id }}"
+           class="btn btn-secondary w-100">
+            Reset
+        </a>
+    </div>
+
+</form>
+{% endif %}
+
+
+{% if selected_company_id %}
+<div class="row g-3">
+
+    <!-- 🔵 PAYMENTS -->
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h6 class="fw-bold mb-1">Payments</h6>
+                <small class="text-muted">Trend</small>
+
+                <div style="height:220px; position:relative;">
+                    <canvas id="paymentsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🔴 EXPENSES -->
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h6 class="fw-bold mb-1 text-danger">Expenses</h6>
+                <small class="text-muted">Trend</small>
+
+                <div style="height:220px; position:relative;">
+                    <canvas id="expensesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endif %}
+
+
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+{% if selected_company_id %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    function createBarChart(canvasId, labels, data, color) {
+        const ctx = document.getElementById(canvasId);
+        if (!ctx) return;
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: color + 'cc',
+                    borderRadius: 6,
+                    maxBarThickness: 22
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 1200,
+                    easing: 'easeOutQuart'
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        displayColors: false,
+                        callbacks: {
+                            title: ctx => ctx[0].label,
+                            label: ctx => `₹ ${ctx.raw.toLocaleString()}`
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            maxRotation: 0,
+                            autoSkip: true,
+                            maxTicksLimit: 6
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { display: false },
+                        ticks: {
+                            callback: v => `₹ ${v}`
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    createBarChart(
+        'paymentsChart',
+        {{ payment_labels|safe }},
+        {{ payment_values|safe }},
+        '#1f4bff'   // 🔵 Blue
+    );
+
+    createBarChart(
+        'expensesChart',
+        {{ expense_labels|safe }},
+        {{ expense_values|safe }},
+        '#e63946'   // 🔴 Red
+    );
+});
+</script>
+{% endif %}
+
+{% endblock %}

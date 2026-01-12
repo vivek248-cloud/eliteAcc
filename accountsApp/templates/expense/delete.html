@@ -1,0 +1,34 @@
+{% extends "layout/base.html" %}
+{% block title %}Delete Expense{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm border-danger">
+    <div class="card-header bg-danger text-white">
+        Confirm Delete
+    </div>
+
+    <div class="card-body">
+        <p>
+            Are you sure you want to delete this spend?
+        </p>
+
+        <ul class="list-unstyled small">
+            <li><strong>Client:</strong> {{ expense.client.name }}</li>
+            <li><strong>Amount:</strong> ₹ {{ expense.amount }}</li>
+            <li><strong>Mode:</strong> {{ expense.spend_mode|capfirst }}</li>
+        </ul>
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <button class="btn btn-danger">
+                Yes, Delete
+            </button>
+
+            <a href="{% url 'expense_index' %}" class="btn btn-secondary">
+                Cancel
+            </a>
+        </form>
+    </div>
+</div>
+{% endblock %}

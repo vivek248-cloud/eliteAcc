@@ -1,0 +1,227 @@
+{% extends "layout/base.html" %}
+{% block title %}Help & Usage Guide{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <!-- PAGE TITLE -->
+    <div class="mb-4">
+        <h2 class="fw-bold d-flex align-items-center gap-2">
+            <i class="bi bi-question-circle text-primary"></i>
+            Help & Usage Guide
+        </h2>
+        <p class="text-muted mb-0">
+            Explanation of indicators, calculations, and advanced table interactions.
+        </p>
+    </div>
+
+    <!-- ========================= -->
+    <!-- 🟢 INDICATORS -->
+    <!-- ========================= -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header fw-semibold d-flex align-items-center gap-2">
+            <i class="bi bi-palette"></i> Indicators & Color Meanings
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:30%">Indicator</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="badge bg-success">Green</span></td>
+                        <td>Positive balance, <mark>received Amount</mark></td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge bg-danger">Red</span></td>
+                        <td><mark>Debited Amount </mark>, losses, or (<mark>yet to receive amount)</mark></td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge bg-warning text-dark">Warning</span></td>
+                        <td><mark>Client overpaid </mark>or amount exceeded expectations <mark>spending amount</mark></td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge bg-secondary">Info</span></td>
+                        <td>Remaining project amount <mark>Previously spend</mark> or <mark>Previously paid</mark></td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge bg-info text-dark">Balance</span></td>
+                        <td>Balance = <mark>Total Paid − Total Spent</mark></td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge bg-warning text-dark">⚠ Indicator</span></td>
+                        <td><mark>Hover over the indicator to see detailed information</mark></td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge bg-danger text-white">⚠ Bank Balance (-)ve</span></td>
+                        <td><mark>Bank balance is negative that resolve when client pays </mark></td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge bg-outline-secondary text-danger">⚠ Bank (opening balance)</span></td>
+                        <td><mark>Bank balance should be Zero when created</mark></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ========================= -->
+    <!-- 📐 FORMULAS -->
+    <!-- ========================= -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header fw-semibold d-flex align-items-center gap-2">
+            <i class="bi bi-calculator"></i> Calculation Formulas
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:35%">Field</th>
+                        <th>Formula</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Total Paid</td>
+                        <td><code>Total paid = <mark>Cheque + Cash</mark></code></td>
+                    </tr>
+                    <tr>
+                        <td>Total Spent</td>
+                        <td><code><mark>sum of</mark> spending amount</code></td>
+                    </tr>
+                    <tr>
+                        <td>Balance</td>
+                        <td><code>balance = <mark>Total Paid − Total Spent</mark>  ! remaining of client paid</code></td>
+                    </tr>
+                    <tr>
+                        <td>Yet To Pay</td>
+                        <td><code> yet to pay = <mark>Project Budget − Total Paid</mark></code></td>
+                    </tr>
+                    <tr>
+                        <td>Previously Paid</td>
+                        <td><code>Paid amount before this transaction</code></td>
+                    </tr>
+                    <tr>
+                        <td>Paid Now</td>
+                        <td><code>Current payment amount</code></td>
+                    </tr>
+                    <tr>
+                        <td>Cash(bank)</td>
+                        <td><code>The <mark>cash</mark> amount credited here</code></td>
+                    </tr>
+                    <tr>
+                        <td>Bank(others)</td>
+                        <td><code>The <mark>Cheque</mark> amount credited here</code></td>
+                    </tr>
+                    <tr>
+                        <td>Negative Yet to Pay</td>
+                        <td><code><strong style="font-weight: bold;color: red;">case 1: </strong>if the project value is less than total paid <mark>eg:project value = 2000 ,total paid = 3000 (! overpaid)</mark></code><br>
+                            <code><strong style="font-weight: bold;color: red;">case 2: </strong>if the project value is less than total paid and spend Amount <br><mark>eg:project value = 2000 ,total paid = 3000 , total spend = 3000 ( ! Admin should add the exceeded spend amount in the Project Value)</mark></code>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ========================= -->
+    <!-- 🖱 CONTROLS -->
+    <!-- ========================= -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header fw-semibold d-flex align-items-center gap-2">
+            <i class="bi bi-mouse"></i> Mouse & Keyboard Controls
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:30%">Action</th>
+                        <th>Function</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><kbd>Ctrl</kbd> + <kbd>Right Click</kbd></td>
+                        <td>Select or unselect a single amount cell</td>
+                    </tr>
+                    <tr>
+                        <td><kbd>Left Click</kbd></td>
+                        <td>Start selecting values in the same column</td>
+                    </tr>
+                    <tr>
+                        <td><kbd>Left Click</kbd> + Drag</td>
+                        <td>Select multiple values vertically</td>
+                    </tr>
+                    <tr>
+                        <td><kbd>Backspace</kbd></td>
+                        <td>Undo the last selected amount</td>
+                    </tr>
+                    <tr>
+                        <td><kbd>Backspace</kbd> (multiple)</td>
+                        <td>Undo selections one by one</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ========================= -->
+    <!-- ➕ TOTAL FEATURE -->
+    <!-- ========================= -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header fw-semibold d-flex align-items-center gap-2">
+            <i class="bi bi-sum"></i> Selection Total Feature
+        </div>
+
+        <div class="card-body">
+            <ul class="mb-0">
+                <li>Click or drag-select amount cells</li>
+                <li>Each selected cell adds its value</li>
+                <li>Unselecting subtracts the value</li>
+                <li>Total updates instantly in the summary area</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ========================= -->
+    <!-- ⚠ NOTES -->
+    <!-- ========================= -->
+    <div class="card shadow-sm border-warning">
+        <div class="card-header fw-semibold text-warning d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-triangle"></i> Important Notes
+        </div>
+
+        <div class="card-body">
+            <ul class="mb-0">
+                <li><mark>Only numeric amount cells</mark> are selectable</li>
+                <li>Drag selection works column-wise only</li>
+                <li>Backspace is disabled for browser navigation here</li>
+                <li><mark>PDF exports always respect applied filters</mark></li>
+            </ul>
+        </div>
+    </div>
+
+
+    <div class="card shadow-sm border-danger mt-4">
+        <div class="card-header fw-semibold text-danger d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-triangle"></i> Creting spending / expense spending
+        </div>
+
+        <div class="card-body">
+            <ul class="mb-0">
+                <li><mark>When creating (spending / expense), ensure the bank balance has a positive value</mark></li>
+                <li>when creating a spending amount, the selected <mark>bank (bank balance) is deducted</mark></li>
+                <li>updating the spending amount will adjust the bank balance accordingly</li>
+                <li><mark>Delete the spending to restore the bank balance</mark></li>
+            </ul>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

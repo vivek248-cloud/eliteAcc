@@ -1,0 +1,63 @@
+from django.urls import path
+from .views import *
+
+urlpatterns = [
+    
+
+    path('', login_view, name='login'),
+    path('dashboard/', home, name='dashboard'),
+    path('logout/', logout_view, name='logout'),
+
+    path('companies/', company_index, name='company_index'),
+    path('companies/create/', company_create, name='company_create'),
+    path('companies/update/<int:pk>/', company_update, name='company_update'),
+    path('companies/delete/<int:pk>/', company_delete, name='company_delete'),
+
+
+    path('clients/', client_index, name='client_index'),
+    path('clients/create/', client_create, name='client_create'),
+    path('clients/update/<int:pk>/', client_update, name='client_update'),
+    path('clients/delete/<int:pk>/', client_delete, name='client_delete'),
+    path('clients/<int:pk>/', client_info, name='client_info'),
+    path('clients/<int:pk>/export/pdf/', client_info_pdf, name='client_info_pdf'),
+    path('clients/all/', all_client_index, name='all_clients_statement'),
+    path('clients/pdf/', all_client_info_pdf, name='all_client_info_pdf'),
+
+
+
+    path('banks/', bank_index, name='bank_index'),
+    path('banks/create/', bank_create, name='bank_create'),
+    path('banks/update/<int:pk>/', bank_update, name='bank_update'),
+    path('banks/delete/<int:pk>/', bank_delete, name='bank_delete'),
+    path('banks/<int:pk>/log/', bank_log, name='bank_log'),
+    path('banks/<int:pk>/log/pdf/', bank_log_pdf, name='bank_log_pdf'),
+
+
+    path('cash/', cash_index, name='cash_index'),
+    path('cash/create/', cash_create, name='cash_create'),
+    path('cash/update/<int:pk>/', cash_update, name='cash_update'),
+    path('cash/delete/<int:pk>/', cash_delete, name='cash_delete'),
+
+    path('available-amount/', available_amount,name='available_amount'),
+
+
+    path('payments/', payment_index, name='payment_index'),
+    path('payments/create/', payment_create, name='payment_create'),
+    path('payments/update/<int:pk>/', payment_update, name='payment_update'),
+    path('payments/delete/<int:pk>/', payment_delete, name='payment_delete'),
+
+
+    path('expenses/', expense_index, name='expense_index'),
+    path('expenses/create/', expense_create, name='expense_create'),
+    path('expenses/update/<int:pk>/', expense_update, name='expense_update'),
+    path('expenses/delete/<int:pk>/', expense_delete, name='expense_delete'),
+
+
+    path('expense-categories/', expense_category_index, name='expense_category_index'),
+    path('expense-categories/create/', expense_category_create, name='expense_category_create'),
+    path('expense-categories/<int:pk>/update/', expense_category_update, name='expense_category_update'),
+    path('expense-categories/<int:pk>/delete/', expense_category_delete, name='expense_category_delete'),
+
+    path('help/', help, name='help'),
+
+]

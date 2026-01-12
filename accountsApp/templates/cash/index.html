@@ -1,0 +1,214 @@
+{% extends "layout/base.html" %}
+{% block title %}Cash Ledger{% endblock %}
+
+{% block content %}
+<h4>Cash</h4>
+
+
+<form method="get" class="row g-2 mb-4 align-items-end">
+
+    <!-- 👤 CLIENT -->
+    <div class="col-md-3">
+        <label class="form-label small">Client</label>
+        <select name="client" class="form-select">
+            <option value="">All Clients</option>
+            {% for c in clients %}
+                <option value="{{ c.id }}"
+                    {% if selected_client == c.id|stringformat:"s" %}selected{% endif %}>
+                    {{ c.name }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- 🔄 CASH TYPE -->
+    <div class="col-md-2">
+        <label class="form-label small">Cash Type</label>
+        <select name="cash_type" class="form-select">
+            <option value="">All</option>
+            <option value="in" {% if selected_cash_type == 'in' %}selected{% endif %}>
+                Cash In
+            </option>
+            <option value="out" {% if selected_cash_type == 'out' %}selected{% endif %}>
+                Cash Out
+            </option>
+        </select>
+    </div>
+
+    <!-- 📅 START DATE -->
+    <div class="col-md-2">
+        <label class="form-label small">Start Date</label>
+        <input type="date"
+               name="start_date"
+               value="{{ start_date }}"
+               class="form-control">
+    </div>
+
+    <!-- 📅 END DATE -->
+    <div class="col-md-2">
+        <label class="form-label small">End Date</label>
+        <input type="date"
+               name="end_date"
+               value="{{ end_date }}"
+               class="form-control">
+    </div>
+
+    <!-- 🔎 FILTER TYPE -->
+    <div class="col-md-3">
+        <label class="form-label small">Filter By</label>
+        <select name="filter_type" id="filter_type" class="form-select">
+            <option value="">Select</option>
+            <option value="day" {% if filter_type == 'day' %}selected{% endif %}>Day</option>
+            <option value="month" {% if filter_type == 'month' %}selected{% endif %}>Month</option>
+            <option value="year" {% if filter_type == 'year' %}selected{% endif %}>Year</option>
+        </select>
+    </div>
+
+    <!-- 📆 DAY -->
+    <div class="col-md-2">
+        <label class="form-label small">Date</label>
+        <input type="date"
+               name="date"
+               value="{{ filter_date }}"
+               class="form-control"
+               id="dayInput">
+    </div>
+
+    <!-- 📅 MONTH -->
+    <div class="col-md-2">
+        <label class="form-label small">Month</label>
+        <select name="month" class="form-select" id="monthInput">
+            <option value="">Month</option>
+            {% for m in months %}
+                <option value="{{ m }}"
+                    {% if filter_month == m|stringformat:"s" %}selected{% endif %}>
+                    {{ m }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- 📆 YEAR -->
+    <div class="col-md-2">
+        <label class="form-label small">Year</label>
+        <input type="number"
+               name="year"
+               value="{{ filter_year }}"
+               class="form-control"
+               placeholder="YYYY"
+               id="yearInput">
+    </div>
+
+    <!-- 🔘 ACTIONS -->
+    <div class="col-md-2 d-flex gap-2">
+        <button class="btn btn-primary w-100">
+            Apply
+        </button>
+        <a href="{% url 'cash_index' %}" class="btn btn-secondary w-100">
+            Reset
+        </a>
+    </div>
+
+</form>
+
+
+
+
+
+<!-- 💵 AVAILABLE CASH -->
+<div class="card mb-3 border-success">
+    <div class="card-body text-center">
+        <h6 class="text-success mb-1">Available Cash</h6>
+        <h3 class="fw-bold text-success">
+            ₹ {{ total_cash|floatformat:2 }}
+        </h3>
+    </div>
+</div>
+
+<a href="{% url 'cash_create' %}" class="btn btn-primary mb-3">
+    + Add Cash Entry
+</a>
+
+<div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+<table class="table table-bordered table-hover align-middle">
+    <thead class="table-light">
+        <tr>
+            <th>#</th>
+            <th>Client</th>
+            <th>Description</th>
+            <th class="text-end">Amount</th>
+            <th>Type</th>
+            <th>Date</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for cash in cash_list %}
+        <tr>
+            <td>{{ forloop.counter }}</td>
+
+            <td>{{ cash.client.name }}</td>
+
+            <td>{{ cash.description|default:"—" }}</td>
+
+            <td class="text-end fw-semibold
+                {% if cash.cash_type == 'out' %}text-danger{% else %}text-success{% endif %}">
+                ₹ {{ cash.amount|floatformat:2 }}
+            </td>
+
+            <td>
+                <span class="badge {% if cash.cash_type == 'out' %}bg-danger{% else %}bg-success{% endif %}">
+                    {{ cash.get_cash_type_display }}
+                </span>
+            </td>
+
+            <td>{{ cash.cash_date }}</td>
+
+            <td class="d-flex gap-2">
+                <a href="{% url 'cash_update' cash.id %}"
+                   class="btn btn-sm btn-outline-warning">
+                    Edit
+                </a>
+
+                <a href="{% url 'cash_delete' cash.id %}"
+                   class="btn btn-sm btn-outline-danger">
+                    Delete
+                </a>
+            </td>
+        </tr>
+
+        {% empty %}
+        <tr>
+            <td colspan="7" class="text-center text-muted">
+                No cash transactions found
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const type = document.getElementById('filter_type');
+    const day = document.getElementById('dayInput');
+    const month = document.getElementById('monthInput');
+    const year = document.getElementById('yearInput');
+
+    function toggleFields() {
+        day.disabled = type.value !== 'day';
+        month.disabled = type.value !== 'month';
+        year.disabled = !['month', 'year'].includes(type.value);
+    }
+
+    type.addEventListener('change', toggleFields);
+    toggleFields(); // initial load
+});
+</script>
+
+
+
+
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends "layout/base.html" %}
+{% block title %}Edit Cash Entry{% endblock %}
+
+{% block content %}
+<h4>Edit Cash Entry</h4>
+
+<form method="post">
+    {% csrf_token %}
+
+    <div class="mb-3">
+        <label class="form-label">Client</label>
+        <select name="client" class="form-select" required>
+            {% for client in clients %}
+                <option value="{{ client.id }}"
+                    {% if client.id == cash.client.id %}selected{% endif %}>
+                    {{ client.name }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Cash Type</label>
+        <select name="cash_type" class="form-select" required>
+            <option value="in" {% if cash.cash_type == 'in' %}selected{% endif %}>
+                Cash In
+            </option>
+            <option value="out" {% if cash.cash_type == 'out' %}selected{% endif %}>
+                Cash Out
+            </option>
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Amount</label>
+        <input type="number"
+               name="amount"
+               value="{{ cash.amount }}"
+               step="0.01"
+               class="form-control"
+               required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Cash Date</label>
+        <input type="date"
+               name="cash_date"
+               class="form-control"
+               value="{{ cash.cash_date|date:'Y-m-d' }}"
+               required>
+    </div>
+    
+    <div class="mb-3">
+        <label class="form-label">Description</label>
+        <input type="text"
+               name="description"
+               value="{{ cash.description }}"
+               class="form-control">
+    </div>
+
+    <button class="btn btn-success">Update</button>
+    <a href="{% url 'cash_index' %}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

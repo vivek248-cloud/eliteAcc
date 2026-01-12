@@ -1,0 +1,201 @@
+{% extends "layout/base.html" %}
+{% block title %}Banks{% endblock %}
+
+{% block content %}
+<h4>Banks</h4>
+
+<form method="get" class="row g-2 mb-4 align-items-end">
+    <!-- 🏦 BANK -->
+    <div class="col-md-3">
+        <label class="form-label">Bank</label>
+        <select name="bank" class="form-select">
+            <option value="">All Banks</option>
+            {% for bank in banks %}
+                <option value="{{ bank.id }}"
+                    {% if selected_bank == bank.id|stringformat:"s" %}selected{% endif %}>
+                    {{ bank.name }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+
+    <div class="col-md-3">
+        <label class="form-label small">Filter By</label>
+        <select name="filter_type" class="form-select" required>
+            <option value="">Select</option>
+            <option value="day" {% if filter_type == 'day' %}selected{% endif %}>Day</option>
+            <option value="month" {% if filter_type == 'month' %}selected{% endif %}>Month</option>
+            <option value="year" {% if filter_type == 'year' %}selected{% endif %}>Year</option>
+        </select>
+    </div>
+
+    <div class="col-md-3">
+        <label class="form-label small">Date</label>
+        <input type="date"
+               name="date"
+               class="form-control"
+               value="{{ filter_date }}"
+               {% if filter_type != 'day' %}disabled{% endif %}>
+    </div>
+
+    <div class="col-md-2">
+        <label class="form-label small">Month</label>
+        <select name="month"
+                class="form-select"
+                {% if filter_type != 'month' %}disabled{% endif %}>
+            <option value="">Month</option>
+            {% for m in months %}
+                <option value="{{ m }}"
+                    {% if filter_month == m|stringformat:"s" %}selected{% endif %}>
+                    {{ m }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="col-md-2">
+        <label class="form-label small">Year</label>
+        <input type="number"
+               name="year"
+               class="form-control"
+               placeholder="YYYY"
+               value="{{ filter_year }}"
+               {% if filter_type not in 'month year' %}disabled{% endif %}>
+    </div>
+
+    <div class="col-md-2 d-flex gap-2">
+        <button class="btn btn-primary w-100">Apply</button>
+        <a href="{% url 'bank_index' %}" class="btn btn-secondary w-100">Reset</a>
+    </div>
+
+</form>
+
+
+
+
+<!-- 🏦 TOTAL BANK BALANCE -->
+{% if not selected_bank and not filter_type %}
+<div class="card mb-3 border-primary">
+    <div class="card-body text-center">
+        <h6 class="text-primary mb-1">Total Available Bank Balance</h6>
+        <h3 class="fw-bold text-primary">
+            ₹ {{ total_bank|floatformat:2 }}
+        </h3>
+    </div>
+</div>
+<div class="row mb-3">
+    {% for bank in banks %}
+    <div class="col-md-4">
+        <div class="card border-primary mb-2">
+            <div class="card-body text-center">
+                <h6 class="text-primary mb-1">
+                    {{ bank.name }}
+                </h6>
+                <h4 class="fw-bold
+                    {% if bank.filtered_balance < 0 %}
+                        text-danger
+                    {% else %}
+                        text-success
+                    {% endif %}
+                ">
+                    ₹ {{ bank.filtered_balance|floatformat:2 }}
+                </h4>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card mb-3 border-primary">
+    <div class="card-body text-center">
+        <h6 class="text-primary mb-1">Total Available Bank Balance</h6>
+        <h3 class="fw-bold text-primary">
+            ₹ {{ total_bank|floatformat:2 }}
+        </h3>
+    </div>
+</div>
+{% endif %}
+
+
+<a href="{% url 'bank_create' %}" class="btn btn-primary mb-3">
+    + Add Bank
+</a>
+
+<div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+<table class="table table-bordered table-hover align-middle">
+    <thead class="table-light">
+        <tr>
+            <th>#</th>
+            <th>Bank Name</th>
+            <th class="text-end">Opening Balance</th>
+            <th class="text-end">Available Balance</th>
+            <th>Last Transaction</th>
+            <th>Bank Log</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for bank in banks %}
+        <tr>
+            <td>{{ forloop.counter }}</td>
+
+            <td class="fw-semibold">{{ bank.name }}</td>
+
+            <td class="text-end">
+                ₹ {{ bank.opening_balance|floatformat:2 }}
+            </td>
+
+            <td class="text-end fw-semibold
+                {% if bank.filtered_balance < 0 %}text-danger{% else %}text-success{% endif %}">
+                ₹ {{ bank.filtered_balance|floatformat:2 }}
+            </td>
+
+            <td>
+                {% if bank.last_transaction_date %}
+                    {{ bank.last_transaction_date|date:"d M Y" }}
+                {% else %}
+                    —
+                {% endif %}
+            </td>
+
+            <td>
+                <a href="{% url 'bank_log' bank.id %}"
+                    class="btn btn-sm btn-outline-primary">
+                    View Log
+                </a>
+            </td>
+
+
+            <td class="d-flex gap-2">
+                <a href="{% url 'bank_update' bank.id %}"
+                class="btn btn-sm btn-outline-warning">Edit</a>
+                <a href="{% url 'bank_delete' bank.id %}"
+                class="btn btn-sm btn-outline-danger">Delete</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5" class="text-center text-muted">
+                No banks found
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+</div>
+
+<script>
+document.querySelector('[name="filter_type"]').addEventListener('change', function () {
+    const type = this.value;
+
+    document.querySelector('[name="date"]').disabled = type !== 'day';
+    document.querySelector('[name="month"]').disabled = type !== 'month';
+    document.querySelector('[name="year"]').disabled = type === 'day';
+});
+</script>
+
+
+{% endblock %}

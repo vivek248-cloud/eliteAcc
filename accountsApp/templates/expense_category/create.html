@@ -1,0 +1,24 @@
+{% extends "layout/base.html" %}
+{% block title %}Add Category{% endblock %}
+
+{% block content %}
+<h4>Add Spend Category</h4>
+
+<form method="post" class="card p-4 shadow-sm">
+    {% csrf_token %}
+
+    <div class="mb-3">
+        <label class="form-label">Category Name</label>
+        <input type="text"
+               name="name"
+               class="form-control"
+               placeholder="e.g. Office Rent"
+               required>
+    </div>
+
+    <button class="btn btn-primary">Save</button>
+    <a href="{% url 'expense_category_index' %}" class="btn btn-secondary">
+        Cancel
+    </a>
+</form>
+{% endblock %}

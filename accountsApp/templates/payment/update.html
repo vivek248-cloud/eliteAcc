@@ -1,0 +1,143 @@
+{% extends "layout/base.html" %}
+{% block title %}Update Payment{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-header bg-warning">
+        Update Payment
+    </div>
+
+    <div class="card-body">
+        <form method="POST">
+            {% csrf_token %}
+
+            <!-- CLIENT -->
+            <div class="mb-3">
+                <label class="form-label">Client</label>
+                <select name="client" class="form-select" required>
+                    {% for client in clients %}
+                        <option value="{{ client.id }}"
+                            {% if client.id == payment.client.id %}selected{% endif %}>
+                            {{ client.name }}  ({{ client.company.name }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- PAYMENT MODE -->
+            <div class="mb-3">
+                <label class="form-label">Payment Mode</label>
+                <select name="payment_mode" id="payment_mode" class="form-select" required>
+                    <option value="cash"
+                        {% if payment.payment_mode == 'cash' %}selected{% endif %}>
+                        Cash
+                    </option>
+                    <option value="cheque"
+                        {% if payment.payment_mode == 'cheque' %}selected{% endif %}>
+                        Cheque
+                    </option>
+                </select>
+            </div>
+
+            <!-- BANK -->
+            <div class="mb-3">
+                <label class="form-label">Bank</label>
+                <select name="bank" id="bank_select" class="form-select" required>
+                    {% for bank in banks %}
+                        <option value="{{ bank.id }}"
+                            data-cash="{% if bank.name|lower == 'cash' %}1{% else %}0{% endif %}"
+                            {% if payment.bank and bank.id == payment.bank.id %}selected{% endif %}>
+                            {{ bank.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <!-- WARNINGS -->
+                <small id="cashWarning" class="text-danger d-none">
+                    Cash payment must use <strong>Cash</strong> bank only.
+                </small>
+
+                <small id="chequeWarning" class="text-danger d-none">
+                    Cheque payment cannot use <strong>Cash</strong> bank.
+                </small>
+            </div>
+
+            <!-- AMOUNT -->
+            <div class="mb-3">
+                <label class="form-label">Amount</label>
+                <input type="number"
+                       step="0.01"
+                       name="amount"
+                       value="{{ payment.amount }}"
+                       class="form-control"
+                       required>
+            </div>
+
+            <!-- DATE -->
+            <div class="mb-3">
+                <label class="form-label">Payment Date</label>
+                <input type="date"
+                       name="payment_date"
+                       value="{{ payment.payment_date|date:'Y-m-d' }}"
+                       class="form-control"
+                       required>
+            </div>
+
+            <!-- ACTIONS -->
+            <button class="btn btn-primary"> <i class="bi bi-save"></i> 
+                Update
+            </button>
+            <a href="{% url 'payment_index' %}" class="btn btn-secondary">
+                Back
+            </a>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const paymentMode = document.getElementById('payment_mode');
+    const bankSelect = document.getElementById('bank_select');
+    const cashWarning = document.getElementById('cashWarning');
+    const chequeWarning = document.getElementById('chequeWarning');
+
+    function isCashBankSelected() {
+        const opt = bankSelect.options[bankSelect.selectedIndex];
+        return opt.dataset.cash === "1";
+    }
+
+    function validate() {
+        cashWarning.classList.add('d-none');
+        chequeWarning.classList.add('d-none');
+
+        const isCashBank = isCashBankSelected();
+
+        if (paymentMode.value === 'cash' && !isCashBank) {
+            cashWarning.classList.remove('d-none');
+        }
+
+        if (paymentMode.value === 'cheque' && isCashBank) {
+            chequeWarning.classList.remove('d-none');
+        }
+    }
+
+    paymentMode.addEventListener('change', function () {
+        // Auto-select Cash bank when switching to cash
+        if (this.value === 'cash') {
+            [...bankSelect.options].forEach(o => {
+                if (o.dataset.cash === "1") {
+                    bankSelect.value = o.value;
+                }
+            });
+        }
+        validate();
+    });
+
+    bankSelect.addEventListener('change', validate);
+
+    // 🔁 IMPORTANT: validate on page load
+    validate();
+});
+</script>
+{% endblock %}

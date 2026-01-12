@@ -1,0 +1,419 @@
+{% extends "layout/base.html" %}
+{% block title %}Client Info{% endblock %}
+
+{% block content %}
+<div class="mb-3" style=" max-height:100vh;overflow-y:auto;overflow-x:hidden;">
+    <h4>Client Info</h4>
+
+
+
+
+<h4 class="mb-3">Client Details</h4>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h5>{{ client.name }}</h5>
+        <p class="mb-1"><strong>Company:</strong> {{ client.company.name }}</p>
+        <p class="mb-1"><strong>Project value:</strong> ₹ {{ client.budget|floatformat:2 }}</p>
+        <p class="mb-1 text-success">
+            <strong>Total paid:</strong> ₹ {{ client.total_paid|floatformat:2 }}
+        </p>
+        <p class="mb-1 text-warning">
+            <strong>Total Expenses:</strong> ₹ {{ client.total_expenses|floatformat:2 }}
+        </p>
+        <p class="mb-1 fw-semibold
+            {% if client.balance > 0 %}text-danger{% else %}text-success{% endif %}">
+            <strong>Balance:</strong> ₹ {{ client.balance|floatformat:2 }}
+        </p>
+    </div>
+</div>
+
+<div class="alert alert-info fw-bold mb-2" >
+    Selected Total: ₹ <span id="selectedTotal">0.00</span>
+</div>
+
+<h6 class="fw-bold">Payment Filters</h6>
+
+<form method="get" class="row g-2 mb-4">
+
+    <!-- 👤 PAYMENT MODE -->
+    <div class="col-md-3">
+        <label class="form-label">Payment Mode</label>
+        <select name="payment_mode" class="form-select">
+            <option value="">All</option>
+            <option value="cash" {% if payment_mode == 'cash' %}selected{% endif %}>Cash</option>
+            <option value="cheque" {% if payment_mode == 'cheque' %}selected{% endif %}>Cheque</option>
+        </select>
+    </div>
+
+    <!-- 📅 START DATE -->
+    <div class="col-md-3">
+        <label class="form-label">Start Date</label>
+        <input type="date"
+               name="payment_start_date"
+               value="{{ payment_start_date }}"
+               class="form-control">
+    </div>
+
+    <!-- 📅 END DATE -->
+    <div class="col-md-3">
+        <label class="form-label">End Date</label>
+        <input type="date"
+               name="payment_end_date"
+               value="{{ payment_end_date }}"
+               class="form-control">
+    </div>
+
+    <!-- 🔘 ACTIONS -->
+    <div class="col-md-3 d-flex gap-2 align-items-end">
+        <button class="btn btn-primary w-100">Apply</button>
+
+        <!-- 🔄 RESET PAYMENT FILTERS -->
+        <a href="{% url 'client_info' client.id %}"
+           class="btn btn-secondary w-100">
+            Reset
+        </a>
+    </div>
+
+</form>
+
+
+
+
+
+<!-- PAYMENTS -->
+<h5>Payments</h5>
+<table class="table table-bordered table-sm">
+    <thead class="table-light">
+        <tr>
+            <th>Date</th>
+            
+            <th class="text-end">Cumulative (Before)</th>
+            <th class="text-end">Amount Paid (Now)</th>
+            <th class="text-end">Remaining (After)</th>
+            <th>Mode</th>
+            <th>Bank</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for p in payments %}
+        <tr>
+            <td>{{ p.date }}</td>
+
+
+
+            <td class="text-end highlight-cell2 selectable-amount"
+                data-bs-toggle="tooltip"
+                title="Total paid before: ₹ {{ p.before|floatformat:2 }}"
+                data-amount="{{ p.before }}" data-col="before">
+                ₹ {{ p.before|floatformat:2 }}
+            </td>
+
+
+
+            <td class="text-end text-success fw-semibold highlight-cell2 selectable-amount"
+                data-amount="{{ p.amount }}" data-col="amount">
+                ₹ {{ p.amount|floatformat:2 }}
+            </td>
+
+            <td class="text-end fw-semibold highlight-cell2 selectable-amount
+                {% if p.remaining < 0 %}
+                    text-danger
+                {% else %}
+                    text-primary
+                {% endif %}"
+                data-amount="{{ p.remaining }}" data-col="remaining">
+                ₹ {{ p.remaining|floatformat:2 }}
+            </td>
+
+            <td class="highlight-cell3">{{ p.mode|capfirst }}</td>
+            <td class="highlight-cell3">{{ p.bank }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="6" class="text-center text-muted">
+                No payments
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+
+
+<h6 class="fw-bold">Expense Filters</h6>
+
+<form method="get" class="row g-2 mb-4">
+
+    <!-- 💸 SPEND MODE -->
+    <div class="col-md-3">
+        <label class="form-label">Spend Mode</label>
+        <select name="spend_mode" class="form-select">
+            <option value="">All</option>
+            <option value="cash" {% if spend_mode == 'cash' %}selected{% endif %}>Cash</option>
+            <option value="cheque" {% if spend_mode == 'cheque' %}selected{% endif %}>Cheque</option>
+        </select>
+    </div>
+
+    <!-- 📅 START DATE -->
+    <div class="col-md-3">
+        <label class="form-label">Start Date</label>
+        <input type="date"
+               name="expense_start_date"
+               value="{{ expense_start_date }}"
+               class="form-control">
+    </div>
+
+    <!-- 📅 END DATE -->
+    <div class="col-md-3">
+        <label class="form-label">End Date</label>
+        <input type="date"
+               name="expense_end_date"
+               value="{{ expense_end_date }}"
+               class="form-control">
+    </div>
+
+    <!-- 🔘 ACTIONS -->
+    <div class="col-md-3 d-flex gap-2 align-items-end">
+        <button class="btn btn-danger w-100">Apply</button>
+
+        <!-- 🔄 RESET EXPENSE FILTERS -->
+        <a href="{% url 'client_info' client.id %}"
+           class="btn btn-secondary w-100">
+            Reset
+        </a>
+    </div>
+
+</form>
+
+
+
+
+
+<!-- EXPENSES -->
+<h5 class="mt-4">Expenses</h5>
+<table class="table table-bordered table-sm">
+    <thead class="table-light">
+        <tr>
+            <th>Date</th>
+            <th>Description</th>
+            <th class="text-end">Spent Before</th>
+            <th class="text-end">Spend Now</th>
+            <th class="text-end">Remaining Balance</th>
+            <th>Mode</th>
+            <th>Bank</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for e in expenses %}
+        <tr>
+            <!-- DATE -->
+            <td>{{ e.date }}</td>
+
+            <!-- DESCRIPTION -->
+            <td>
+                {{ e.description }}
+            </td>
+
+            <!-- SPENT BEFORE -->
+            <td class="text-end text-muted selectable-amount" data-bs-toggle="tooltip" title="Total spend before ₹ {{ e.before|floatformat:2 }}" data-amount="{{ e.before }}" data-col="spent_before">
+                ₹ {{ e.before|floatformat:2 }}
+            </td>
+
+            <!-- SPEND NOW -->
+            <td class="text-end text-danger fw-semibold selectable-amount" data-bs-toggle="tooltip" title="Now spent ₹ {{ e.now|floatformat:2 }}" data-amount="{{ e.now }}" data-col="spend_now">
+                ₹ {{ e.now|floatformat:2 }}
+            </td>
+
+            <!-- REMAINING BALANCE -->
+            <td class="text-end fw-bold
+                {% if e.remaining < 0 %}
+                    text-danger shake
+                {% else %}
+                    text-primary
+                {% endif %}
+            selectable-amount" data-amount="{{ e.remaining }}" data-col="remaining_balance">
+                ₹ {{ e.remaining|floatformat:2 }}
+
+                <i class="bi bi-info-circle ms-1"
+                data-bs-toggle="tooltip"
+                data-bs-html="true"
+                title="
+                        <div>
+                            <strong>Formula</strong>
+                            <hr class='my-1'>
+                            Remaining = Total Paid − Total Expenses till now
+                            {% if e.remaining < 0 %}
+                            <div class='text-danger mt-1'>
+                                ⚠ Client has exceeded the paid amount
+                            </div>
+                            {% endif %}
+                        </div>
+                ">
+                </i>
+
+            </td>
+
+            <!-- MODE -->
+            <td>{{ e.mode|capfirst }}</td>
+
+            <!-- BANK -->
+            <td>{{ e.bank }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="7" class="text-center text-muted">
+                No expenses
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+
+
+</table>
+
+<div class="d-flex justify-content-between">
+    <a href="{% url 'client_index' %}" class="btn btn-secondary mt-3 mb-3">
+        ← Back to Clients
+    </a>
+
+    <a href="{% url 'client_info_pdf' client.id %}?{{ request.GET.urlencode }}"
+    class="btn btn-danger mb-3 mt-3">
+    📄 Export PDF
+    </a>
+</div>
+
+</div>
+
+
+<script>
+document.querySelector('[name="filter_type"]').addEventListener('change', function () {
+    const type = this.value;
+
+    document.querySelector('[name="date"]').disabled = type !== 'day';
+    document.querySelector('[name="month"]').disabled = type !== 'month';
+    document.querySelector('[name="year"]').disabled = type === 'day';
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const tooltipTriggerList = [].slice.call(
+        document.querySelectorAll('[data-bs-toggle="tooltip"]')
+    );
+    tooltipTriggerList.forEach(function (el) {
+        new bootstrap.Tooltip(el);
+    });
+});
+</script>
+
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    let total = 0;
+    let isDragging = false;
+    let activeColumn = null;
+
+    const totalEl = document.getElementById('selectedTotal');
+
+    // 🧠 STACK FOR UNDO
+    const selectionStack = [];
+
+    function updateTotal(amount, add = true) {
+        total += add ? amount : -amount;
+        totalEl.textContent = total.toFixed(2);
+    }
+
+    function selectCell(cell) {
+        if (!cell.classList.contains('selected')) {
+            cell.classList.add('selected');
+
+            const amount = parseFloat(cell.dataset.amount || 0);
+            updateTotal(amount, true);
+
+            // 🧠 PUSH TO STACK
+            selectionStack.push(cell);
+        }
+    }
+
+    function unselectCell(cell) {
+        if (cell.classList.contains('selected')) {
+            cell.classList.remove('selected');
+
+            const amount = parseFloat(cell.dataset.amount || 0);
+            updateTotal(amount, false);
+        }
+    }
+
+    document.querySelectorAll('.selectable-amount').forEach(td => {
+
+        const column = td.dataset.col;
+
+        // ❌ Disable right-click menu
+        td.addEventListener('contextmenu', e => e.preventDefault());
+
+        td.addEventListener('mousedown', function (e) {
+
+            // ✅ CTRL + RIGHT CLICK → TOGGLE
+            if (e.ctrlKey && e.button === 2) {
+                e.preventDefault();
+
+                if (this.classList.contains('selected')) {
+                    unselectCell(this);
+
+                    // ❌ REMOVE FROM STACK
+                    const index = selectionStack.indexOf(this);
+                    if (index !== -1) selectionStack.splice(index, 1);
+
+                } else {
+                    selectCell(this);
+                }
+            }
+
+            // 🟢 LEFT CLICK START DRAG
+            if (e.button === 0) {
+                isDragging = true;
+                activeColumn = column;
+                selectCell(this);
+            }
+        });
+
+        // 🟢 DRAG OVER SAME COLUMN
+        td.addEventListener('mouseenter', function () {
+            if (isDragging && column === activeColumn) {
+                selectCell(this);
+            }
+        });
+
+    });
+
+    // 🔚 STOP DRAG
+    document.addEventListener('mouseup', function () {
+        isDragging = false;
+        activeColumn = null;
+    });
+
+    // ⌫ BACKSPACE → UNDO LAST SELECTION
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Backspace') {
+
+            // ❌ Prevent browser back navigation
+            e.preventDefault();
+
+            const lastCell = selectionStack.pop();
+            if (lastCell) {
+                unselectCell(lastCell);
+            }
+        }
+    });
+
+});
+</script>
+
+
+
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "layout/base.html" %}
+{% block title %}Delete Client{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm border-danger">
+    <div class="card-header bg-danger text-white">
+        Confirm Delete
+    </div>
+
+    <div class="card-body">
+        <p>
+            Are you sure you want to delete
+            <strong>{{ client.name }}</strong>?
+        </p>
+
+        <p class="text-danger small">
+            ⚠ This will delete all related payments and expenses.
+        </p>
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <button class="btn btn-danger">
+                Yes, Delete
+            </button>
+
+            <a href="{% url 'client_index' %}" class="btn btn-secondary">
+                Cancel
+            </a>
+        </form>
+    </div>
+</div>
+{% endblock %}

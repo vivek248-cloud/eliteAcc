@@ -1,0 +1,187 @@
+{% extends "layout/base.html" %}
+{% block title %}Clients{% endblock %}
+
+{% block content %}
+<h4 class="mb-3">Client List</h4>
+
+<a href="{% url 'client_create' %}" class="btn btn-primary mb-3">
+    + Add Client
+</a>
+
+<a href="{% url 'all_clients_statement' %}"
+        class="btn  btn-warning mb-3 ms-2 rounded-3">
+        All Clients Statement
+</a>
+
+
+<div class="table-responsive" style="max-height: 700px; overflow-y: auto;">
+<table class="table table-bordered table-hover align-middle">
+    <thead class="table-light">
+        <tr>
+            <th class="text-center">#</th>
+            <th class="text-center">Client</th>
+            <th class="text-center">Company</th>
+            <th class="text-center">Project value</th>
+            <th class="text-center">Total Paid</th>
+            <th class="text-center">Spending</th>
+            <th class="text-center">Balance</th>
+            <th class="text-center">Yet to Pay</th>
+            <th class="text-center">Action</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for client in clients %}
+        <tr>
+            <td>{{ forloop.counter }}</td>
+
+            <td>
+                <a href="{% url 'client_info' client.id %}"
+                   class="fw-bold text-decoration-none">
+                    {{ client.name }} 
+                </a>
+            </td>
+
+            <td>{{ client.company.name }}</td>
+
+            <!-- 💰 Budget -->
+            <td class="text-end">
+                ₹ {{ client.budget|floatformat:2 }}
+            </td>
+
+            <!-- 💵 TOTAL PAID -->
+            <td class="text-end highlight-cell" >
+                <span class="{% if client.total_paid < 0 %}text-danger{% else %}text-success{% endif %}">
+                    ₹ {{ client.total_paid|floatformat:2 }}
+                </span>
+
+                {% if client.total_paid < 0 %}
+                    <span
+                        class="ms-1 text-danger fw-bold"
+                        data-bs-toggle="tooltip"
+                        data-bs-html="true"
+                        title="
+                            <strong>⚠ Net Negative</strong><br>
+                            Cheque: ₹ {{ client.total_cheque_payments|floatformat:2 }}<br>
+                            Cash: ₹ {{ client.total_cash|floatformat:2 }}<br>
+                            Expenses: ₹ {{ client.total_expenses|floatformat:2 }}
+                        "
+                        style="cursor:pointer;"
+                    >
+                        &#33;
+                    </span>
+                {% endif %}
+            </td>
+
+            <!-- 🔴 SPENDING -->
+            <td class="text-end text-warning highlight-cell fw-semibold">
+                ₹ {{ client.total_expenses|floatformat:2 }}
+            </td>
+
+
+
+            <!-- 🟢 BALANCE (REFUND / PENDING) -->
+            <td class="text-end fw-semibold highlight-cell">
+                <span class="{% if client.balance < 0 %}text-danger{% else %}text-primary{% endif %}">
+                    ₹ {{ client.balance|floatformat:2 }}
+                </span>
+
+                {% if client.balance < 0 %}
+                    <span
+                        class="ms-1 text-danger fw-bold"
+                        data-bs-toggle="tooltip"
+                        data-bs-html="true"
+                        title="
+                            <strong>✔ help</strong><br>
+                            Budget: ₹ {{ client.budget|floatformat:2 }}<br>
+                            Total Paid: ₹ {{ client.total_paid|floatformat:2 }}<br>
+                            client yet to pay for the spend: ₹ {{ client.balance|floatformat:2 }}
+                        "
+                        style="cursor:pointer;"
+                    >
+                        &#33;
+                    </span>
+                {% endif %}
+            </td>
+
+            <td class="text-end fw-semibold
+                {% if client.yet_to_pay > 0 %}
+                    text-warning
+                {% else %}
+                    text-danger
+                {% endif %}"
+
+                {% if client.yet_to_pay < 0 %}
+
+                    {% if client.total_expenses > client.budget %}
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="top"
+                        title="⚠ Budget exceeded. Admin must update project budget to match expenses."
+                    {% else %}
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="top"
+                        title="Client overpaid. Refund or adjust in next billing."
+                    {% endif %}
+
+                {% endif %}
+            >
+                ₹ {{ client.yet_to_pay|floatformat:2 }}
+            </td>
+
+
+
+            <!-- ⚙️ ACTIONS -->
+            <td class="d-flex gap-2 justify-content-center">
+                <a href="{% url 'client_update' client.id %}"
+                   class="btn btn-sm btn-outline-warning">
+                    Edit
+                </a>
+                <a href="{% url 'client_delete' client.id %}"
+                   class="btn btn-sm btn-outline-danger">
+                    Delete
+                </a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="9" class="text-center text-muted">
+                No clients found
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+
+
+
+
+<p class="text-muted mt-2 small">
+    <strong>Note:</strong>
+    <br>
+    Total Paid = Cheque + Cash
+    <br>
+    Balance = Total Paid - Spending - Budget
+    <br>
+    Yet to Pay = Spending - Total Paid
+    <br>
+    <em>(Hover on ⚠ and ✔ icons for more info)</em>
+</p>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var tooltipTriggerList = [].slice.call(
+        document.querySelectorAll('[data-bs-toggle="tooltip"]')
+    );
+    tooltipTriggerList.map(function (el) {
+        return new bootstrap.Tooltip(el);
+    });
+});
+</script>
+
+
+
+
+{% endblock %}

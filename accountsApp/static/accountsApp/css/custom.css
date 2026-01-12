@@ -1,0 +1,526 @@
+
+
+
+/* Highlight important amount cells */
+table td.highlight-cell {
+    background-color: #f0f7ff !important;
+    border-left: 1px solid #000000 !important;
+    padding-left: 12px;
+}
+
+table td.highlight-cell2 {
+    background-color: #f0f7ff !important;
+    border-left: 1px solid #000000 !important;
+    padding-left: 12px;
+}
+
+table td.highlight-cell3 {
+    background-color: #d6ffc3 !important;
+    border-left: 1px solid #000000 !important;
+    padding-left: 12px;
+}
+
+
+@keyframes shake {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    50% { transform: translateX(3px); }
+    75% { transform: translateX(-3px); }
+    100% { transform: translateX(0); }
+}
+
+.shake {
+    animation: shake 0.4s ease-in-out;
+}
+
+
+/* ============================= */
+/* Google Font */
+/* ============================= */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* ============================= */
+/* CSS VARIABLES (LIGHT MODE) */
+/* ============================= */
+:root {
+  --background: hsl(220 20% 97%);
+  --foreground: hsl(222 47% 11%);
+
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(222 47% 11%);
+
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(222 47% 11%);
+
+  --primary: hsl(221 83% 53%);
+  --primary-foreground: hsl(210 40% 98%);
+
+  --secondary: hsl(220 14% 96%);
+  --secondary-foreground: hsl(222 47% 11%);
+
+  --muted: hsl(220 14% 96%);
+  --muted-foreground: hsl(220 9% 46%);
+
+  --accent: hsl(220 14% 96%);
+  --accent-foreground: hsl(222 47% 11%);
+
+  --destructive: hsl(0 84% 60%);
+  --destructive-foreground: hsl(210 40% 98%);
+
+  --success: hsl(142 76% 36%);
+  --success-foreground: hsl(210 40% 98%);
+
+  --warning: hsl(38 92% 50%);
+  --warning-foreground: hsl(222 47% 11%);
+
+  --border: hsl(220 13% 91%);
+  --input: hsl(220 13% 91%);
+  --ring: hsl(221 83% 53%);
+
+  --radius: 0.75rem;
+}
+
+/* ============================= */
+/* DARK MODE */
+/* ============================= */
+.dark {
+  --background: hsl(222 47% 6%);
+  --foreground: hsl(210 40% 98%);
+
+  --card: hsl(222 47% 9%);
+  --card-foreground: hsl(210 40% 98%);
+
+  --popover: hsl(222 47% 9%);
+  --popover-foreground: hsl(210 40% 98%);
+
+  --border: hsl(222 47% 15%);
+  --input: hsl(222 47% 15%);
+}
+
+/* ============================= */
+/* RESET + BASE STYLES */
+/* ============================= */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  border-color: var(--border);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--background);
+  color: var(--foreground);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================= */
+/* COMMON ELEMENT STYLES */
+/* ============================= */
+.card {
+  background: var(--card);
+  color: var(--card-foreground);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+input,
+select,
+textarea {
+  background: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--input);
+  border-radius: var(--radius);
+  font-family: inherit;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--ring);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 30%, transparent);
+}
+
+/* ============================= */
+/* BUTTONS */
+/* ============================= */
+.btn-primary {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+
+.btn-danger {
+  background: var(--destructive);
+  color: var(--destructive-foreground);
+}
+
+.btn-success {
+  background: var(--success);
+  color: var(--success-foreground);
+}
+
+/* ============================= */
+/* TEXT COLORS */
+/* ============================= */
+.text-success {
+  color: var(--success);
+}
+
+.text-danger {
+  color: var(--destructive);
+}
+
+.text-warning {
+  color: var(--warning);
+}
+
+.text-muted {
+  color: var(--muted-foreground);
+}
+
+/* ================================
+   Dashboard Global Styles
+================================ */
+
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* ================================
+   Cards
+================================ */
+
+.dashboard-card {
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  border-radius: var(--radius);
+  box-shadow: 0 1px 2px hsl(var(--border));
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.dashboard-card:hover {
+  box-shadow: 0 8px 24px -12px hsl(var(--foreground) / 0.25);
+  transform: translateY(-2px);
+}
+
+.dashboard-card-header {
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+  margin-bottom: 0.25rem;
+}
+
+.dashboard-card-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* ================================
+   Card Status Colors
+================================ */
+
+.text-success {
+  color: hsl(var(--success));
+}
+
+.text-warning {
+  color: hsl(var(--warning));
+}
+
+.text-danger,
+.text-destructive {
+  color: hsl(var(--destructive));
+}
+
+/* ================================
+   Icons
+================================ */
+
+.dashboard-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: calc(var(--radius) - 4px);
+  background: hsl(var(--secondary));
+  color: hsl(var(--muted-foreground));
+  width: 40px;
+  height: 40px;
+  font-size: 1.25rem;
+}
+
+/* ================================
+   Bank Selector
+================================ */
+
+.bank-select {
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+}
+
+.bank-select:focus {
+  outline: none;
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
+}
+
+/* ================================
+   Filters
+================================ */
+
+.filter-box {
+  background: hsl(var(--card));
+  border-radius: var(--radius);
+  padding: 1rem;
+  box-shadow: 0 1px 2px hsl(var(--border));
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.filter-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+}
+
+.filter-input {
+  width: 160px;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+.filter-input:focus {
+  outline: none;
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
+}
+
+
+.financial-dashboard {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    padding: 24px;
+    background-color: #f8fafc; /* Light slate background for professionalism */
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+.dashboard-card {
+    background-color: #ffffff;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+}
+
+.card-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #374151; /* Gray-700 */
+    margin-bottom: 12px;
+}
+
+.card-subtitle {
+    font-size: 0.875rem;
+    color: #6b7280; /* Gray-500 */
+    margin-top: 8px;
+}
+
+.card-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1e40af; /* Deep blue for positive balances */
+    margin: 16px 0;
+}
+
+.card-value.warning {
+    color: #dc2626; /* Red for receivables (outstanding) */
+}
+
+/* Specific card tweaks */
+.clients-card .card-value {
+    color: #059669; /* Emerald green for clients count */
+}
+
+.banks-card {
+    display: flex;
+    flex-direction: column;
+}
+
+.banks-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    flex-grow: 1;
+}
+
+.bank-item {
+    padding: 8px 0;
+    font-size: 1rem;
+    color: #4b5563;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.bank-item:last-child {
+    border-bottom: none;
+}
+
+.text-muted {
+    color: #9ca3af;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .financial-dashboard {
+        grid-template-columns: 1fr;
+        padding: 16px;
+    }
+}
+
+/* ================================
+   Recent Payments
+================================ */
+
+.payment-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  transition: background 0.2s ease;
+}
+
+.payment-row:hover {
+  background: hsl(var(--secondary) / 0.6);
+}
+
+.payment-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: hsl(var(--primary) / 0.15);
+  color: hsl(var(--primary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+/* ================================
+   Charts
+================================ */
+
+.chart-card {
+  background: hsl(var(--card));
+  border-radius: var(--radius);
+  box-shadow: 0 1px 2px hsl(var(--border));
+  padding: 1.5rem;
+}
+
+.chart-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.chart-subtitle {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+  margin-bottom: 0.75rem;
+}
+
+.chart-container {
+  height: 240px;
+}
+
+/* ================================
+   Animations
+================================ */
+
+.animate-slide-up {
+  animation: slideUp 0.5s ease-out forwards;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Negative value shake */
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+/* ================================
+   Empty State
+================================ */
+
+.empty-state {
+  border: 2px dashed hsl(var(--border));
+  border-radius: var(--radius);
+  background: hsl(var(--card));
+  padding: 3rem;
+  text-align: center;
+  color: hsl(var(--muted-foreground));
+}
+
+
+.selectable-amount {
+    cursor: pointer;
+}
+
+.selectable-amount.selected {
+    background-color: #d1ecf1 !important;
+    border: 2px solid #0dcaf0;
+}
+
+
+kbd {
+    background: #28292ba9;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 0.85rem;
+}
