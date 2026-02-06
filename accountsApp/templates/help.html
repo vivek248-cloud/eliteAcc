@@ -4,224 +4,374 @@
 {% block content %}
 <div class="container-fluid py-4">
 
-    <!-- PAGE TITLE -->
-    <div class="mb-4">
-        <h2 class="fw-bold d-flex align-items-center gap-2">
-            <i class="bi bi-question-circle text-primary"></i>
-            Help & Usage Guide
-        </h2>
-        <p class="text-muted mb-0">
-            Explanation of indicators, calculations, and advanced table interactions.
-        </p>
-    </div>
-
-    <!-- ========================= -->
-    <!-- 🟢 INDICATORS -->
-    <!-- ========================= -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-header fw-semibold d-flex align-items-center gap-2">
-            <i class="bi bi-palette"></i> Indicators & Color Meanings
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-5 gap-3">
+        <div>
+            <h2 class="fw-black text-dark mb-1">Knowledge Base</h2>
+            <p class="text-muted small mb-0">Understand the logic, indicators, and interactions of Elite Accounts.</p>
         </div>
-
-        <div class="table-responsive">
-            <table class="table table-bordered table-hover mb-0 align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th style="width:30%">Indicator</th>
-                        <th>Description</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><span class="badge bg-success">Green</span></td>
-                        <td>Positive balance, <mark>received Amount</mark></td>
-                    </tr>
-                    <tr>
-                        <td><span class="badge bg-danger">Red</span></td>
-                        <td><mark>Debited Amount </mark>, losses, or (<mark>yet to receive amount)</mark></td>
-                    </tr>
-                    <tr>
-                        <td><span class="badge bg-warning text-dark">Warning</span></td>
-                        <td><mark>Client overpaid </mark>or amount exceeded expectations <mark>spending amount</mark></td>
-                    </tr>
-                    <tr>
-                        <td><span class="badge bg-secondary">Info</span></td>
-                        <td>Remaining project amount <mark>Previously spend</mark> or <mark>Previously paid</mark></td>
-                    </tr>
-                    <tr>
-                        <td><span class="badge bg-info text-dark">Balance</span></td>
-                        <td>Balance = <mark>Total Paid − Total Spent</mark></td>
-                    </tr>
-                    <tr>
-                        <td><span class="badge bg-warning text-dark">⚠ Indicator</span></td>
-                        <td><mark>Hover over the indicator to see detailed information</mark></td>
-                    </tr>
-                    <tr>
-                        <td><span class="badge bg-danger text-white">⚠ Bank Balance (-)ve</span></td>
-                        <td><mark>Bank balance is negative that resolve when client pays </mark></td>
-                    </tr>
-                    <tr>
-                        <td><span class="badge bg-outline-secondary text-danger">⚠ Bank (opening balance)</span></td>
-                        <td><mark>Bank balance should be Zero when created</mark></td>
-                    </tr>
-                </tbody>
-            </table>
+        <div class="d-flex gap-2">
+            <button onclick="window.print()" class="btn btn-danger btn-sm rounded-3 px-3">
+                <i class="bi bi-printer me-1"></i> Print Guide
+            </button>
         </div>
     </div>
 
-    <!-- ========================= -->
-    <!-- 📐 FORMULAS -->
-    <!-- ========================= -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-header fw-semibold d-flex align-items-center gap-2">
-            <i class="bi bi-calculator"></i> Calculation Formulas
+    <div class="row g-4">
+        
+        <div class="col-lg-12">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h6 class="mb-0 fw-bold text-dark text-uppercase tracking-wider small">
+                        <i class="bi bi-palette text-primary me-2"></i>Visual Indicators & Status
+                    </h6>
+                </div>
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead class="bg-light bg-opacity-50 text-muted small">
+                            <tr>
+                                <th class="ps-4 border-0">STATUS MARKER</th>
+                                <th class="border-0">CONTEXT & MEANING</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="ps-4"><span class="badge rounded-pill bg-success px-3 py-2">Green / Credit</span></td>
+                                <td>Positive liquidity, <span class="text-success fw-bold">Received Amount</span>, or profitable balance.</td>
+                            </tr>
+                            <tr>
+                                <td class="ps-4"><span class="badge rounded-pill bg-danger px-3 py-2">Red / Debit</span></td>
+                                <td><span class="text-danger fw-bold">Debited Amount</span>, expenditure, or amount yet to be collected.</td>
+                            </tr>
+                            <tr>
+                                <td class="ps-4"><span class="badge rounded-pill bg-warning text-dark px-3 py-2">Warning</span></td>
+                                <td><span class="fw-bold text-dark">Overpayment detected:</span> Client paid more than the budget or spending exceeded expectations.</td>
+                            </tr>
+                            <tr>
+                                <td class="ps-4"><span class="badge rounded-pill bg-info text-dark px-3 py-2">System Info</span></td>
+                                <td>Shows historical data: <span class="text-info fw-bold">Previously spent</span> or <span class="text-info fw-bold">Previously paid</span> records.</td>
+                            </tr>
+                            <tr>
+                                <td class="ps-4"><span class="badge rounded-pill bg-dark px-3 py-2">⚠ Bank Alert</span></td>
+                                <td>Negative Bank Balance: Occurs when spending happens before client payment. Resolves on credit.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
-        <div class="table-responsive">
-            <table class="table table-bordered table-striped mb-0 align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th style="width:35%">Field</th>
-                        <th>Formula</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Total Paid</td>
-                        <td><code>Total paid = <mark>Cheque + Cash</mark></code></td>
-                    </tr>
-                    <tr>
-                        <td>Total Spent</td>
-                        <td><code><mark>sum of</mark> spending amount</code></td>
-                    </tr>
-                    <tr>
-                        <td>Balance</td>
-                        <td><code>balance = <mark>Total Paid − Total Spent</mark>  ! remaining of client paid</code></td>
-                    </tr>
-                    <tr>
-                        <td>Yet To Pay</td>
-                        <td><code> yet to pay = <mark>Project Budget − Total Paid</mark></code></td>
-                    </tr>
-                    <tr>
-                        <td>Previously Paid</td>
-                        <td><code>Paid amount before this transaction</code></td>
-                    </tr>
-                    <tr>
-                        <td>Paid Now</td>
-                        <td><code>Current payment amount</code></td>
-                    </tr>
-                    <tr>
-                        <td>Cash(bank)</td>
-                        <td><code>The <mark>cash</mark> amount credited here</code></td>
-                    </tr>
-                    <tr>
-                        <td>Bank(others)</td>
-                        <td><code>The <mark>Cheque</mark> amount credited here</code></td>
-                    </tr>
-                    <tr>
-                        <td>Negative Yet to Pay</td>
-                        <td><code><strong style="font-weight: bold;color: red;">case 1: </strong>if the project value is less than total paid <mark>eg:project value = 2000 ,total paid = 3000 (! overpaid)</mark></code><br>
-                            <code><strong style="font-weight: bold;color: red;">case 2: </strong>if the project value is less than total paid and spend Amount <br><mark>eg:project value = 2000 ,total paid = 3000 , total spend = 3000 ( ! Admin should add the exceeded spend amount in the Project Value)</mark></code>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+        <div class="col-md-7">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h6 class="mb-0 fw-bold text-dark text-uppercase tracking-wider small">
+                        <i class="bi bi-calculator text-primary me-2"></i>Accounting Formulas
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item py-3 px-4 border-0">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="fw-bold text-dark">Total Paid</span>
+                                <code class="text-primary">Cheque + Cash</code>
+                            </div>
+                            <p class="text-muted small mb-0 text-italic">Total liquidity received from the client across all modes.</p>
+                        </div>
+                        <div class="list-group-item py-3 px-4 border-light">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="fw-bold text-dark">Net Balance</span>
+                                <code class="text-primary">Total Paid − Total Spent</code>
+                            </div>
+                            <p class="text-muted small mb-0 italic">The actual available remaining funds for a specific client/project.</p>
+                        </div>
+                        <div class="list-group-item py-3 px-4 border-light">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="fw-bold text-dark">Yet To Pay</span>
+                                <code class="text-primary">Project Budget − Total Paid</code>
+                            </div>
+                            <p class="text-muted small mb-0 italic">Remaining amount the client owes based on the agreed project value.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-5">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-dark text-white">
+                <div class="card-header bg-transparent border-0 py-3">
+                    <h6 class="mb-0 fw-bold text-uppercase tracking-wider small">
+                        <i class="bi bi-mouse text-info me-2"></i>Interactive Shortcuts
+                    </h6>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    <div class="mb-3 d-flex align-items-center justify-content-between border-bottom border-secondary pb-2">
+                        <span class="small opacity-75">Multi-Select</span>
+                        <span class="badge bg-secondary">Left Click + Drag</span>
+                    </div>
+                    <div class="mb-3 d-flex align-items-center justify-content-between border-bottom border-secondary pb-2">
+                        <span class="small opacity-75">Single Toggle</span>
+                        <span class="badge bg-secondary">Ctrl + Right Click</span>
+                    </div>
+                    <div class="mb-3 d-flex align-items-center justify-content-between border-bottom border-secondary pb-2">
+                        <span class="small opacity-75">Undo Selection</span>
+                        <span class="badge bg-secondary">Backspace</span>
+                    </div>
+                    <div class="mt-4 p-3 bg-white bg-opacity-10 rounded-3">
+                        <p class="small mb-0 italic"><i class="bi bi-info-circle me-2 text-info"></i>Selection total updates instantly in the table summary area.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm rounded-4 border-start border-primary border-5 h-100" style="background: rgba(255, 193, 7, 0.03);">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
+                                    <i class="bi bi-shield-exclamation text-primary fs-5"></i>
+                                </div>
+                                <h6 class="fw-black text-primary text-uppercase small mb-0 tracking-wider">General Usage Rules</h6>
+                            </div>
+                            
+                            <ul class="list-unstyled mb-0">
+                                <li class="d-flex mb-3">
+                                    <i class="bi bi-check2-circle text-primary me-3 mt-1"></i>
+                                    <span class="text-dark small">Only <strong>numeric cells</strong> are selectable for the <span class="badge bg-primary bg-opacity-10 text-dark border-0">auto-sum</span> feature.</span>
+                                </li>
+                                <li class="d-flex mb-3">
+                                    <i class="bi bi-check2-circle text-primary me-3 mt-1"></i>
+                                    <span class="text-dark small"><strong>PDF Exports</strong> are dynamic; they always respect your <span class="text-decoration-underline">currently applied filters</span>.</span>
+                                </li>
+                                <li class="d-flex">
+                                    <i class="bi bi-check2-circle text-primary me-3 mt-1"></i>
+                                    <span class="text-dark small">Bank opening balances should ideally be <strong>zero</strong> during initial setup to maintain ledger integrity.</span>
+                                </li>
+                                <li class="d-flex mt-3">
+                                    <i class="bi bi-check2-circle text-primary me-3 mt-1"></i>
+                                    <mark><span class="text-dark small italic">Note: Set zero opening balances for all bank accounts during creation.</span></mark>
+                                </li>
+                                <li class="d-flex mt-3">
+                                    <i class="bi bi-check2-circle text-primary me-3 mt-1"></i>
+                                    <mark><span class="text-dark small italic">Note: Please ensure cash bank selected for cash payment mode</span></mark>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm rounded-4 border-start border-danger border-5 h-100" style="background: rgba(220, 53, 69, 0.03);">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-danger bg-opacity-10 p-2 rounded-3 me-3">
+                                    <i class="bi bi-exclamation-octagon text-danger fs-5"></i>
+                                </div>
+                                <h6 class="fw-black text-danger text-uppercase small mb-0 tracking-wider">Spending & Liquidity</h6>
+                            </div>
+                            
+                            <ul class="list-unstyled mb-0">
+                                <li class="d-flex mb-3">
+                                    <i class="bi bi-arrow-right-short text-danger me-2 mt-1 fs-5"></i>
+                                    <span class="text-dark small">Always verify a <strong class="text-danger">Positive Bank Balance</strong> before finalizing new expenditure entries.</span>
+                                </li>
+                                <li class="d-flex mb-3">
+                                    <i class="bi bi-arrow-right-short text-danger me-2 mt-1 fs-5"></i>
+                                    <span class="text-dark small">The system performs an <span class="badge bg-danger bg-opacity-10 text-danger border-0">automatic deduction</span> from the linked bank ledger upon creation.</span>
+                                </li>
+                                <li class="d-flex mb-3">
+                                    <i class="bi bi-arrow-right-short text-danger me-2 mt-1 fs-5"></i>
+                                    <span class="text-dark small">Updating a spending record will <strong>re-calculate</strong> and adjust the bank balance in real-time.</span>
+                                </li>
+                                <li class="d-flex">
+                                    <i class="bi bi-arrow-right-short text-danger me-2 mt-1 fs-5"></i>
+                                    <span class="text-dark small">Removing an entry will <span class="text-decoration-underline">instantly restore</span> the funds to the corresponding bank account.</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="card border-0 shadow-sm rounded-4 mt-4 overflow-hidden">
+    <div class="card-header bg-dark text-white py-3">
+        <h6 class="mb-0 fw-bold text-uppercase small tracking-wider">
+            <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i> 
+            Case Study: Resolving Budget Deficits
+        </h6>
+    </div>
+    <div class="card-body p-4">
+        <div class="row align-items-center">
+            <div class="col-lg-7 mb-4 mb-lg-0">
+                <img src="/static/accountsApp/images/case.png"
+                    class="img-fluid rounded-3 shadow-sm border zoomable-img"
+                    style="cursor: zoom-in;"
+                    data-bs-toggle="modal"
+                    data-bs-target="#imageZoomModal"
+                    alt="Budget Overrun Example">
+            </div>
+            <div class="col-lg-5">
+                <div class="ps-lg-3">
+                    <h6 class="fw-black text-dark mb-3">Scenario: Spending > Project Value</h6>
+                    
+                    <div class="d-flex mb-3">
+                        <div class="avatar-xs bg-primary bg-opacity-10 text-primary rounded-circle me-3 px-3 py-2">1</div>
+                        <div>
+                            <p class="small mb-0"><strong>Update Project Value:</strong> Increase the contract amount to reflect the actual costs incurred.</p>
+                        </div>
+                    </div>
+
+                    <div class="d-flex">
+                        <div class="avatar-xs bg-primary bg-opacity-10 text-primary rounded-circle me-3 px-3 py-2">2</div>
+                        <div>
+                            <p class="small mb-0"><strong>Update Payments:</strong> Collect the remaining balance from the client to clear the <span class="text-danger fw-bold">Negative Balance</span>.</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 p-3 bg-light rounded-3 border-start border-primary border-4">
+                        <p class="small text-muted mb-0 italic">
+                            <i class="bi bi-info-circle me-1"></i> 
+                            The red <strong>!</strong> symbol appears whenever <strong>Spending</strong> is higher than <strong>Total Paid</strong>.
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-
-    <!-- ========================= -->
-    <!-- 🖱 CONTROLS -->
-    <!-- ========================= -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-header fw-semibold d-flex align-items-center gap-2">
-            <i class="bi bi-mouse"></i> Mouse & Keyboard Controls
-        </div>
-
-        <div class="table-responsive">
-            <table class="table table-bordered table-hover mb-0 align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th style="width:30%">Action</th>
-                        <th>Function</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><kbd>Ctrl</kbd> + <kbd>Right Click</kbd></td>
-                        <td>Select or unselect a single amount cell</td>
-                    </tr>
-                    <tr>
-                        <td><kbd>Left Click</kbd></td>
-                        <td>Start selecting values in the same column</td>
-                    </tr>
-                    <tr>
-                        <td><kbd>Left Click</kbd> + Drag</td>
-                        <td>Select multiple values vertically</td>
-                    </tr>
-                    <tr>
-                        <td><kbd>Backspace</kbd></td>
-                        <td>Undo the last selected amount</td>
-                    </tr>
-                    <tr>
-                        <td><kbd>Backspace</kbd> (multiple)</td>
-                        <td>Undo selections one by one</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- ========================= -->
-    <!-- ➕ TOTAL FEATURE -->
-    <!-- ========================= -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-header fw-semibold d-flex align-items-center gap-2">
-            <i class="bi bi-sum"></i> Selection Total Feature
-        </div>
-
-        <div class="card-body">
-            <ul class="mb-0">
-                <li>Click or drag-select amount cells</li>
-                <li>Each selected cell adds its value</li>
-                <li>Unselecting subtracts the value</li>
-                <li>Total updates instantly in the summary area</li>
-            </ul>
-        </div>
-    </div>
-
-    <!-- ========================= -->
-    <!-- ⚠ NOTES -->
-    <!-- ========================= -->
-    <div class="card shadow-sm border-warning">
-        <div class="card-header fw-semibold text-warning d-flex align-items-center gap-2">
-            <i class="bi bi-exclamation-triangle"></i> Important Notes
-        </div>
-
-        <div class="card-body">
-            <ul class="mb-0">
-                <li><mark>Only numeric amount cells</mark> are selectable</li>
-                <li>Drag selection works column-wise only</li>
-                <li>Backspace is disabled for browser navigation here</li>
-                <li><mark>PDF exports always respect applied filters</mark></li>
-            </ul>
-        </div>
-    </div>
-
-
-    <div class="card shadow-sm border-danger mt-4">
-        <div class="card-header fw-semibold text-danger d-flex align-items-center gap-2">
-            <i class="bi bi-exclamation-triangle"></i> Creting spending / expense spending
-        </div>
-
-        <div class="card-body">
-            <ul class="mb-0">
-                <li><mark>When creating (spending / expense), ensure the bank balance has a positive value</mark></li>
-                <li>when creating a spending amount, the selected <mark>bank (bank balance) is deducted</mark></li>
-                <li>updating the spending amount will adjust the bank balance accordingly</li>
-                <li><mark>Delete the spending to restore the bank balance</mark></li>
-            </ul>
-        </div>
-    </div>
-
 </div>
+
+
+    </div>
+</div>
+
+
+<div class="modal fade" id="imageZoomModal" tabindex="-1">
+  <div class="modal-dialog modal-fullscreen">
+    <div class="modal-content bg-dark">
+
+      <div class="modal-header border-0">
+        <h5 class="text-white">Image Preview</h5>
+        <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body d-flex justify-content-center align-items-center overflow-hidden">
+
+        <img id="zoomedImage"
+             src=""
+             class="zoom-image">
+
+      </div>
+
+      <div class="modal-footer justify-content-center gap-2">
+        <button class="btn btn-light btn-sm" onclick="zoomIn()">➕ Zoom In</button>
+        <button class="btn btn-light btn-sm" onclick="zoomOut()">➖ Zoom Out</button>
+        <button class="btn btn-light btn-sm" onclick="resetZoom()">Reset</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+<style>
+    .fw-black { font-weight: 900; }
+    .tracking-wider { letter-spacing: 0.1rem; }
+    .italic { font-style: italic; }
+    
+    code {
+        background-color: #f8f9fa;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+
+    .bg-dark code {
+        background-color: rgba(255,255,255,0.1);
+        color: #0dcaf0 !important;
+    }
+
+    .list-group-item {
+        transition: background-color 0.2s ease;
+    }
+
+    .list-group-item:hover {
+        background-color: #fafafa;
+    }
+
+    .zoom-image {
+    max-width: 100%;
+    max-height: 100%;
+    transition: transform 0.2s ease;
+    cursor: grab;
+}
+
+
+</style>
+
+
+
+<script>
+let scale = 1;
+let isDragging = false;
+let startX, startY, translateX = 0, translateY = 0;
+const zoomImg = document.getElementById("zoomedImage");
+
+document.querySelectorAll(".zoomable-img").forEach(img => {
+    img.addEventListener("click", () => {
+        zoomImg.src = img.src;
+        resetZoom();
+    });
+});
+
+function zoomIn() {
+    scale += 0.2;
+    applyTransform();
+}
+
+function zoomOut() {
+    scale = Math.max(0.5, scale - 0.2);
+    applyTransform();
+}
+
+function resetZoom() {
+    scale = 1;
+    translateX = 0;
+    translateY = 0;
+    applyTransform();
+}
+
+function applyTransform() {
+    zoomImg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+}
+
+zoomImg.addEventListener("mousedown", e => {
+    isDragging = true;
+    startX = e.clientX - translateX;
+    startY = e.clientY - translateY;
+});
+
+document.addEventListener("mousemove", e => {
+    if (!isDragging) return;
+    translateX = e.clientX - startX;
+    translateY = e.clientY - startY;
+    applyTransform();
+});
+
+document.addEventListener("mouseup", () => isDragging = false);
+
+// Mouse wheel zoom
+zoomImg.addEventListener("wheel", e => {
+    e.preventDefault();
+    scale += e.deltaY * -0.001;
+    scale = Math.min(Math.max(.5, scale), 4);
+    applyTransform();
+});
+</script>
+
+
+
 {% endblock %}

@@ -1,69 +1,140 @@
 {% extends "layout/base.html" %}
-{% block title %}Available Amount{% endblock %}
+{% block title %}Available Balance{% endblock %}
 
 {% block content %}
-<h4>Available Amount</h4>
+<style>
+    .balance-card { border-radius: 15px; border: none; transition: all 0.3s ease; }
+    .nav-pills .nav-link { color: #6c757d; font-weight: 500; padding: 10px 25px; }
+    .nav-pills .nav-link.active { background-color: #0d6efd; box-shadow: 0 4px 12px rgba(13, 110, 253, 0.2); }
+    .amount-display { font-size: 2.5rem; letter-spacing: -1px; }
+    .bank-row:hover { background-color: #f8f9fa; }
+    .icon-circle { width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; }
+    
+    /* Style for the tooltip trigger */
+    .info-tooltip { cursor: help; color: #adb5bd; font-size: 0.9rem; margin-left: 5px; }
+    .info-tooltip:hover { color: #6c757d; }
+</style>
 
-<div class="mb-4">
-    <label class="form-label fw-semibold">Select Mode</label><br>
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="fw-bold mb-0">Financial Overview</h4>
+                <span class="badge bg-light text-dark border">Updated Just Now</span>
+            </div>
 
-    <div class="form-check form-check-inline">
-        <input class="form-check-input"
-               type="radio"
-               name="mode"
-               id="mode_cash"
-               checked
-               onclick="toggleAmount('cash')">
-        <label class="form-check-label" for="mode_cash">
-            Cash
-        </label>
-    </div>
+            <ul class="nav nav-pills nav-fill bg-white p-2 rounded-pill shadow-sm mb-4 border" id="pills-tab" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active rounded-pill" id="cash-tab" onclick="toggleAmount('cash')" type="button">
+                        <i class="bi bi-cash-stack me-2"></i>Cash
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link rounded-pill" id="bank-tab" onclick="toggleAmount('bank')" type="button">
+                        <i class="bi bi-bank me-2"></i>Cheque / Bank
+                    </button>
+                </li>
+            </ul>
 
-    <div class="form-check form-check-inline">
-        <input class="form-check-input"
-               type="radio"
-               name="mode"
-               id="mode_cheque"
-               onclick="toggleAmount('bank')">
-        <label class="form-check-label" for="mode_cheque">
-            Cheque
-        </label>
-    </div>
-</div>
+            <div id="cash_box" class="card balance-card shadow-sm border-start border-success border-5">
+                <div class="card-body p-4 text-center">
+                    <div class="icon-circle bg-success bg-opacity-10 text-success mx-auto">
+                        <i class="bi bi-wallet2 fs-4"></i>
+                    </div>
+                    <p class="text-muted text-uppercase fw-semibold small mb-1">
+                        Total Cash on Hand
+                        <i class="bi bi-info-circle info-tooltip" 
+                           data-bs-toggle="tooltip" 
+                           data-bs-placement="top" 
+                           title="Last Transaction: {{ last_cash_date|date:'d M Y'|default:'No records' }}"></i>
+                    </p>
+                    <h2 class="amount-display fw-bold text-success mb-0">
+                        ₹ {{ total_cash|floatformat:2 }}
+                    </h2>
+                </div>
+            </div>
 
-<!-- 💵 CASH -->
-<div id="cash_box" class="card border-success mb-3">
-    <div class="card-body text-center">
-        <h6 class="text-success">Available Cash</h6>
-        <h3 class="fw-bold text-success">
-            ₹ {{ total_cash|floatformat:2 }}
-        </h3>
-    </div>
-</div>
+            <div id="bank_box" class="card balance-card shadow-sm border-start border-primary border-5 d-none">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="icon-circle bg-primary bg-opacity-10 text-primary mb-0 me-3">
+                            <i class="bi bi-bank "></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0 fw-bold">Bank Accounts</h6>
+                            <small class="text-muted">Available Cheque Balances</small>
+                        </div>
+                    </div>
 
-<!-- 🏦 BANK (CHEQUE ONLY) -->
-<div id="bank_box" class="card border-primary mb-3 d-none">
-    <div class="card-body text-center">
-        <h6 class="text-primary">Available Bank Balance</h6>
-        <h3 class="fw-bold text-primary">
-            ₹ {{ total_bank|floatformat:2 }}
-        </h3>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="border-0 rounded-start">Bank Name</th>
+                                    <th class="border-0 rounded-end text-end">Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for bank in cheque_banks %}
+                                <tr class="bank-row">
+                                    <td class="py-3">
+                                        <span class="fw-medium">{{ bank.name }}</span>
+                                    </td>
+                                    <td class="py-3 text-end text-primary fw-bold">
+                                        ₹ {{ bank.available_balance|floatformat:2 }}
+                                        <i class="bi bi-info-circle info-tooltip" 
+                                           data-bs-toggle="tooltip" 
+                                           data-bs-placement="left" 
+                                           title="Last Activity: {{ bank.last_transaction_date|date:'d M Y'|default:'N/A' }}"></i>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="2" class="text-center py-4 text-muted">No cheque banks found</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-3 p-3 bg-primary bg-opacity-10 rounded-3 d-flex justify-content-between align-items-center">
+                        <span class="text-primary fw-bold">Total Bank Balance</span>
+                        <h4 class="text-primary fw-bold mb-0">₹ {{ total_bank|floatformat:2 }}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
-function toggleAmount(type) {
-    const cashBox = document.getElementById('cash_box');
-    const bankBox = document.getElementById('bank_box');
+    // 1. Toggle Function
+    function toggleAmount(type) {
+        const cashBox = document.getElementById('cash_box');
+        const bankBox = document.getElementById('bank_box');
+        const cashTab = document.getElementById('cash-tab');
+        const bankTab = document.getElementById('bank-tab');
 
-    if (type === 'cash') {
-        cashBox.classList.remove('d-none');
-        bankBox.classList.add('d-none');
-    } else {
-        bankBox.classList.remove('d-none');
-        cashBox.classList.add('d-none');
+        if (type === 'cash') {
+            cashBox.classList.remove('d-none');
+            bankBox.classList.add('d-none');
+            cashTab.classList.add('active');
+            bankTab.classList.remove('active');
+        } else {
+            bankBox.classList.remove('d-none');
+            cashBox.classList.add('d-none');
+            bankTab.classList.add('active');
+            cashTab.classList.remove('active');
+        }
     }
-}
+
+    // 2. Initialize Tooltips (Required for Bootstrap 5)
+    document.addEventListener('DOMContentLoaded', function () {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+    });
 </script>
 
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 {% endblock %}

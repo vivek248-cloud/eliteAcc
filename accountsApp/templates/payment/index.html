@@ -3,9 +3,7 @@
 
 {% block content %}
 
-<div class="alert alert-info fw-bold mb-2" style="position: sticky; top: 0; z-index: 10;">
-    Selected Total: ₹ <span id="selectedTotal">0.00</span>
-</div>
+
 
 <h4>Payments</h4>
 
@@ -20,7 +18,7 @@
             {% for c in clients %}
                 <option value="{{ c.id }}"
                     {% if selected_client == c.id|stringformat:"s" %}selected{% endif %}>
-                    {{ c.name }}
+                    {{ c.name }}({{ c.company.name }})
                 </option>
             {% endfor %}
         </select>
@@ -28,43 +26,79 @@
 
     <!-- 💳 PAYMENT MODE -->
     <div class="col-md-2">
-        <label class="form-label">Payment Mode</label>
+        <label class="form-label">Mode</label>
         <select name="mode" class="form-select">
             <option value="">All</option>
-            <option value="cash" {% if selected_mode == 'cash' %}selected{% endif %}>
-                Cash
-            </option>
-            <option value="cheque" {% if selected_mode == 'cheque' %}selected{% endif %}>
-                Cheque
-            </option>
+            <option value="cash" {% if selected_mode == 'cash' %}selected{% endif %}>Cash</option>
+            <option value="cheque" {% if selected_mode == 'cheque' %}selected{% endif %}>Cheque</option>
         </select>
     </div>
+
+    <!-- 🏦 BANK -->
+    <div class="col-md-3">
+        <label class="form-label">Bank</label>
+        <select name="bank" id="bankSelect" class="form-select">
+            <option value="">All Banks</option>
+
+            {% if cash_bank %}
+                <option value="{{ cash_bank.id }}"
+                    data-type="cash"
+                    {% if selected_bank == cash_bank.id|stringformat:"s" %}selected{% endif %}>
+                    {{ cash_bank.name }}
+                </option>
+            {% endif %}
+
+            {% for b in banks %}
+                <option value="{{ b.id }}"
+                    data-type="cheque"
+                    {% if selected_bank == b.id|stringformat:"s" %}selected{% endif %}>
+                    {{ b.name }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
 
     <!-- 📅 START DATE -->
     <div class="col-md-2">
         <label class="form-label">Start Date</label>
-        <input type="date" name="start_date"
-               value="{{ start_date }}" class="form-control">
+        <input type="date" name="start_date" value="{{ start_date }}" class="form-control">
     </div>
 
     <!-- 📅 END DATE -->
     <div class="col-md-2">
         <label class="form-label">End Date</label>
-        <input type="date" name="end_date"
-               value="{{ end_date }}" class="form-control">
+        <input type="date" name="end_date" value="{{ end_date }}" class="form-control">
     </div>
 
     <!-- 🔘 ACTIONS -->
-    <div class="col-md-3 d-flex gap-2">
-        <button class="btn btn-primary w-100">Apply</button>
-        <a href="{% url 'payment_index' %}" class="btn btn-secondary w-100">
-            Reset
-        </a>
+    <div class="col-md-12 d-flex gap-2 mt-2">
+        <button class="btn btn-primary w-50">Apply</button>
+        <a href="{% url 'payment_index' %}" class="btn btn-secondary w-50">Reset</a>
     </div>
 
 </form>
 
 
+<div class="d-flex justify-content-center" style="position: sticky; top: 80px; z-index: 1050;">
+    <div class="shadow-lg border-0 rounded-pill px-4 py-2 d-inline-flex align-items-center animate__animated animate__fadeInDown" 
+         style="background: rgba(13, 110, 253, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2) !important;">
+        
+        <div class="bg-white rounded-circle d-flex align-items-center justify-content-center me-3" 
+             style="width: 32px; height: 32px;">
+            <i class="bi bi-calculator-fill text-primary" style="font-size: 1rem;"></i>
+        </div>
+
+        <div class="text-white">
+            <span class="text-uppercase fw-bold opacity-5 me-2" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                Selected Total
+            </span>
+            <span class="fs-5 fw-black" style="font-family: 'Monaco', monospace;">
+                ₹ <span id="selectedTotal">0.00</span>
+            </span>
+        </div>
+    </div>
+</div>
 
 
 
@@ -74,8 +108,8 @@
 
 
 <div class="table-responsive" style="max-height: 700px; overflow-y: auto;">
-<table class="table table-bordered table-hover align-middle">
-    <thead class="table-light">
+<table class="table table-bordered table-hover align-middle table-selectable">
+    <thead class="table-primary">
         <tr>
             <th>#</th>
             <th>Client</th>
@@ -95,7 +129,7 @@
             <td>{{ p.client.name }}</td>
 
             <!-- SOURCE -->
-            <td>
+            <td  class="highlight-cell3">
                 {% if p.bank %}
                     {{ p.bank.name }}
                 {% else %}
@@ -251,6 +285,41 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const modeSelect = document.querySelector('select[name="mode"]');
+    const bankSelect = document.getElementById('bankSelect');
+
+    function filterBanks() {
+        const mode = modeSelect.value;
+
+        Array.from(bankSelect.options).forEach(opt => {
+            if (!opt.value) return; // "All Banks"
+
+            const type = opt.dataset.type;
+
+            if (mode === 'cash') {
+                opt.hidden = type !== 'cash';
+            } else if (mode === 'cheque') {
+                opt.hidden = type !== 'cheque';
+            } else {
+                opt.hidden = false;
+            }
+        });
+
+        // Reset invalid selection
+        const selected = bankSelect.selectedOptions[0];
+        if (selected && selected.hidden) {
+            bankSelect.value = '';
+        }
+    }
+
+    filterBanks(); // initial load
+    modeSelect.addEventListener('change', filterBanks);
 });
 </script>
 

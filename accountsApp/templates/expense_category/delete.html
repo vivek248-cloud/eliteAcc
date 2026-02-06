@@ -2,20 +2,74 @@
 {% block title %}Delete Category{% endblock %}
 
 {% block content %}
-<h4 class="text-danger">Delete Category</h4>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            
+            <div class="text-center mb-4">
+                <div class="avatar-md bg-danger bg-opacity-10 text-danger rounded-circle d-inline-flex align-items-center justify-content-center mb-3 pulse-danger" style="width: 72px; height: 72px;">
+                    <i class="bi bi-tags-fill fs-2"></i>
+                </div>
+                <h3 class="fw-black text-dark mb-1">Delete Category</h3>
+                <p class="text-muted small">Removing a category may affect how your expenses are grouped in reports.</p>
+            </div>
 
-<div class="card p-4 shadow-sm">
-    <p>
-        Are you sure you want to delete
-        <strong>{{ category.name }}</strong>?
-    </p>
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="background: #ffffff; border: 1px solid #f8d7da !important;">
+                <div class="card-body p-4 p-lg-5 text-center">
+                    <p class="mb-1 text-muted small text-uppercase fw-bold tracking-wider">Confirming deletion for:</p>
+                    <div class="d-inline-block px-3 py-2 rounded-3 bg-light border fw-bold text-dark mb-4">
+                        <i class="bi bi-tag me-1 text-danger"></i> {{ category.name }}
+                    </div>
 
-    <form method="post">
-        {% csrf_token %}
-        <button class="btn btn-danger">Yes, Delete</button>
-        <a href="{% url 'expense_category_index' %}" class="btn btn-secondary">
-            Cancel
-        </a>
-    </form>
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger fw-bold py-2 rounded-3 shadow-sm">
+                                <i class="bi bi-trash3-fill me-1"></i> Yes, Delete Category
+                            </button>
+                            <a href="{% url 'expense_category_index' %}" class="btn btn-light border py-2 rounded-3 fw-semibold text-muted">
+                                Cancel (Keep Category)
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <a href="{% url 'expense_category_index' %}" class="text-decoration-none small text-white bg-primary  px-3 py-2 rounded-3 d-inline-block">
+                    <i class="bi bi-arrow-left me-1"></i> Return to Categories
+                </a>
+            </div>
+            
+        </div>
+    </div>
 </div>
+
+<style>
+    body { background-color: #fcfcfc; }
+    .fw-black { font-weight: 900; }
+    .tracking-wider { letter-spacing: 1px; }
+    
+    .pulse-danger {
+        animation: shadow-pulse 2s infinite;
+    }
+
+    @keyframes shadow-pulse {
+        0% { box-shadow: 0 0 0 0px rgba(220, 53, 69, 0.2); }
+        70% { box-shadow: 0 0 0 15px rgba(220, 53, 69, 0); }
+        100% { box-shadow: 0 0 0 0px rgba(220, 53, 69, 0); }
+    }
+
+    .btn-danger {
+        background-color: #dc3545;
+        border: none;
+        transition: all 0.2s ease;
+    }
+
+    .btn-danger:hover {
+        background-color: #bb2d3b;
+        transform: translateY(-1px);
+    }
+</style>
 {% endblock %}

@@ -2,33 +2,82 @@
 {% block title %}Delete Bank{% endblock %}
 
 {% block content %}
-<div class="card shadow-sm border-danger">
-    <div class="card-header bg-danger text-white">
-        Confirm Delete
-    </div>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            
+            <div class="text-center mb-4">
+                <div class="avatar-md bg-danger bg-opacity-10 text-danger rounded-circle d-inline-flex align-items-center justify-content-center mb-3 pulse-danger-heavy" style="width: 80px; height: 80px;">
+                    <i class="bi bi-bank2 fs-1"></i>
+                </div>
+                <h3 class="fw-black text-dark mb-1">Delete Account?</h3>
+                <p class="text-muted small px-3">This action will permanently purge the selected bank ledger and all associated transactions.</p>
+            </div>
 
-    <div class="card-body">
-        <p>
-            Are you sure you want to delete
-            <strong>{{ bank.name }}</strong>?
-        </p>
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="background: #ffffff; border: 1px solid #f8d7da !important;">
+                <div class="card-body p-4 p-lg-5">
+                    
+                    <div class="text-center mb-4">
+                        <p class="mb-1 text-muted small text-uppercase fw-bold tracking-wider">Account to be removed:</p>
+                        <h4 class="text-dark fw-black mb-0">{{ bank.name }}</h4>
+                    </div>
 
-        <p class="text-danger small">
-            ⚠ This bank is linked to payments and expenses.
-            Deleting it will remove all related records.
-        </p>
+                    <div class="alert alert-danger border-0 rounded-3 p-3 mb-4 d-flex align-items-start">
+                        <i class="bi bi-exclamation-triangle-fill me-3 fs-4"></i>
+                        <div class="small">
+                            <strong>Warning:</strong> This bank is linked to payments and expenses. Deleting it will <b>remove all related transaction history</b> from the system.
+                        </div>
+                    </div>
 
-        <form method="POST">
-            {% csrf_token %}
+                    <form method="POST">
+                        {% csrf_token %}
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger fw-bold py-3 rounded-3 shadow-sm text-uppercase">
+                                <i class="bi bi-trash3-fill me-1"></i> Confirm Total Purge
+                            </button>
+                            <a href="{% url 'bank_index' %}" class="btn btn-light border py-2 rounded-3 fw-semibold text-muted">
+                                Cancel, Save My Data
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
 
-            <button class="btn btn-danger">
-                Yes, Delete
-            </button>
-
-            <a href="{% url 'bank_index' %}" class="btn btn-secondary">
-                Cancel
-            </a>
-        </form>
+            <div class="text-center mt-4">
+                <a href="{% url 'bank_index' %}" class="text-decoration-none small text-white bg-primary  px-3 py-2 rounded-3 d-inline-block">
+                    <i class="bi bi-arrow-left me-1"></i> Return to Bank Accounts
+                </a>
+            </div>
+            
+        </div>
     </div>
 </div>
+
+<style>
+    body { background-color: #fdfdfd; }
+    .fw-black { font-weight: 900; }
+    .tracking-wider { letter-spacing: 1px; }
+    
+    .pulse-danger-heavy {
+        animation: shadow-pulse-red 1.5s infinite;
+    }
+
+    @keyframes shadow-pulse-red {
+        0% { box-shadow: 0 0 0 0px rgba(220, 53, 69, 0.4); }
+        70% { box-shadow: 0 0 0 20px rgba(220, 53, 69, 0); }
+        100% { box-shadow: 0 0 0 0px rgba(220, 53, 69, 0); }
+    }
+
+    .btn-danger {
+        background-color: #dc3545;
+        border: none;
+        letter-spacing: 0.5px;
+    }
+
+    .btn-danger:hover {
+        background-color: #a71d2a;
+        transform: scale(1.02);
+    }
+</style>
 {% endblock %}

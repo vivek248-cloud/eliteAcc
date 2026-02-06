@@ -2,43 +2,112 @@
 {% block title %}Create Client{% endblock %}
 
 {% block content %}
-<div class="card shadow-sm">
-    <div class="card-header bg-primary text-white">
-        Create Client
-    </div>
-
-    <div class="card-body">
-        <form method="POST">
-            {% csrf_token %}
-
-            <div class="mb-3">
-                <label class="form-label">Company</label>
-                <select name="company" class="form-select" required>
-                    <option value="">Select Company</option>
-                    {% for company in companies %}
-                        <option value="{{ company.id }}">
-                            {{ company.name }}
-                        </option>
-                    {% endfor %}
-                </select>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-7 col-xl-6">
+            
+            <div class="text-center mb-4">
+                <div class="avatar-md bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+                    <i class="bi bi-person-badge fs-2"></i>
+                </div>
+                <h3 class="fw-black text-dark mb-1">New Client Profile</h3>
+                <p class="text-muted small">Register a new client entity and assign their project budget</p>
             </div>
 
-            <div class="mb-3">
-                <label class="form-label">Client Name</label>
-                <input type="text" name="name" class="form-control" required>
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="background: #ffffff; border: 1px solid #eee !important;">
+                <div class="card-body p-4 p-lg-5">
+                    <form method="POST">
+                        {% csrf_token %}
+
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-uppercase text-muted" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                Assign to Company
+                            </label>
+                            <select name="company" class="form-select border-light-subtle shadow-none bg-light bg-opacity-50 py-2" required>
+                                <option value="">Select Company</option>
+                                {% for company in companies %}
+                                    <option value="{{ company.id }}">
+                                        {{ company.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <hr class="opacity-50 my-4">
+
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-uppercase text-muted" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                Client / Representative Name
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-light-subtle text-muted">
+                                    <i class="bi bi-person"></i>
+                                </span>
+                                <input type="text" name="name" 
+                                       class="form-control border-light-subtle shadow-none bg-light bg-opacity-50 py-2" 
+                                       placeholder="Full Name"
+                                       required>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-uppercase text-muted" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                Allocated Budget
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white border-light-subtle fw-bold text-primary">₹</span>
+                                <input type="number" step="0.01" name="budget" 
+                                       class="form-control border-light-subtle shadow-none bg-light bg-opacity-50 py-2 fw-bold" 
+                                       placeholder="0.00"
+                                       required>
+                            </div>
+                            <div class="form-text mt-2 small">
+                                This limit helps track spending and receivables for this client.
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-5">
+                            <button type="submit" class="btn btn-primary fw-bold py-3 rounded-3 shadow-sm text-uppercase tracking-wider">
+                                <i class="bi bi-save2 me-2"></i> Create Client
+                            </button>
+                            <a href="{% url 'client_index' %}" class="btn btn-light border py-2 rounded-3 fw-semibold text-muted">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
             </div>
 
-            <div class="mb-3">
-                <label class="form-label">Budget</label>
-                <input type="number" step="0.01" name="budget"
-                       class="form-control" required>
+            <div class="text-center mt-4">
+                <a href="{% url 'client_index' %}" class="text-decoration-none small text-white bg-primary  px-3 py-2 rounded-3 d-inline-block">
+                    <i class="bi bi-chevron-left me-1"></i> Back to Client List
+                </a>
             </div>
-
-            <button class="btn btn-success">Save</button>
-            <a href="{% url 'client_index' %}" class="btn btn-secondary">
-                Back
-            </a>
-        </form>
+            
+        </div>
     </div>
 </div>
+
+<style>
+    body { background-color: #fbfbfb; }
+    .fw-black { font-weight: 900; }
+    .tracking-wider { letter-spacing: 1px; }
+    .form-select, .form-control { border-radius: 10px; }
+    .form-select:focus, .form-control:focus {
+        background-color: #fff !important;
+        border-color: #4361ee !important;
+        box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.05) !important;
+    }
+    .input-group-text {
+        border-radius: 10px 0 0 10px !important;
+        border-color: #dee2e6;
+    }
+    .input-group > .form-control {
+        border-radius: 0 10px 10px 0 !important;
+    }
+    .btn-primary {
+        background-color: #4361ee;
+        border: none;
+    }
+</style>
 {% endblock %}

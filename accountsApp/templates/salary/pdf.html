@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 13px;
+        }
+        h2, h4 {
+            margin-bottom: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #333;
+            padding: 6px;
+            text-align: left;
+        }
+        th {
+            background: #f0f0f0;
+        }
+        .text-end {
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Salary Statement</h2>
+<h4>Worker: {{ worker.name }}</h4>
+
+{% if start_date or end_date %}
+<p>
+    Period:
+    {{ start_date|default:"—" }} to {{ end_date|default:"—" }}
+</p>
+{% endif %}
+
+<table>
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Client</th>
+            <th>Spend Mode</th>
+            <th>Bank</th>
+            <th>Description</th>
+            <th class="text-end">Amount</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for e in expenses %}
+        <tr>
+            <td>{{ e.expense_date }}</td>
+            <td>{{ e.client.name }}</td>
+            <td>{{ e.spend_mode|title }}</td>
+            <td>{{ e.bank.name|default:"Cash" }}</td>
+            <td>{{ e.description }}</td>
+            <td class="text-end">₹ {{ e.amount|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+    <tfoot>
+        <tr>
+            <th colspan="5" class="text-end">Total</th>
+            <th class="text-end">₹ {{ total_salary|floatformat:2 }}</th>
+        </tr>
+    </tfoot>
+</table>
+
+</body>
+</html>

@@ -1,5 +1,6 @@
 from django.urls import path
 from .views import *
+from django.contrib.auth import views as auth_views
 
 urlpatterns = [
     
@@ -48,6 +49,7 @@ urlpatterns = [
 
 
     path('expenses/', expense_index, name='expense_index'),
+    path('expenses/pdf/', expense_pdf_export, name='expense_pdf_export'),
     path('expenses/create/', expense_create, name='expense_create'),
     path('expenses/update/<int:pk>/', expense_update, name='expense_update'),
     path('expenses/delete/<int:pk>/', expense_delete, name='expense_delete'),
@@ -58,6 +60,28 @@ urlpatterns = [
     path('expense-categories/<int:pk>/update/', expense_category_update, name='expense_category_update'),
     path('expense-categories/<int:pk>/delete/', expense_category_delete, name='expense_category_delete'),
 
+
+    path('workers/', worker_index, name='worker_index'),
+    path('workers/create/', worker_create, name='worker_create'),
+    path('workers/<int:pk>/update/', worker_update, name='worker_update'),
+    path('workers/<int:pk>/delete/', worker_delete, name='worker_delete'),
+
+    path('salary/', salary_index, name='salary_index'),
+    path('salary/pdf/', salary_pdf, name='salary_pdf'),
+
+
+    path('settings/', settings_view, name='settings'),
+    path('settings/backup/', database_backup, name='database_backup'),
+
+
+
+
+    path('password-change/',
+        auth_views.PasswordChangeView.as_view(
+            template_name='registration/password_change_form.html',
+            success_url='/settings/'
+        ),
+        name='password_change'),
     path('help/', help, name='help'),
 
 ]

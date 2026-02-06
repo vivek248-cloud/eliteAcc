@@ -2,115 +2,143 @@
 {% block title %}Update Spend{% endblock %}
 
 {% block content %}
-<div class="card shadow-sm">
-    <div class="card-header bg-warning">
-        Update Spend
-    </div>
-
-    <div class="card-body">
-        <form method="POST" id="expenseForm">
-            {% csrf_token %}
-
-            <!-- CLIENT -->
-            <div class="mb-3">
-                <label class="form-label">Client</label>
-                <select name="client" class="form-select" required>
-                    {% for client in clients %}
-                        <option value="{{ client.id }}"
-                            {% if client.id == expense.client.id %}selected{% endif %}>
-                            {{ client.name }} ({{ client.company.name }})
-                        </option>
-                    {% endfor %}
-                </select>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-7">
+            
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <div>
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-sm bg-warning bg-opacity-10 text-warning rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                            <i class="bi bi-pencil-fill" style="font-size: 0.8rem;"></i>
+                        </div>
+                        <h3 class="fw-black text-dark mb-0">Update Spend</h3>
+                    </div>
+                    <p class="text-muted small mb-0 mt-1">Modify existing record details for this transaction</p>
+                </div>
+                <a href="{% url 'expense_index' %}" class="btn btn-primary border btn-sm rounded-pill px-3">
+                    <i class="bi bi-arrow-left me-1"></i> Back
+                </a>
             </div>
 
-            <!-- SPEND MODE -->
-            <div class="mb-3">
-                <label class="form-label">Spend Mode</label>
-                <select name="spend_mode" id="spend_mode" class="form-select" required>
-                    <option value="cash"
-                        {% if expense.spend_mode == 'cash' %}selected{% endif %}>
-                        Cash
-                    </option>
-                    <option value="cheque"
-                        {% if expense.spend_mode == 'cheque' %}selected{% endif %}>
-                        Cheque
-                    </option>
-                </select>
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="background: #ffffff; border: 1px solid #eee !important;">
+                <div class="card-body p-4 p-lg-5">
+                    <form method="POST" id="expenseForm">
+                        {% csrf_token %}
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-uppercase text-muted">Client / Project</label>
+                                <select name="client" class="form-select bg-light bg-opacity-50 border-light-subtle shadow-none" required>
+                                    {% for client in clients %}
+                                        <option value="{{ client.id }}" {% if client.id == expense.client.id %}selected{% endif %}>
+                                            {{ client.name }} {% if client.company %}({{ client.company.name }}){% endif %}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-uppercase text-muted">Expense Category</label>
+                                <select name="category" id="category_select" class="form-select bg-light bg-opacity-50 border-light-subtle shadow-none" required>
+                                    <option value="">Select Category</option>
+                                    {% for category in categories %}
+                                        <option value="{{ category.id }}" 
+                                                data-name="{{ category.name|lower }}"
+                                                {% if expense.category and expense.category.id == category.id %}selected{% endif %}>
+                                            {{ category.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-4 {% if not expense.salary_to %}d-none{% endif %} animate__animated animate__fadeIn" id="workerBox">
+                            <div class="p-3 rounded-3 border-start border-4 border-primary bg-primary bg-opacity-10">
+                                <label class="form-label small fw-bold text-dark text-uppercase">Salary To (Worker)</label>
+                                <select name="salary_to" class="form-select border-0 shadow-none">
+                                    <option value="">Select Worker</option>
+                                    {% for w in workers %}
+                                        <option value="{{ w.id }}" {% if expense.salary_to and expense.salary_to.id == w.id %}selected{% endif %}>
+                                            {{ w.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <hr class="opacity-50 my-4">
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-uppercase text-muted">Spend Mode</label>
+                                <select name="spend_mode" id="spend_mode" class="form-select bg-light bg-opacity-50 border-light-subtle shadow-none" required>
+                                    <option value="cash" {% if expense.spend_mode == 'cash' %}selected{% endif %}>Cash</option>
+                                    <option value="cheque" {% if expense.spend_mode == 'cheque' %}selected{% endif %}>Cheque</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-uppercase text-muted">Bank Source</label>
+                                <select name="bank" id="bank_select" class="form-select bg-light bg-opacity-50 border-light-subtle shadow-none">
+                                    <option value="" data-type="cash">Cash Account</option>
+                                    {% for bank in banks %}
+                                    <option value="{{ bank.id }}" 
+                                            data-type="{% if bank.name|lower == 'cash' %}cash{% else %}bank{% endif %}"
+                                            {% if expense.bank and bank.id == expense.bank.id %}selected{% endif %}>
+                                        {{ bank.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <div id="cashWarning" class="form-text text-danger d-none small">⚠️ Must be <b>Cash</b> for cash mode.</div>
+                                <div id="chequeWarning" class="form-text text-danger d-none small">⚠️ Select a <b>Bank</b> for cheques.</div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-uppercase text-muted">Amount</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white border-light-subtle fw-bold text-success">₹</span>
+                                    <input type="number" step="0.01" name="amount" value="{{ expense.amount }}" class="form-control bg-light bg-opacity-50 border-light-subtle shadow-none fw-bold" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-uppercase text-muted">Expense Date</label>
+                                <input type="date" name="expense_date" value="{{ expense.expense_date|date:'Y-m-d' }}" class="form-control bg-light bg-opacity-50 border-light-subtle shadow-none" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-uppercase text-muted">Description</label>
+                            <textarea name="description" class="form-control bg-light bg-opacity-50 border-light-subtle shadow-none" rows="2" required>{{ expense.description }}</textarea>
+                        </div>
+
+                        <div class="d-grid mt-5">
+                            <button type="submit" class="btn btn-primary fw-black py-3 rounded-3 shadow-sm text-uppercase tracking-wider">
+                                <i class="bi bi-arrow-repeat me-2"></i> Update Transaction Record
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
-
-            <!-- BANK -->
-            <div class="mb-3">
-                <label class="form-label">Bank</label>
-                <select name="bank" id="bank_select" class="form-select">
-                    <option value="">Cash</option>
-                    {% for bank in banks %}
-                        <option value="{{ bank.id }}"
-                            {% if expense.bank and bank.id == expense.bank.id %}selected{% endif %}>
-                            {{ bank.name }}
-                        </option>
-                    {% endfor %}
-                </select>
-
-                <small id="cashWarning" class="text-danger d-none">
-                    Bank must be <strong>Cash</strong> for cash expense.
-                </small>
-
-                <small id="chequeWarning" class="text-danger d-none">
-                    Please select a <strong>bank</strong> for cheque expense.
-                </small>
-            </div>
-
-            <!-- CATEGORY -->
-            <div class="mb-3">
-                <label class="form-label">Category</label>
-                <select name="category" class="form-select" required>
-                    {% for category in categories %}
-                        <option value="{{ category.id }}"
-                            {% if expense.category and category.id == expense.category.id %}selected{% endif %}>
-                            {{ category.name }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <!-- DESCRIPTION -->
-            <div class="mb-3">
-                <label class="form-label">Description</label>
-                <textarea name="description"
-                          class="form-control"
-                          rows="3"
-                          required>{{ expense.description }}</textarea>
-            </div>
-
-            <!-- AMOUNT -->
-            <div class="mb-3">
-                <label class="form-label">Amount</label>
-                <input type="number"
-                       step="0.01"
-                       name="amount"
-                       value="{{ expense.amount }}"
-                       class="form-control"
-                       required>
-            </div>
-
-            <!-- DATE -->
-            <div class="mb-3">
-                <label class="form-label">Expense Date</label>
-                <input type="date"
-                       name="expense_date"
-                       value="{{ expense.expense_date|date:'Y-m-d' }}"
-                       class="form-control"
-                       required>
-            </div>
-
-            <button class="btn btn-primary">
-                <i class="bi bi-save"></i> Update
-            </button>
-            <a href="{% url 'expense_index' %}" class="btn btn-secondary">Back</a>
-        </form>
+        </div>
     </div>
 </div>
+
+<style>
+    body { background-color: #fbfbfb; }
+    .fw-black { font-weight: 900; }
+    .tracking-wider { letter-spacing: 1px; }
+    .form-select, .form-control { border-radius: 10px; padding: 0.6rem 1rem; }
+    .form-select:focus, .form-control:focus {
+        background-color: #fff !important;
+        border-color: #4361ee !important;
+        box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.05) !important;
+    }
+    .input-group-text { border-radius: 10px 0 0 10px; }
+    .input-group > .form-control { border-radius: 0 10px 10px 0; }
+    .animate__fadeIn { animation: fadeIn 0.3s ease-in; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+</style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -120,42 +148,68 @@ document.addEventListener('DOMContentLoaded', function () {
     const chequeWarning = document.getElementById('chequeWarning');
     const form = document.getElementById('expenseForm');
 
-    function validateSelection() {
+    function updateBankOptions() {
         cashWarning.classList.add('d-none');
         chequeWarning.classList.add('d-none');
+        const isCash = spendMode.value === 'cash';
 
-        if (spendMode.value === 'cash') {
+        [...bankSelect.options].forEach(option => {
+            if (isCash) {
+                option.hidden = option.dataset.type !== 'cash';
+            } else {
+                option.hidden = option.dataset.type === 'cash';
+            }
+        });
+
+        if (isCash) {
             bankSelect.value = '';
             bankSelect.disabled = true;
         } else {
             bankSelect.disabled = false;
         }
+    }
 
-        if (spendMode.value === 'cash' && bankSelect.value !== '') {
-            cashWarning.classList.remove('d-none');
-            return false;
-        }
-
+    function validateSelection() {
+        cashWarning.classList.add('d-none');
+        chequeWarning.classList.add('d-none');
         if (spendMode.value === 'cheque' && bankSelect.value === '') {
             chequeWarning.classList.remove('d-none');
             return false;
         }
-
         return true;
     }
 
-    spendMode.addEventListener('change', validateSelection);
-    bankSelect.addEventListener('change', validateSelection);
+    spendMode.addEventListener('change', () => {
+        updateBankOptions();
+        validateSelection();
+    });
 
+    bankSelect.addEventListener('change', validateSelection);
     form.addEventListener('submit', function (e) {
         if (!validateSelection()) {
             e.preventDefault();
         }
     });
+    updateBankOptions();
+});
 
-    // 🔁 Initial validation on page load
-    validateSelection();
+document.addEventListener('DOMContentLoaded', function () {
+    const categorySelect = document.getElementById('category_select');
+    const workerBox = document.getElementById('workerBox');
+
+    function toggleWorkerField() {
+        const option = categorySelect.options[categorySelect.selectedIndex];
+        const name = option.dataset.name || '';
+        if (name.includes('salary')) {
+            workerBox.classList.remove('d-none');
+        } else {
+            workerBox.classList.add('d-none');
+            const ws = workerBox.querySelector('select');
+            if(ws) ws.value = '';
+        }
+    }
+    categorySelect.addEventListener('change', toggleWorkerField);
+    toggleWorkerField();
 });
 </script>
-
 {% endblock %}

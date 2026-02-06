@@ -50,15 +50,31 @@
 </form>
 
 
-<div class="alert alert-info fw-bold mb-2">
-    Selected Total: ₹ <span id="selectedTotal">0.00</span>
+<div class="d-flex justify-content-center mb-3" style="position: sticky; top: 80px; z-index: 1050;">
+    <div class="shadow-lg border-0 rounded-pill px-4 py-2 d-inline-flex align-items-center animate__animated animate__fadeInDown" 
+         style="background: rgba(13, 110, 253, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2) !important;">
+        
+        <div class="bg-white rounded-circle d-flex align-items-center justify-content-center me-3" 
+             style="width: 32px; height: 32px;">
+            <i class="bi bi-calculator-fill text-primary" style="font-size: 1rem;"></i>
+        </div>
+
+        <div class="text-white">
+            <span class="text-uppercase fw-bold opacity-5 me-2" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                Selected Total
+            </span>
+            <span class="fs-5 fw-black" style="font-family: 'Monaco', monospace;">
+                ₹ <span id="selectedTotal">0.00</span>
+            </span>
+        </div>
+    </div>
 </div>
 
 
 <!-- TABLE -->
 <div class="table-responsive">
 <table class="table table-bordered table-sm align-middle">
-<thead class="table-light">
+<thead class="table-primary">
 <tr>
     <th>Date</th>
     <th>Client</th>
@@ -72,6 +88,7 @@
     {% endif %}
 
     {% if txn_type != 'payment' %}
+        <th>Total Paid</th>
         <th>Spend Details</th>
         <th>Spend Amount</th>
         <th>Balance</th>
@@ -106,6 +123,10 @@
 {% endif %}
 
 {% if txn_type != 'payment' %}
+<td class="text-end text-muted highlight-cell selectable-amount"
+    data-amount="{{ r.total_paid}}" data-col="total_paid">
+    ₹ {{ r.total_paid|floatformat:2 }}
+</td>
 <td class="highlight-cell3">{{ r.spend_detail }}</td>
 
 <td class="text-end text-danger highlight-cell3 selectable-amount"
@@ -132,6 +153,8 @@
 </div>
 
 </div>
+
+
 
 
 <script>

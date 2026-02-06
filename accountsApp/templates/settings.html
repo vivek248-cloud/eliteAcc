@@ -1,0 +1,105 @@
+{% extends "layout/base.html" %}
+{% block title %}Settings | Elite Accounts{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-9 col-lg-8">
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h4 class="fw-bold text-dark mb-0">System Settings</h4>
+                    <p class="text-muted small mb-0">Manage your account security and application preferences</p>
+                </div>
+                <div class="text-end">
+                    <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill">Version 1.1</span>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-3 mb-4" style="background-color: #f8f9fa; border-left: 4px solid #6c757d !important;">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="fw-bold mb-1"><i class="bi bi-gear-wide-connected me-2"></i>Advanced Administration</h6>
+                        <p class="text-muted small mb-0">Access the core Django admin panel for full database customization.</p>
+                    </div>
+                    <a href="/admin/" class="btn btn-dark btn-sm px-4 rounded-3" target="_blank">
+                        Open Admin <i class="bi bi-box-arrow-up-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm rounded-3 h-100">
+                        <div class="card-header bg-white border-0 fw-bold pt-3">
+                            <i class="bi bi-shield-lock text-primary me-2"></i>Security
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small">Update your login credentials regularly to maintain account integrity.</p>
+                            <a href="{% url 'password_change' %}" class="btn btn-outline-primary btn-sm w-100 rounded-3">
+                                Change Password
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm rounded-3 h-100">
+                        <div class="card-header bg-white border-0 fw-bold pt-3">
+                            <i class="bi bi-database-down text-danger me-2"></i>Database Backup
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small">Export a full snapshot of your financial records to a local file.</p>
+                            <a href="{% url 'database_backup' %}"
+                               class="btn btn-danger btn-sm w-100 rounded-3"
+                               onclick="return confirm('Create and download database backup?')">
+                                <i class="bi bi-download me-1"></i> Download Backup
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-12">
+                    <div class="card border-0 shadow-sm rounded-3">
+                        <div class="card-header bg-white border-0 fw-bold pt-3">
+                            <i class="bi bi-envelope-at text-success me-2"></i>System Notifications
+                        </div>
+                        <div class="card-body">
+                            <form method="post">
+                                {% csrf_token %}
+                                <div class="row align-items-end">
+                                    <div class="col-md-8">
+                                        <label class="form-label small text-muted fw-bold">Alert Email Address</label>
+                                        <input type="email" name="notification_email" class="form-control bg-light border-0 shadow-none" 
+                                               placeholder="example@email.com" value="{{ settings_obj.notification_email }}">
+                                    </div>
+                                    <div class="col-md-4 mt-3 mt-md-0">
+                                        <button class="btn btn-success btn-sm w-100 rounded-3 py-2">
+                                            Update Preferences
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-12">
+                    <div class="card border-0 shadow-sm rounded-3">
+                        <div class="card-body d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="fw-bold mb-1"><i class="bi bi-palette text-warning me-2"></i>Interface Theme</h6>
+                                <p class="text-muted small mb-0">Custom themes and dark mode options are coming soon.</p>
+                            </div>
+                            <span class="badge bg-light text-dark border-0 px-3 py-2">
+                                Default Light
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -2,200 +2,250 @@
 {% block title %}Banks{% endblock %}
 
 {% block content %}
-<h4>Banks</h4>
 
-<form method="get" class="row g-2 mb-4 align-items-end">
-    <!-- 🏦 BANK -->
-    <div class="col-md-3">
-        <label class="form-label">Bank</label>
-        <select name="bank" class="form-select">
-            <option value="">All Banks</option>
-            {% for bank in banks %}
-                <option value="{{ bank.id }}"
-                    {% if selected_bank == bank.id|stringformat:"s" %}selected{% endif %}>
-                    {{ bank.name }}
-                </option>
-            {% endfor %}
-        </select>
-    </div>
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4">
+    <h4 class="mb-0 fw-semibold text-dark">Bank Accounts</h4>
+    <a href="{% url 'bank_create' %}" class="btn btn-primary shadow-sm d-inline-flex align-items-center">
+        <i class="bi bi-plus-lg me-2"></i> Add New Bank
+    </a>
+</div>
 
+<!-- Filter Card -->
+<div class="card shadow border-0 mb-4 rounded-3 overflow-hidden">
+    <div class="card-body px-4 py-3">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-12 col-md-4 col-lg-3">
+                <label class="form-label fw-medium text-dark">Bank</label>
+                <select name="bank" class="form-select rounded-3">
+                    <option value="">All Banks</option>
+                    {% for bank in banks %}
+                        <option value="{{ bank.id }}"
+                            {% if selected_bank == bank.id|stringformat:"s" %}selected{% endif %}>
+                            {{ bank.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
 
-    <div class="col-md-3">
-        <label class="form-label small">Filter By</label>
-        <select name="filter_type" class="form-select" required>
-            <option value="">Select</option>
-            <option value="day" {% if filter_type == 'day' %}selected{% endif %}>Day</option>
-            <option value="month" {% if filter_type == 'month' %}selected{% endif %}>Month</option>
-            <option value="year" {% if filter_type == 'year' %}selected{% endif %}>Year</option>
-        </select>
-    </div>
+            <div class="col-12 col-md-4 col-lg-3">
+                <label class="form-label fw-medium text-dark">Period</label>
+                <select name="filter_type" id="filterType" class="form-select rounded-3" aria-required="true">
+                    <option value="">Select period</option>
+                    <option value="day"   {% if filter_type == 'day'   %}selected{% endif %}>Daily</option>
+                    <option value="month" {% if filter_type == 'month' %}selected{% endif %}>Monthly</option>
+                    <option value="year"  {% if filter_type == 'year'  %}selected{% endif %}>Yearly</option>
+                </select>
+            </div>
 
-    <div class="col-md-3">
-        <label class="form-label small">Date</label>
-        <input type="date"
-               name="date"
-               class="form-control"
-               value="{{ filter_date }}"
-               {% if filter_type != 'day' %}disabled{% endif %}>
-    </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                <label class="form-label fw-medium text-dark">Date</label>
+                <input type="date" name="date" class="form-control rounded-3"
+                       value="{{ filter_date }}"
+                       {% if filter_type != 'day' %}disabled{% endif %}>
+            </div>
 
-    <div class="col-md-2">
-        <label class="form-label small">Month</label>
-        <select name="month"
-                class="form-select"
-                {% if filter_type != 'month' %}disabled{% endif %}>
-            <option value="">Month</option>
-            {% for m in months %}
-                <option value="{{ m }}"
-                    {% if filter_month == m|stringformat:"s" %}selected{% endif %}>
-                    {{ m }}
-                </option>
-            {% endfor %}
-        </select>
-    </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                <label class="form-label fw-medium text-dark">Month</label>
+                <select name="month" class="form-select rounded-3"
+                        {% if filter_type != 'month' %}disabled{% endif %}>
+                    <option value="">Choose month</option>
+                    {% for m in months %}
+                        <option value="{{ m }}"
+                            {% if filter_month == m|stringformat:"s" %}selected{% endif %}>
+                            {{ m }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
 
-    <div class="col-md-2">
-        <label class="form-label small">Year</label>
-        <input type="number"
-               name="year"
-               class="form-control"
-               placeholder="YYYY"
-               value="{{ filter_year }}"
-               {% if filter_type not in 'month year' %}disabled{% endif %}>
-    </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                <label class="form-label fw-medium text-dark">Year</label>
+                <input type="number" name="year" class="form-control rounded-3"
+                       placeholder="YYYY" min="2000" max="2035"
+                       value="{{ filter_year }}"
+                       {% if filter_type not in 'month year' %}disabled{% endif %}>
+            </div>
 
-    <div class="col-md-2 d-flex gap-2">
-        <button class="btn btn-primary w-100">Apply</button>
-        <a href="{% url 'bank_index' %}" class="btn btn-secondary w-100">Reset</a>
-    </div>
-
-</form>
-
-
-
-
-<!-- 🏦 TOTAL BANK BALANCE -->
-{% if not selected_bank and not filter_type %}
-<div class="card mb-3 border-primary">
-    <div class="card-body text-center">
-        <h6 class="text-primary mb-1">Total Available Bank Balance</h6>
-        <h3 class="fw-bold text-primary">
-            ₹ {{ total_bank|floatformat:2 }}
-        </h3>
+            <div class="col-12 col-lg-auto ms-lg-auto d-flex gap-2 pt-3 pt-lg-0">
+                <button type="submit" class="btn btn-primary flex-fill flex-lg-grow-0 rounded-3">
+                    <i class="bi bi-funnel-fill me-1"></i> Filter
+                </button>
+                <a href="{% url 'bank_index' %}" class="btn btn-outline-secondary flex-fill flex-lg-grow-0 rounded-3">
+                    Reset
+                </a>
+            </div>
+        </form>
     </div>
 </div>
-<div class="row mb-3">
-    {% for bank in banks %}
-    <div class="col-md-4">
-        <div class="card border-primary mb-2">
-            <div class="card-body text-center">
-                <h6 class="text-primary mb-1">
-                    {{ bank.name }}
-                </h6>
-                <h4 class="fw-bold
-                    {% if bank.filtered_balance < 0 %}
-                        text-danger
-                    {% else %}
-                        text-success
-                    {% endif %}
-                ">
-                    ₹ {{ bank.filtered_balance|floatformat:2 }}
-                </h4>
+
+<!-- Balances -->
+{% if not selected_bank and not filter_type %}
+    <div class="row g-3 mb-5">
+        <!-- Grand Total -->
+        <div class="col-12">
+            <div class="card border-0 shadow-lg text-white rounded-4 overflow-hidden bg-gradient-primary">
+                <div class="card-body text-center py-3">
+                    <div class="d-flex align-items-center justify-content-center gap-3 mb-3">
+                        <i class="bi bi-piggy-bank fs-2"></i>
+                        <h5 class="mb-0 fw-semibold">Total Available Across Banks</h5>
+                    </div>
+                    <h2 class="fw-bold mb-0 display-5">₹ {{ total_bank|floatformat:2 }}</h2>
+                </div>
             </div>
         </div>
+
+        <!-- Per Bank Cards -->
+        {% for bank in banks %}
+        <div class="col-md-6 col-lg-4 col-xl-3">
+            <div class="card border-0 shadow h-100 rounded-4 transition-all hover-lift">
+                <div class="card-body text-center py-4">
+                    <h6 class="text-muted fw-medium mb-2">{{ bank.name }}</h6>
+                    <h4 class="fw-bold mb-1
+                        {% if bank.filtered_balance < 0 %}text-danger{% else %}text-success{% endif %}">
+                        ₹ {{ bank.filtered_balance|floatformat:2 }}
+                    </h4>
+                    <small class="text-muted">Available Balance</small>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
     </div>
-    {% endfor %}
-</div>
 {% else %}
-<div class="card mb-3 border-primary">
-    <div class="card-body text-center">
-        <h6 class="text-primary mb-1">Total Available Bank Balance</h6>
-        <h3 class="fw-bold text-primary">
-            ₹ {{ total_bank|floatformat:2 }}
-        </h3>
+    <div class="card border-0 shadow-lg text-white rounded-4 overflow-hidden bg-gradient-primary mb-5">
+        <div class="card-body text-center py-5">
+            <div class="d-flex align-items-center justify-content-center gap-3 mb-3">
+                <i class="bi bi-filter-circle fs-2"></i>
+                <h5 class="mb-0 fw-semibold">Filtered Period Balance</h5>
+            </div>
+            <h2 class="fw-bold mb-0 display-5">₹ {{ total_bank|floatformat:2 }}</h2>
+        </div>
     </div>
-</div>
 {% endif %}
 
-
-<a href="{% url 'bank_create' %}" class="btn btn-primary mb-3">
-    + Add Bank
-</a>
-
-<div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
-<table class="table table-bordered table-hover align-middle">
-    <thead class="table-light">
-        <tr>
-            <th>#</th>
-            <th>Bank Name</th>
-            <th class="text-end">Opening Balance</th>
-            <th class="text-end">Available Balance</th>
-            <th>Last Transaction</th>
-            <th>Bank Log</th>
-            <th>Action</th>
-        </tr>
-    </thead>
-
-    <tbody>
-        {% for bank in banks %}
-        <tr>
-            <td>{{ forloop.counter }}</td>
-
-            <td class="fw-semibold">{{ bank.name }}</td>
-
-            <td class="text-end">
-                ₹ {{ bank.opening_balance|floatformat:2 }}
-            </td>
-
-            <td class="text-end fw-semibold
-                {% if bank.filtered_balance < 0 %}text-danger{% else %}text-success{% endif %}">
-                ₹ {{ bank.filtered_balance|floatformat:2 }}
-            </td>
-
-            <td>
-                {% if bank.last_transaction_date %}
-                    {{ bank.last_transaction_date|date:"d M Y" }}
-                {% else %}
-                    —
-                {% endif %}
-            </td>
-
-            <td>
-                <a href="{% url 'bank_log' bank.id %}"
-                    class="btn btn-sm btn-outline-primary">
-                    View Log
-                </a>
-            </td>
-
-
-            <td class="d-flex gap-2">
-                <a href="{% url 'bank_update' bank.id %}"
-                class="btn btn-sm btn-outline-warning">Edit</a>
-                <a href="{% url 'bank_delete' bank.id %}"
-                class="btn btn-sm btn-outline-danger">Delete</a>
-            </td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="5" class="text-center text-muted">
-                No banks found
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-
+<!-- Table -->
+<div class="card shadow border-0 rounded-4 overflow-hidden">
+    <div class="table-responsive" style="max-height: 60vh;">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-primary sticky-top shadow-sm">
+                <tr>
+                    <th class="ps-4">#</th>
+                    <th>Bank</th>
+                    <th class="text-end">Opening</th>
+                    <th class="text-end">Available</th>
+                    <th class="text-end">Last Tx</th>
+                    <th class="text-center">Log</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for bank in banks %}
+                <tr class="transition-all hover-bg-light">
+                    <td class="ps-4">{{ forloop.counter }}</td>
+                    <td class="fw-medium">{{ bank.name }}</td>
+                    <td class="text-end">₹ {{ bank.opening_balance|floatformat:2 }}</td>
+                    <td class="text-end fw-bold
+                        {% if bank.filtered_balance < 0 %}text-danger{% else %}text-success{% endif %}">
+                        ₹ {{ bank.filtered_balance|floatformat:2 }}
+                    </td>
+                    <td class="text-end small">
+                        {% if bank.last_transaction_date %}
+                            {{ bank.last_transaction_date }}
+                        {% else %}
+                            <span class="text-muted">No transactions</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        <a href="{% url 'bank_log' bank.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                            <i class="bi bi-journal-text me-1"></i>View Log
+                        </a>
+                    </td>
+                    <td>
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'bank_update' bank.id %}" class="btn btn-sm btn-outline-warning rounded-pill px-3">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="{% url 'bank_delete' bank.id %}" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-5 fs-5">
+                        <i class="bi bi-bank fs-1 d-block mb-3 opacity-50"></i>
+                        No bank accounts found
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
-<script>
-document.querySelector('[name="filter_type"]').addEventListener('change', function () {
-    const type = this.value;
+<style>
+    :root {
+        --primary-gradient: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+    }
 
-    document.querySelector('[name="date"]').disabled = type !== 'day';
-    document.querySelector('[name="month"]').disabled = type !== 'month';
-    document.querySelector('[name="year"]').disabled = type === 'day';
+    .bg-gradient-primary {
+        background: var(--primary-gradient);
+    }
+
+    .table-primary {
+        --bs-table-bg: #e7f1ff;
+        --bs-table-color: #0c4a6e;
+    }
+
+    .sticky-top {
+        top: 0;
+        z-index: 10;
+    }
+
+    .table-responsive {
+        --shadow-size: 14px;
+        background:
+            linear-gradient(white, white),
+            radial-gradient(ellipse at top, rgba(0,0,0,0.08) 0%, transparent 70%) top,
+            radial-gradient(ellipse at bottom, rgba(0,0,0,0.08) 0%, transparent 70%) bottom;
+        background-repeat: no-repeat;
+        background-attachment: local, local, scroll;
+        background-size: 100% 100%, 100% var(--shadow-size), 100% var(--shadow-size);
+    }
+
+    .card, .btn {
+        transition: all 0.2s ease;
+    }
+
+    .hover-lift:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 30px rgba(0,0,0,0.12) !important;
+    }
+
+    .hover-bg-light:hover {
+        background-color: #f8f9fa !important;
+    }
+
+    .rounded-4 { border-radius: 1.25rem !important; }
+    .rounded-pill { border-radius: 3rem !important; }
+</style>
+
+<script>
+// Existing filter logic (unchanged but more robust)
+document.addEventListener('DOMContentLoaded', () => {
+    const filterType = document.getElementById('filterType');
+    if (!filterType) return;
+
+    function toggleFields() {
+        const val = filterType.value;
+        document.querySelector('[name="date"]').disabled  = val !== 'day';
+        document.querySelector('[name="month"]').disabled = val !== 'month';
+        document.querySelector('[name="year"]').disabled  = val !== 'month' && val !== 'year';
+    }
+
+    filterType.addEventListener('change', toggleFields);
+    toggleFields(); // initial state
 });
 </script>
-
 
 {% endblock %}

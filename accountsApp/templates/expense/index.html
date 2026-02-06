@@ -14,7 +14,10 @@
             {% for c in clients %}
                 <option value="{{ c.id }}"
                     {% if selected_client == c.id|stringformat:"s" %}selected{% endif %}>
-                    {{ c.name }} ({{ client.company.name }})
+                    {{ c.name }}
+                    {% if c.company %}
+                        ({{ c.company.name }})
+                    {% endif %}
                 </option>
             {% endfor %}
         </select>
@@ -23,10 +26,11 @@
     <!-- 🏷 CATEGORY -->
     <div class="col-md-3">
         <label class="form-label">Category</label>
-        <select name="category" class="form-select">
+        <select name="category" class="form-select" id="categorySelect">
             <option value="">All Categories</option>
             {% for cat in categories %}
                 <option value="{{ cat.id }}"
+                    data-name="{{ cat.name|lower }}"
                     {% if selected_category == cat.id|stringformat:"s" %}selected{% endif %}>
                     {{ cat.name }}
                 </option>
@@ -34,29 +38,80 @@
         </select>
     </div>
 
+
+
+    <!-- 👷 WORKER (NEW) -->
+    <div class="col-md-3 d-none" id="workerFilter">
+        <label class="form-label">Worker</label>
+        <select name="worker" class="form-select" id="workerSelect">
+            <option value="">All Workers</option>
+            {% for w in workers %}
+                <option value="{{ w.id }}"
+                    {% if selected_worker == w.id|stringformat:"s" %}selected{% endif %}>
+                    {{ w.name }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+
+        const categorySelect = document.getElementById('categorySelect');
+        const workerFilter = document.getElementById('workerFilter');
+        const workerSelect = document.getElementById('workerSelect');
+
+        function toggleWorkerFilter() {
+            const selectedOption = categorySelect.options[categorySelect.selectedIndex];
+            const categoryName = selectedOption?.dataset.name || '';
+
+            if (categoryName === 'salary') {
+                workerFilter.classList.remove('d-none');
+            } else {
+                workerFilter.classList.add('d-none');
+                workerSelect.value = ''; // reset worker when hidden
+            }
+        }
+
+        // On change
+        categorySelect.addEventListener('change', toggleWorkerFilter);
+
+        // On page load (important!)
+        toggleWorkerFilter();
+    });
+    </script>
+
+
     <!-- 💳 SPEND MODE (NEW) -->
     <div class="col-md-2">
         <label class="form-label">Spend Mode</label>
-        <select name="spend_mode" class="form-select">
+        <select name="spend_mode" id="spendModeSelect" class="form-select">
             <option value="">All</option>
-            <option value="cash" {% if selected_spend_mode == 'cash' %}selected{% endif %}>
-                Cash
-            </option>
-            <option value="cheque" {% if selected_spend_mode == 'cheque' %}selected{% endif %}>
-                Cheque
-            </option>
+            <option value="cash" {% if selected_spend_mode == 'cash' %}selected{% endif %}>Cash</option>
+            <option value="cheque" {% if selected_spend_mode == 'cheque' %}selected{% endif %}>Cheque</option>
         </select>
     </div>
 
     <!-- 🏦 BANK (NEW) -->
-    <div class="col-md-2">
+    <div class="col-md-3">
         <label class="form-label">Bank</label>
-        <select name="bank" class="form-select">
+        <select name="bank" id="bankSelect" class="form-select">
             <option value="">All Banks</option>
-            {% for bank in banks %}
-                <option value="{{ bank.id }}"
-                    {% if selected_bank == bank.id|stringformat:"s" %}selected{% endif %}>
-                    {{ bank.name }}
+
+            {% if cash_bank %}
+                <option value="{{ cash_bank.id }}"
+                        data-type="cash"
+                        {% if selected_bank == cash_bank.id|stringformat:"s" %}selected{% endif %}>
+                    {{ cash_bank.name }}
+                </option>
+            {% endif %}
+
+            {% for b in banks %}
+                <option value="{{ b.id }}"
+                        data-type="cheque"
+                        {% if selected_bank == b.id|stringformat:"s" %}selected{% endif %}>
+                    {{ b.name }}
                 </option>
             {% endfor %}
         </select>
@@ -87,24 +142,47 @@
 </form>
 
 
-<div class="alert alert-info fw-bold mb-2" >
-    Selected Total: ₹ <span id="selectedTotal">0.00</span>
-</div>
+<div class="d-flex justify-content-center" style="position: sticky; top: 80px; z-index: 1050;">
+    <div class="shadow-lg border-0 rounded-pill px-4 py-2 d-inline-flex align-items-center animate__animated animate__fadeInDown" 
+         style="background: rgba(13, 110, 253, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2) !important;">
+        
+        <div class="bg-white rounded-circle d-flex align-items-center justify-content-center me-3" 
+             style="width: 32px; height: 32px;">
+            <i class="bi bi-calculator-fill text-primary" style="font-size: 1rem;"></i>
+        </div>
 
+        <div class="text-white">
+            <span class="text-uppercase fw-bold opacity-5 me-2" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                Selected Total
+            </span>
+            <span class="fs-5 fw-black" style="font-family: 'Monaco', monospace;">
+                ₹ <span id="selectedTotal">0.00</span>
+            </span>
+        </div>
+    </div>
+</div>
 
 
 <a href="{% url 'expense_create' %}" class="btn btn-primary mb-3">
     + Add Spending
 </a>
 
+
+<a href="{% url 'expense_pdf_export' %}?{{ request.GET.urlencode }}"
+   class="btn btn-danger btn-sm mb-3 ms-2 py-2 px-3 rounded-3">
+    <i class="bi bi-file-earmark-pdf-fill me-1"></i>
+   Export PDF
+</a>
+
 <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
 <!-- 📋 TABLE -->
 <table class="table table-bordered table-hover align-middle">
-    <thead class="table-light">
+    <thead class="table-primary">
         <tr>
             <th>#</th>
             <th>Client</th>
             <th>Category</th>
+            <th>Salary for</th> 
             <th>Description</th>
             <th>Bank</th>
             <th class="text-end">Amount</th>
@@ -126,9 +204,18 @@
                 {{ expense.category.name|default:"—" }}
             </td>
 
+            <td>
+                {% if expense.salary_to %}
+                    <span class="fw-semibold text-primary">
+                        {{ expense.salary_to.name }}
+                    </span>
+                {% else %}
+                    —
+                {% endif %}
+            </td>
             <td>{{ expense.description }}</td>
 
-            <td>{{ expense.bank.name|default:"Cash" }}</td>
+            <td class="highlight-cell3">{{ expense.bank.name|default:"Cash" }}</td>
 
             <td class="text-end text-danger fw-semibold highlight-cell selectable-amount" data-amount="{{ expense.amount }}"  data-col="amount">
                 ₹ {{ expense.amount|floatformat:2 }}
@@ -163,8 +250,42 @@
     </tbody>
 </table>
 
+
+
+
+
+
 </div>
 
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const filterFields = document.querySelectorAll(
+        'select[name], input[name]'
+    );
+
+    function updateHighlight(el) {
+        if (!el) return;
+
+        if (el.value && el.value !== '') {
+            el.classList.add('filter-active');
+        } else {
+            el.classList.remove('filter-active');
+        }
+    }
+
+    // Initial highlight on page load
+    filterFields.forEach(el => updateHighlight(el));
+
+    // Update highlight on change / input
+    filterFields.forEach(el => {
+        el.addEventListener('change', () => updateHighlight(el));
+        el.addEventListener('input', () => updateHighlight(el));
+    });
+
+});
+</script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -268,6 +389,44 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 </script>
+
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const modeSelect = document.getElementById('spendModeSelect');
+    const bankSelect = document.getElementById('bankSelect');
+
+    function filterBanks() {
+        const mode = modeSelect.value;
+
+        Array.from(bankSelect.options).forEach(opt => {
+            if (!opt.value) return; // "All Banks"
+
+            const type = opt.dataset.type;
+
+            if (mode === 'cash') {
+                opt.hidden = type !== 'cash';
+            } else if (mode === 'cheque') {
+                opt.hidden = type !== 'cheque';
+            } else {
+                opt.hidden = false;
+            }
+        });
+
+        // Reset invalid selection
+        const selected = bankSelect.selectedOptions[0];
+        if (selected && selected.hidden) {
+            bankSelect.value = '';
+        }
+    }
+
+    filterBanks(); // initial load
+    modeSelect.addEventListener('change', filterBanks);
+});
+</script>
+
 
 
 {% endblock %}

@@ -163,6 +163,14 @@ class Payment(models.Model):
 
 
 
+# worker Model
+class Worker(models.Model):
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
+
+
 # expense category Model
 
 class ExpenseCategory(models.Model):
@@ -204,6 +212,15 @@ class Expense(models.Model):
         blank=True
     )
 
+    # 🆕 SALARY TO (WORKER)
+    salary_to = models.ForeignKey(
+        Worker,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='salary_expenses'
+    )
+    
     description = models.TextField()
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     spend_mode = models.CharField(max_length=10, choices=SPEND_MODE_CHOICES)
@@ -211,3 +228,13 @@ class Expense(models.Model):
 
     def __str__(self):
         return f"{self.client.name} - ₹{self.amount}"
+
+
+
+
+
+class AppSettings(models.Model):
+    notification_email = models.EmailField(blank=True, null=True)
+
+    def __str__(self):
+        return self.notification_email or "No email set"

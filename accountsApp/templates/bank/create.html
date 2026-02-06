@@ -2,33 +2,99 @@
 {% block title %}Create Bank{% endblock %}
 
 {% block content %}
-<div class="card shadow-sm">
-    <div class="card-header bg-primary text-white">
-        Create Bank
-    </div>
-
-    <div class="card-body">
-        <form method="POST">
-            {% csrf_token %}
-
-            <div class="mb-3">
-                <label class="form-label">Bank Name</label>
-                <input type="text" name="name"
-                       class="form-control" required>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            
+            <div class="text-center mb-4">
+                <div class="avatar-md bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+                    <i class="bi bi-bank fs-2"></i>
+                </div>
+                <h3 class="fw-black text-dark mb-1">Add New Bank</h3>
+                <p class="text-muted small">Register a new financial account or cash ledger</p>
             </div>
 
-            <div class="mb-3">
-                <label class="form-label">Opening Balance (should be zero)</label>
-                <input type="number" step="0.01"
-                       name="opening_balance"
-                       class="form-control" required>
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="background: #ffffff; border: 1px solid #eee !important;">
+                <div class="card-body p-4 p-lg-5">
+                    <form method="POST">
+                        {% csrf_token %}
+
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-uppercase text-muted" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                Bank / Account Name
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-light-subtle text-muted">
+                                    <i class="bi bi-building"></i>
+                                </span>
+                                <input type="text" name="name" 
+                                       class="form-control border-light-subtle shadow-none bg-light bg-opacity-50 py-2" 
+                                       placeholder="e.g. HDFC Bank Main"
+                                       required>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-uppercase text-muted" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                Opening Balance
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-light-subtle text-muted">₹</span>
+                                <input type="number" step="0.01" name="opening_balance" 
+                                       class="form-control border-light-subtle shadow-none bg-light bg-opacity-50 py-2 fw-bold" 
+                                       placeholder="0.00"
+                                       required>
+                            </div>
+                            <div class="form-text mt-2 text-info small">
+                                <i class="bi bi-info-circle me-1"></i> Typically set to zero for new ledgers.
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-5">
+                            <button type="submit" class="btn btn-primary fw-bold py-3 rounded-3 shadow-sm text-uppercase tracking-wider">
+                                <i class="bi bi-check-circle me-2"></i> Save Account
+                            </button>
+                            <a href="{% url 'bank_index' %}" class="btn btn-light border py-2 rounded-3 fw-semibold text-muted">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
             </div>
 
-            <button class="btn btn-success">Save</button>
-            <a href="{% url 'bank_index' %}" class="btn btn-secondary">
-                Back
-            </a>
-        </form>
+            <div class="text-center mt-4">
+                <a href="{% url 'bank_index' %}" class="text-decoration-none small text-white bg-primary  px-3 py-2 rounded-3 d-inline-block">
+                    <i class="bi bi-arrow-left me-1"></i> View Bank Accounts
+                </a>
+            </div>
+            
+        </div>
     </div>
 </div>
+
+<style>
+    body { background-color: #fbfbfb; }
+    .fw-black { font-weight: 900; }
+    .tracking-wider { letter-spacing: 1px; }
+    .form-control:focus {
+        background-color: #fff !important;
+        border-color: #4361ee !important;
+        box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.05) !important;
+    }
+    .input-group-text {
+        border-radius: 10px 0 0 10px !important;
+        border-color: #dee2e6;
+    }
+    .form-control {
+        border-radius: 0 10px 10px 0 !important;
+    }
+    .btn-primary {
+        background-color: #4361ee;
+        border: none;
+    }
+    .btn-primary:hover {
+        background-color: #374fc7;
+        transform: translateY(-1px);
+    }
+</style>
 {% endblock %}

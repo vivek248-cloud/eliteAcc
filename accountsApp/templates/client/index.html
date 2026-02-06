@@ -13,10 +13,81 @@
         All Clients Statement
 </a>
 
+<div class="card border-0 shadow-sm rounded-3 mb-4">
+    <div class="card-body p-3">
+        <form method="get">
+            <div class="row align-items-center g-3">
+                
+                <div class="col-md-7">
+                    <div class="d-flex align-items-center gap-2">
+                        <label class="text-muted small fw-bold text-uppercase mb-0 me-2">Show:</label>
+                        <div class="btn-group bg-light p-1 rounded-3" role="group" style="border: 1px solid #e9ecef;">
+                            
+                            <input type="radio" class="btn-check" name="expense_type" id="expense_all" 
+                                   value="all" {% if expense_type == 'all' %}checked{% endif %}
+                                   onchange="this.form.submit()">
+                            <label class="btn btn-sm btn-outline-primary border-0 rounded-2 px-3 fw-semibold" for="expense_all">
+                                All
+                            </label>
+
+                            <input type="radio" class="btn-check" name="expense_type" id="expense_business" 
+                                   value="business" {% if expense_type == 'business' %}checked{% endif %}
+                                   onchange="this.form.submit()">
+                            <label class="btn btn-sm btn-outline-primary border-0 rounded-2 px-3 fw-semibold" for="expense_business">
+                                Business
+                            </label>
+
+                            <input type="radio" class="btn-check" name="expense_type" id="expense_personal" 
+                                   value="personal" {% if expense_type == 'personal' %}checked{% endif %}
+                                   onchange="this.form.submit()">
+                            <label class="btn btn-sm btn-outline-primary border-0 rounded-2 px-3 fw-semibold" for="expense_personal">
+                                Personal
+                            </label>
+                        </div>
+                        
+                        <noscript>
+                            <button class="btn btn-sm btn-dark ms-2 rounded-2 px-3">Apply</button>
+                        </noscript>
+                    </div>
+                </div>
+
+                <div class="col-md-5">
+                    <div class="d-flex flex-wrap justify-content-md-end gap-3 text-muted" style="font-size: 0.75rem;">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-wallet2 text-success me-1"></i>
+                            <span><strong>Total Paid:</strong> Chq + Cash</span>
+                        </div>
+                        <div class="d-flex align-items-center border-start ps-3">
+                            <i class="bi bi-calculator text-primary me-1"></i>
+                            <span><strong>Balance:</strong> Paid-Spend-Budget</span>
+                        </div>
+                        <div class="d-flex align-items-center border-start ps-3">
+                            <i class="bi bi-exclamation-circle text-warning me-1"></i>
+                            <span><strong>Yet to Pay:</strong> Total budget - Paid</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </form>
+    </div>
+</div>
+
+
+<div class="toast-container position-fixed top-0 end-0 p-3 mt-5">
+    <div id="filterToast" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body" id="toastBodyContent">
+                </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
 
 <div class="table-responsive" style="max-height: 700px; overflow-y: auto;">
 <table class="table table-bordered table-hover align-middle">
-    <thead class="table-light">
+    <thead class="table-primary ">
         <tr>
             <th class="text-center">#</th>
             <th class="text-center">Client</th>
@@ -45,7 +116,7 @@
             <td>{{ client.company.name }}</td>
 
             <!-- 💰 Budget -->
-            <td class="text-end">
+            <td class="text-end budget-cell">
                 ₹ {{ client.budget|floatformat:2 }}
             </td>
 
@@ -104,7 +175,9 @@
                 {% endif %}
             </td>
 
-            <td class="text-end fw-semibold
+            <!-- 🟡 YET TO PAY -->
+
+            <td class="text-end fw-semibold hover-trigger
                 {% if client.yet_to_pay > 0 %}
                     text-warning
                 {% else %}
@@ -112,17 +185,14 @@
                 {% endif %}"
 
                 {% if client.yet_to_pay < 0 %}
-
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="top"
+                    data-highlight-budget="true"   
                     {% if client.total_expenses > client.budget %}
-                        data-bs-toggle="tooltip"
-                        data-bs-placement="top"
-                        title="⚠ Budget exceeded. Admin must update project budget to match expenses."
+                        title="⚠ Project value exceeded. Admin must update project budget to match expenses."
                     {% else %}
-                        data-bs-toggle="tooltip"
-                        data-bs-placement="top"
                         title="Client overpaid. Refund or adjust in next billing."
                     {% endif %}
-
                 {% endif %}
             >
                 ₹ {{ client.yet_to_pay|floatformat:2 }}
@@ -156,17 +226,7 @@
 
 
 
-<p class="text-muted mt-2 small">
-    <strong>Note:</strong>
-    <br>
-    Total Paid = Cheque + Cash
-    <br>
-    Balance = Total Paid - Spending - Budget
-    <br>
-    Yet to Pay = Spending - Total Paid
-    <br>
-    <em>(Hover on ⚠ and ✔ icons for more info)</em>
-</p>
+
 
 </div>
 
@@ -178,10 +238,71 @@ document.addEventListener('DOMContentLoaded', function () {
     tooltipTriggerList.map(function (el) {
         return new bootstrap.Tooltip(el);
     });
+
+    // Hover logic
+    document.querySelectorAll('[data-highlight-budget="true"]').forEach(trigger => {
+
+        const row = trigger.closest('tr');
+        if (!row) return;
+
+        const budgetCell = row.querySelector('.budget-cell');
+        if (!budgetCell) return;
+
+        trigger.addEventListener('mouseenter', () => {
+            budgetCell.classList.add('budget-highlight');
+        });
+
+        trigger.addEventListener('mouseleave', () => {
+            budgetCell.classList.remove('budget-highlight');
+        });
+
+    });
+
 });
 </script>
 
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const urlParams = new URLSearchParams(window.location.search);
+    const expenseType = urlParams.get('expense_type');
+    
+    // If no expense_type is in URL, it's effectively "all" on first load, 
+    // but usually, we only show the toast after a user interacts with the filter.
+    if (expenseType) {
+        const toastEl = document.getElementById('filterToast');
+        const toastBody = document.getElementById('toastBodyContent');
+        let message = "";
+        let bgColor = "";
+        let icon = "";
 
+        switch (expenseType) {
+            case 'business':
+                message = "Showing <strong>Business</strong> expenses only.";
+                bgColor = "bg-primary"; // Blue
+                icon = "bi-briefcase-fill";
+                break;
+            case 'personal':
+                message = "Note: The balance shown is filtered for <strong>Personal</strong> expenses.";
+                bgColor = "bg-danger"; // Red
+                icon = "bi-house-heart-fill";
+                break;
+            case 'all':
+                message = "Showing <strong>All</strong> transaction balances.";
+                bgColor = "bg-success"; // Black/Grey
+                icon = "bi-list-ul";
+                break;
+        }
 
-
+        if (message) {
+            // Apply styles and content
+            toastEl.classList.add(bgColor);
+            toastBody.innerHTML = `<i class="bi ${icon} me-2"></i> ${message}`;
+            
+            // Show the toast
+            const toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+    }
+});
+</script>
 {% endblock %}

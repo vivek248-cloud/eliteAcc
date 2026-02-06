@@ -2,35 +2,95 @@
 {% block title %}Update Bank{% endblock %}
 
 {% block content %}
-<div class="card shadow-sm">
-    <div class="card-header bg-warning">
-        Update Bank
-    </div>
-
-    <div class="card-body">
-        <form method="POST">
-            {% csrf_token %}
-
-            <div class="mb-3">
-                <label class="form-label">Bank Name</label>
-                <input type="text" name="name"
-                       value="{{ bank.name }}"
-                       class="form-control" required>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            
+            <div class="text-center mb-4">
+                <div class="avatar-md bg-warning bg-opacity-10 text-warning rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+                    <i class="bi bi-pencil-square fs-2"></i>
+                </div>
+                <h3 class="fw-black text-dark mb-1">Edit Account</h3>
+                <p class="text-muted small">Modify the details for <strong>{{ bank.name }}</strong></p>
             </div>
 
-            <div class="mb-3">
-                <label class="form-label">Opening Balance</label>
-                <input type="number" step="0.01"
-                       name="opening_balance"
-                       value="{{ bank.opening_balance }}"
-                       class="form-control" required>
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="background: #ffffff; border: 1px solid #eee !important;">
+                <div class="card-body p-4 p-lg-5">
+                    <form method="POST">
+                        {% csrf_token %}
+
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-uppercase text-muted" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                Bank / Account Name
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-light-subtle text-muted">
+                                    <i class="bi bi-building"></i>
+                                </span>
+                                <input type="text" name="name" 
+                                       value="{{ bank.name }}"
+                                       class="form-control border-light-subtle shadow-none bg-light bg-opacity-50 py-2" 
+                                       required>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-uppercase text-muted" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                Opening Balance
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-light-subtle text-muted">₹</span>
+                                <input type="number" step="0.01" name="opening_balance" 
+                                       value="{{ bank.opening_balance }}"
+                                       class="form-control border-light-subtle shadow-none bg-light bg-opacity-50 py-2 fw-bold" 
+                                       required>
+                            </div>
+                            <div class="form-text mt-2 text-muted small">
+                                <i class="bi bi-exclamation-circle me-1"></i> Changing this will adjust the current calculated balance.
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-5">
+                            <button type="submit" class="btn btn-primary fw-bold py-3 rounded-3 shadow-sm text-uppercase tracking-wider">
+                                <i class="bi bi-arrow-repeat me-2"></i> Update Account
+                            </button>
+                            <a href="{% url 'bank_index' %}" class="btn btn-light border py-2 rounded-3 fw-semibold text-muted">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
             </div>
 
-            <button class="btn btn-primary">Update</button>
-            <a href="{% url 'bank_index' %}" class="btn btn-secondary">
-                Back
-            </a>
-        </form>
+            <div class="text-center mt-4">
+                <a href="{% url 'bank_index' %}" class="text-decoration-none small text-white bg-primary  px-3 py-2 rounded-3 d-inline-block">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Bank List
+                </a>
+            </div>
+            
+        </div>
     </div>
 </div>
+
+<style>
+    body { background-color: #fbfbfb; }
+    .fw-black { font-weight: 900; }
+    .tracking-wider { letter-spacing: 1px; }
+    .form-control:focus {
+        background-color: #fff !important;
+        border-color: #4361ee !important;
+        box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.05) !important;
+    }
+    .input-group-text {
+        border-radius: 10px 0 0 10px !important;
+        border-color: #dee2e6;
+    }
+    .form-control {
+        border-radius: 0 10px 10px 0 !important;
+    }
+    .btn-primary {
+        background-color: #4361ee;
+        border: none;
+    }
+</style>
 {% endblock %}

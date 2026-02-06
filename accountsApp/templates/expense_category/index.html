@@ -2,43 +2,119 @@
 {% block title %}Spend Categories{% endblock %}
 
 {% block content %}
-<h4 class="mb-3">Spend Categories</h4>
+<div class="container-fluid py-4">
 
-<a href="{% url 'expense_category_create' %}" class="btn btn-primary mb-3">
-    + Add Category
-</a>
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <h2 class="fw-black text-dark mb-1">Spend Category</h2>
+            <p class="text-muted small mb-0">Define and manage categories for precise expenditure tracking.</p>
+        </div>
+        <a href="{% url 'expense_category_create' %}" class="btn btn-primary shadow-sm px-4 py-2 rounded-3 fw-bold">
+            <i class="bi bi-tag-plus me-2"></i>+ Create Category
+        </a>
+    </div>
 
-<table class="table table-bordered table-hover">
-    <thead class="table-light">
-        <tr>
-            <th>#</th>
-            <th>Category Name</th>
-            <th>Action</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for category in categories %}
-        <tr>
-            <td>{{ forloop.counter }}</td>
-            <td>{{ category.name }}</td>
-            <td class="d-flex gap-2">
-                <a href="{% url 'expense_category_update' category.id %}"
-                   class="btn btn-sm btn-outline-warning">
-                    Edit
-                </a>
-                <a href="{% url 'expense_category_delete' category.id %}"
-                   class="btn btn-sm btn-outline-danger">
-                    Delete
-                </a>
-            </td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="3" class="text-center text-muted">
-                No categories found
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header bg-white border-0 py-3 d-flex align-items-center justify-content-between">
+                    <h6 class="mb-0 fw-bold text-dark text-uppercase tracking-wider small">Classification List</h6>
+                    <span class="badge bg-primary bg-opacity-10 text-primary border-0 fw-bold px-3">{{ categories.count }} Active</span>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light bg-opacity-50">
+                            <tr>
+                                <th class="ps-4 py-3 border-0 text-muted small fw-bold" style="width: 80px;">REF</th>
+                                <th class="py-3 border-0 text-muted small fw-bold">CATEGORY NAME</th>
+                                <th class="pe-4 py-3 border-0 text-muted small fw-bold text-end">MANAGEMENT</th>
+                            </tr>
+                        </thead>
+                        <tbody class="border-top-0">
+                            {% for category in categories %}
+                            <tr class="category-row">
+                                <td class="ps-4">
+                                    <span class="text-muted font-monospace small">#{{ forloop.counter|stringformat:"02d" }}</span>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-xs bg-light rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                            <i class="bi bi-hash text-primary"></i>
+                                        </div>
+                                        <span class="fw-bold text-dark">{{ category.name }}</span>
+                                    </div>
+                                </td>
+                                <td class="pe-4 text-end">
+                                    <div class="d-flex justify-content-end gap-2">
+                                        <a href="{% url 'expense_category_update' category.id %}" 
+                                           class="btn btn-sm btn-white border shadow-xs text-dark rounded-2" 
+                                           title="Rename">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </a>
+                                        <a href="{% url 'expense_category_delete' category.id %}" 
+                                           class="btn btn-sm btn-outline-danger border-0 rounded-2" 
+                                           title="Delete">
+                                            <i class="bi bi-trash3"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center py-5">
+                                    <div class="py-4">
+                                        <i class="bi bi-tags text-muted display-4 opacity-25"></i>
+                                        <p class="text-muted mt-3">No categories defined yet.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 mt-4 mt-lg-0">
+            <div class="card border-0 shadow-sm rounded-4 bg-primary bg-opacity-10 border-0 h-100">
+                <div class="card-body p-4">
+                    <h6 class="fw-black text-primary text-uppercase small tracking-wider mb-3">System Tip</h6>
+                    <p class="text-dark small mb-0">
+                        Categories help you group expenses like <b><mark>Materials</mark></b>, <mark><b>Salary</b></mark>, or <mark><b>Personal</b></mark>. 
+                        This allows the dashboard to generate meaningful analytics on where your capital is being deployed.
+                    </p>
+                    <hr class="text-primary opacity-25 my-4">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-lightbulb text-primary fs-4 me-3"></i>
+                        <span class="text-muted small">Keep names concise for better report layouts.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .fw-black { font-weight: 900; }
+    .tracking-wider { letter-spacing: 0.05rem; }
+    
+    .category-row:hover {
+        background-color: rgba(67, 97, 238, 0.02) !important;
+    }
+
+    .btn-white {
+        background-color: #fff;
+        transition: all 0.2s;
+    }
+    
+    .btn-white:hover {
+        background-color: #f8f9fa;
+        border-color: #ffc107 !important;
+    }
+
+    .avatar-xs {
+        border: 1px solid #eee;
+    }
+</style>
 {% endblock %}

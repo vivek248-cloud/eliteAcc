@@ -1,0 +1,86 @@
+{% extends "layout/base.html" %}
+{% block title %}Update Worker{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            
+            <div class="text-center mb-4">
+                <div class="avatar-md bg-warning bg-opacity-10 text-warning rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+                    <i class="bi bi-person-gear fs-3"></i>
+                </div>
+                <h3 class="fw-black text-dark mb-1">Edit Worker Details</h3>
+                <p class="text-muted small">Update the identification or profile name for this staff member</p>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4" style="background: #ffffff; border: 1px solid #eee !important;">
+                <div class="card-body p-4 p-lg-5">
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-uppercase text-muted" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                Full Name
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-light-subtle text-muted">
+                                    <i class="bi bi-person-badge"></i>
+                                </span>
+                                <input type="text" 
+                                       name="name" 
+                                       value="{{ worker.name }}" 
+                                       class="form-control border-light-subtle shadow-none bg-light bg-opacity-50 py-2" 
+                                       required>
+                            </div>
+                            <div class="form-text mt-2" style="font-size: 0.75rem;">
+                                Note: Changing this name will update it across all linked salary logs.
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary fw-bold py-2 rounded-3 shadow-sm">
+                                <i class="bi bi-arrow-repeat me-1"></i> Update Profile
+                            </button>
+                            <a href="{% url 'worker_index' %}" class="btn btn-light border py-2 rounded-3 fw-semibold text-muted">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <a href="{% url 'worker_index' %}" class="text-decoration-none small text-white bg-primary  px-3 py-2 rounded-3 d-inline-block">
+                    <i class="bi bi-chevron-left me-1"></i> Back to Workers List
+                </a>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<style>
+    body { background-color: #fbfbfb; }
+    .fw-black { font-weight: 900; }
+    .form-control:focus {
+        background-color: #fff !important;
+        border-color: #4361ee !important;
+        box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.05) !important;
+    }
+    .input-group-text {
+        border-radius: 10px 0 0 10px !important;
+        border-color: #dee2e6;
+    }
+    .form-control {
+        border-radius: 0 10px 10px 0 !important;
+    }
+    .btn-primary {
+        background-color: #4361ee;
+        border: none;
+    }
+    .btn-primary:hover {
+        background-color: #374fc7;
+    }
+</style>
+{% endblock %}

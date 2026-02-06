@@ -1,244 +1,236 @@
 {% extends "layout/base.html" %}
-
-{% block title %}Dashboard{% endblock %}
+{% block title %}Executive Dashboard{% endblock %}
 
 {% block content %}
-
-<h4 class="mb-4">Dashboard</h4>
-
-<form method="get" class="mb-4">
-    <div class="row">
-        <div class="col-md-4">
-            <label class="form-label fw-semibold">Select Company</label>
-            <select name="company" class="form-select" onchange="this.form.submit()">
-                <option value="">-- Select Company --</option>
-                {% for company in companies %}
-                    <option value="{{ company.id }}"
-                        {% if company.id|stringformat:"s" == selected_company_id %}
-                            selected
-                        {% endif %}
-                    >
-                        {{ company.name }}
-                    </option>
-                {% endfor %}
-            </select>
+<div class="fade-in">
+    <div class="row align-items-center mb-4">
+        <div class="col-lg-6">
+            <h4 class="fw-bold mb-0">Financial Executive Summary</h4>
+            <p class="text-muted small">Real-time performance tracking</p>
+        </div>
+        <div class="col-lg-6">
+            <form method="get" class="d-flex gap-2 justify-content-lg-end">
+                <select name="company" class="form-select form-select-sm shadow-sm" style="max-width: 200px;" onchange="this.form.submit()">
+                    <option value="">All Companies</option>
+                    {% for company in companies %}
+                        <option value="{{ company.id }}" {% if company.id|stringformat:"s" == selected_company_id %}selected{% endif %}>
+                            {{ company.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <input type="date" name="start_date" value="{{ start_date }}" class="form-control form-control-sm shadow-sm" style="width: 140px;">
+                <input type="date" name="end_date" value="{{ end_date }}" class="form-control form-control-sm shadow-sm" style="width: 140px;">
+                <button class="btn btn-sm btn-primary">Apply</button>
+            </form>
         </div>
     </div>
-</form>
 
-
-
-{% if selected_company_id %}
-<div class="financial-dashboard">
-    <!-- Clients Card -->
-    <div class="dashboard-card clients-card">
-        <h3 class="card-title">Clients</h3>
-        <div class="card-value">{{ clients.count }}</div>
-        <p class="card-subtitle">Total Active Clients</p>
-    </div>
-
-    <!-- Bank Balance Card -->
-    <div class="dashboard-card balance-card">
-        <h3 class="card-title">
-            {% if selected_bank %}
-                {{ selected_bank.name }} Balance
-            {% else %}
-                Total Bank Balance
-            {% endif %}
-        </h3>
-        <div class="card-value">₹ {{ display_bank_balance|floatformat:2 }}</div>
-        <p class="card-subtitle">Current Balance</p>
-    </div>
-
-    <!-- All Banks List Card -->
-    <div class="dashboard-card banks-card">
-        <h3 class="card-title">All Banks</h3>
-        <ul class="banks-list">
-            {% for bank in banks %}
-                <li class="bank-item">{{ bank.name }}</li>
-            {% empty %}
-                <li class="bank-item text-muted">No banks available</li>
-            {% endfor %}
-        </ul>
-    </div>
-
-    <!-- Yet To Receive Card -->
-    <div class="dashboard-card receivables-card">
-        <h3 class="card-title">Yet To Receive</h3>
-        <p class="card-subtitle">From all clients</p>
-        <div class="card-value warning">₹ {{ total_balance|floatformat:2 }}</div>
-    </div>
-</div>
-{% endif %}
-
-{% if selected_company_id %}
-<div class="card shadow-sm mb-4">
-    <div class="card-header bg-light">
-        <strong>Recent Payments</strong>
-    </div>
-    <div class="card-body">
-        {% for p in recent_payments %}
-            <div class="d-flex justify-content-between border-bottom py-2">
-                <span>{{ p.client.name }}</span>
-                <strong>₹ {{ p.amount|floatformat:2 }}</strong>
+    {% if selected_company_id %}
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-3 h-100" style="border-top: 4px solid #718672 !important;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="p-2 rounded-2" style="background-color: rgba(113, 134, 114, 0.1);">
+                            <i class="bi bi-arrow-down-left" style="color: #718672; font-size: 1.2rem;"></i>
+                        </div>
+                        <span class="text-muted small fw-bold text-uppercase">Revenue</span>
+                    </div>
+                    <h3 class="fw-bold mb-1" style="color: #2d3436;">₹ {{ total_payments|floatformat:0 }}</h3>
+                    <p class="text-muted small mb-0">Total Collections</p>
+                </div>
             </div>
-        {% empty %}
-            <p class="text-muted">No payments found</p>
-        {% endfor %}
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-3 h-100" style="border-top: 4px solid #ffb74d !important;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="p-2 rounded-2" style="background-color: rgba(255, 183, 77, 0.1);">
+                            <i class="bi bi-arrow-up-right" style="color: #f57c00; font-size: 1.2rem;"></i>
+                        </div>
+                        <span class="text-muted small fw-bold text-uppercase">Outflow</span>
+                    </div>
+                    <h3 class="fw-bold mb-1" style="color: #2d3436;">₹ {{ total_expenses|floatformat:0 }}</h3>
+                    <p class="text-muted small mb-0">Total Spending</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-3 h-100" style="border-top: 4px solid #4fc3f7 !important;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="p-2 rounded-2" style="background-color: rgba(79, 195, 247, 0.1);">
+                            <i class="bi bi-graph-up-arrow" style="color: #0288d1; font-size: 1.2rem;"></i>
+                        </div>
+                        <span class="text-muted small fw-bold text-uppercase">Net Margin</span>
+                    </div>
+                    <h3 class="fw-bold mb-1" style="color: #2d3436;">₹ {{ total_profit|floatformat:0 }}</h3>
+                    <span class="badge rounded-pill {% if total_profit >= 0 %}bg-success{% else %}bg-danger{% endif %} bg-opacity-10 {% if total_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        {{ profit_percentage|floatformat:1 }}% Profitability
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-3 h-100" style="border-top: 4px solid #ef5350 !important;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="p-2 rounded-2" style="background-color: rgba(239, 83, 80, 0.1);">
+                            <i class="bi bi-hourglass-split" style="color: #d32f2f; font-size: 1.2rem;"></i>
+                        </div>
+                        <span class="text-muted small fw-bold text-uppercase">Receivables</span>
+                    </div>
+                    <h3 class="fw-bold mb-1" style="color: #d32f2f;">₹ {{ total_balance|floatformat:0 }}</h3>
+                    <p class="text-muted small mb-0">Yet to be received</p>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
-{% endif %}
-
-
-
 {% if selected_company_id %}
-<form method="get" class="row g-2 align-items-end mb-3">
-
-    <!-- keep company selection -->
-    <input type="hidden" name="company" value="{{ selected_company_id }}">
-
-    <div class="col-md-3">
-        <label class="form-label">Start Date</label>
-        <input type="date"
-               name="start_date"
-               value="{{ start_date }}"
-               class="form-control">
-    </div>
-
-    <div class="col-md-3">
-        <label class="form-label">End Date</label>
-        <input type="date"
-               name="end_date"
-               value="{{ end_date }}"
-               class="form-control">
-    </div>
-
-    <div class="col-md-3 d-flex gap-2">
-        <button class="btn btn-primary w-100">
-            Apply
-        </button>
-        <a href="?company={{ selected_company_id }}"
-           class="btn btn-secondary w-100">
-            Reset
-        </a>
-    </div>
-
-</form>
-{% endif %}
-
-
-{% if selected_company_id %}
-<div class="row g-3">
-
-    <!-- 🔵 PAYMENTS -->
-    <div class="col-md-6">
-        <div class="card shadow-sm border-0">
-            <div class="card-body">
-                <h6 class="fw-bold mb-1">Payments</h6>
-                <small class="text-muted">Trend</small>
-
-                <div style="height:220px; position:relative;">
-                    <canvas id="paymentsChart"></canvas>
+<div class="row g-4 mb-4" >
+    <div class="col-md-6" style="border-radius: 20px;">
+        <div class="card border-0 shadow-sm " >
+            <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0"><i class="bi bi-arrow-down-left-circle text-success me-2"></i>Recent Received</h6>
+                <a href="{% url 'payment_index' %}" class="btn btn-sm btn-link text-decoration-none p-0">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for p in recent_payments %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center py-3 border-light">
+                        <div>
+                            <p class="mb-0 fw-medium text-dark">{{ p.client.name }}</p>
+                            <small class="text-muted">{{ p.payment_date|date:"d M, Y" }} • {{ p.bank.name }}</small>
+                        </div>
+                        <span class="fw-bold text-success">+ ₹{{ p.amount|floatformat:0 }}</span>
+                    </div>
+                    {% empty %}
+                    <div class="p-4 text-center text-muted small">No recent payments</div>
+                    {% endfor %}
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 🔴 EXPENSES -->
     <div class="col-md-6">
-        <div class="card shadow-sm border-0">
-            <div class="card-body">
-                <h6 class="fw-bold mb-1 text-danger">Expenses</h6>
-                <small class="text-muted">Trend</small>
-
-                <div style="height:220px; position:relative;">
-                    <canvas id="expensesChart"></canvas>
+        <div class="card border-0 shadow-sm rounded-3" >
+            <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0"><i class="bi bi-arrow-up-right-circle text-danger me-2"></i>Recent Spendings</h6>
+                <a href="{% url 'expense_index' %}" class="btn btn-sm btn-link text-decoration-none p-0">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for e in recent_expenses %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center py-3 border-light ">
+                        <div>
+                            <p class="mb-0 fw-medium text-dark">{{ e.category.name|default:"General Expense" }}</p>
+                            <small class="text-muted">{{ e.expense_date|date:"d M, Y" }} • {{ e.client.name }}</small>
+                        </div>
+                        <span class="fw-bold text-danger">- ₹{{ e.amount|floatformat:0 }}</span>
+                    </div>
+                    {% empty %}
+                    <div class="p-4 text-center text-muted small">No recent spendings</div>
+                    {% endfor %}
                 </div>
             </div>
         </div>
     </div>
-
 </div>
 {% endif %}
 
-
-
-
+    <div class="row g-3 mb-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold mb-4">Profit & Spend Trend</h6>
+                    <div style="height: 350px;">
+                        <canvas id="profitTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-3 h-100">
+                <div class="card-header bg-white py-3 border-0"><h6 class="fw-bold mb-0">Bank Balances</h6></div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        {% for bank in banks %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-bank2 me-3 text-primary"></i>
+                                <span class="fw-medium">{{ bank.name }}</span>
+                            </div>
+                            <span class="fw-bold">₹ {{ bank.available_balance|floatformat:0 }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <img src="https://cdn-icons-png.flaticon.com/512/4076/4076549.png" width="120" class="opacity-25 mb-3">
+        <h5>Select a company to view financial insights</h5>
+    </div>
+    {% endif %}
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
-{% if selected_company_id %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const ctx = document.getElementById('profitTrendChart');
+    if (!ctx) return;
 
-    function createBarChart(canvasId, labels, data, color) {
-        const ctx = document.getElementById(canvasId);
-        if (!ctx) return;
-
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: data,
-                    backgroundColor: color + 'cc',
-                    borderRadius: 6,
-                    maxBarThickness: 22
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                animation: {
-                    duration: 1200,
-                    easing: 'easeOutQuart'
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ profit_trend_labels|safe }},
+            datasets: [{
+                label: 'Net Profit',
+                data: {{ profit_trend_values|safe }},
+                borderColor: '#7f56d9',
+                backgroundColor: (context) => {
+                    const chart = context.chart;
+                    const {ctx, chartArea} = chart;
+                    if (!chartArea) return null;
+                    const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                    gradient.addColorStop(0, 'rgba(127, 86, 217, 0)');
+                    gradient.addColorStop(1, 'rgba(127, 86, 217, 0.1)');
+                    return gradient;
                 },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        displayColors: false,
-                        callbacks: {
-                            title: ctx => ctx[0].label,
-                            label: ctx => `₹ ${ctx.raw.toLocaleString()}`
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        grid: { display: false },
-                        ticks: {
-                            maxRotation: 0,
-                            autoSkip: true,
-                            maxTicksLimit: 6
-                        }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        grid: { display: false },
-                        ticks: {
-                            callback: v => `₹ ${v}`
-                        }
+                fill: true,
+                tension: 0.4,
+                pointRadius: 4,
+                pointBackgroundColor: '#fff',
+                borderWidth: 3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    padding: 12,
+                    displayColors: false,
+                    callbacks: {
+                        label: (ctx) => ` Profit: ₹ ${ctx.raw.toLocaleString()}`
                     }
                 }
+            },
+            scales: {
+                y: { 
+                    grid: { borderDash: [5, 5], color: '#eaecf0' },
+                    ticks: { callback: v => '₹' + v.toLocaleString() }
+                },
+                x: { grid: { display: false } }
             }
-        });
-    }
-
-    createBarChart(
-        'paymentsChart',
-        {{ payment_labels|safe }},
-        {{ payment_values|safe }},
-        '#1f4bff'   // 🔵 Blue
-    );
-
-    createBarChart(
-        'expensesChart',
-        {{ expense_labels|safe }},
-        {{ expense_values|safe }},
-        '#e63946'   // 🔴 Red
-    );
+        }
+    });
 });
 </script>
-{% endif %}
-
 {% endblock %}

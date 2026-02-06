@@ -2,23 +2,78 @@
 {% block title %}Update Category{% endblock %}
 
 {% block content %}
-<h4>Update Expense Category</h4>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            
+            <div class="text-center mb-4">
+                <div class="avatar-md bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+                    <i class="bi bi-tag-fill fs-3"></i>
+                </div>
+                <h3 class="fw-black text-dark mb-1">Edit Category</h3>
+                <p class="text-muted small">Update the name for your expense classification</p>
+            </div>
 
-<form method="post" class="card p-4 shadow-sm">
-    {% csrf_token %}
+            <div class="card border-0 shadow-sm rounded-4" style="background: #ffffff; border: 1px solid #eee !important;">
+                <div class="card-body p-4 p-lg-5">
+                    <form method="post">
+                        {% csrf_token %}
 
-    <div class="mb-3">
-        <label class="form-label">Category Name</label>
-        <input type="text"
-               name="name"
-               value="{{ category.name }}"
-               class="form-control"
-               required>
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-uppercase text-muted" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                Category Name
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-light-subtle text-muted">
+                                    <i class="bi bi-pencil-square"></i>
+                                </span>
+                                <input type="text" 
+                                       name="name" 
+                                       value="{{ category.name }}" 
+                                       class="form-control border-light-subtle shadow-none bg-light bg-opacity-50 py-2" 
+                                       placeholder="e.g. Material, Transport..."
+                                       required>
+                            </div>
+                            <div class="form-text mt-2" style="font-size: 0.75rem;">
+                                This name will appear in your "Spendings" dropdown menus.
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary fw-bold py-2 rounded-3 shadow-sm">
+                                <i class="bi bi-check2-circle me-1"></i> Save Changes
+                            </button>
+                            <a href="{% url 'expense_category_index' %}" class="btn btn-light border py-2 rounded-3 fw-semibold text-muted">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <small class="text-muted">
+                    <i class="bi bi-info-circle me-1"></i> 
+                    Updating this name will reflect across all previous records.
+                </small>
+            </div>
+            
+        </div>
     </div>
+</div>
 
-    <button class="btn btn-primary">Update</button>
-    <a href="{% url 'expense_category_index' %}" class="btn btn-secondary">
-        Cancel
-    </a>
-</form>
+<style>
+    body { background-color: #fbfbfb; }
+    .fw-black { font-weight: 900; }
+    .form-control:focus {
+        background-color: #fff;
+        border-color: #4361ee;
+    }
+    .input-group-text {
+        border-radius: 8px 0 0 8px;
+    }
+    .form-control {
+        border-radius: 0 8px 8px 0;
+    }
+</style>
 {% endblock %}

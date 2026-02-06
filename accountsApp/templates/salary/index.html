@@ -1,0 +1,141 @@
+{% extends "layout/base.html" %}
+{% block title %}Salary Statement{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-black text-dark mb-0" style="letter-spacing: -1px;">Salary Statement</h3>
+            <p class="text-muted small mb-0">Worker compensation records & disbursement history</p>
+        </div>
+        {% if selected_worker %}
+        <a href="{% url 'salary_pdf' %}?worker={{ selected_worker }}&start_date={{ start_date }}&end_date={{ end_date }}&spend_mode={{ selected_spend_mode }}"
+           class="btn btn-danger shadow-sm px-4 rounded-pill fw-bold">
+            <i class="bi bi-file-earmark-pdf-fill me-2"></i>Export PDF
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4" style="background: #ffffff; border: 1px solid #eee !important;">
+        <div class="card-body p-4">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-uppercase text-muted" style="font-size: 0.65rem;">Worker</label>
+                    <select name="worker" class="form-select border-light-subtle shadow-none bg-light bg-opacity-50">
+                        <option value="">All Workers</option>
+                        {% for w in workers %}
+                            <option value="{{ w.id }}" {% if selected_worker == w.id|stringformat:"s" %}selected{% endif %}>{{ w.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-uppercase text-muted" style="font-size: 0.65rem;">Client</label>
+                    <select name="client" class="form-select border-light-subtle shadow-none bg-light bg-opacity-50">
+                        <option value="">All Clients</option>
+                        {% for c in clients %}
+                            <option value="{{ c.id }}" {% if selected_client == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold text-uppercase text-muted" style="font-size: 0.65rem;">Date Range</label>
+                    <div class="input-group">
+                        <input type="date" name="start_date" value="{{ start_date }}" class="form-control border-light-subtle bg-light bg-opacity-50 shadow-none">
+                        <span class="input-group-text bg-white border-light-subtle text-muted small">to</span>
+                        <input type="date" name="end_date" value="{{ end_date }}" class="form-control border-light-subtle bg-light bg-opacity-50 shadow-none">
+                    </div>
+                </div>
+
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary px-4 rounded-3 flex-grow-1 fw-bold">Apply</button>
+                    <a href="{% url 'salary_index' %}" class="btn btn-light border px-3 rounded-3"><i class="bi bi-arrow-counterclockwise"></i></a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4" style="background: #ffffff; border-left: 5px solid #dc3545 !important;">
+        <div class="card-body p-4 d-flex justify-content-between align-items-center">
+            <div>
+                <span class="text-uppercase text-muted small fw-bold tracking-wider" style="font-size: 0.7rem;">Total Salary Disbursement</span>
+                <h2 class="fw-black text-dark mb-0 mt-1">₹ {{ total_salary|floatformat:2 }}</h2>
+            </div>
+            <div class="text-end">
+                <span class="text-uppercase text-muted small fw-bold d-block mb-1" style="font-size: 0.6rem;">Status</span>
+                <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3 py-2 fw-bold">
+                    {{ expenses|length }} Records Total
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="background: #ffffff; border: 1px solid #eee !important;">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-primary" style=" border-bottom: 1px solid #e4e3e3;">
+                    <tr>
+                        <th class="ps-4 py-3 text-muted small fw-bold text-uppercase" style="font-size: 0.85rem;">Date</th>
+                        <th class="py-3 text-muted small fw-bold text-uppercase" style="font-size: 0.85rem;">Recipient</th>
+                        <th class="py-3 text-muted small fw-bold text-uppercase" style="font-size: 0.85rem;">Project</th>
+                        <th class="py-3 text-muted small fw-bold text-uppercase" style="font-size: 0.85rem;">Description</th>
+                        <th class="py-3 text-muted small fw-bold text-uppercase" style="font-size: 0.85rem;">Method</th>
+                        <th class="pe-4 py-3 text-end text-muted small fw-bold text-uppercase" style="font-size: 0.85rem;">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for e in expenses %}
+                    <tr style="border-bottom: 1px solid #d8d9da;">
+                        <td class="ps-4">
+                            <span class="text-dark fw-semibold" style="font-size: 0.9rem;">{{ e.expense_date|date:"d M, Y" }}</span>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-xs bg-light text-primary rounded-circle me-2 d-flex align-items-center justify-content-center fw-bold" style="width: 32px; height: 32px; border: 1px solid #b8b8b8;">
+                                    {{ e.salary_to.name|first }}
+                                </div>
+                                <span class="fw-bold text-dark">{{ e.salary_to.name }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="fw-bold text-dark" style="font-size: 0.85rem;">{{ e.client.name }}</div>
+                            <small class="text-muted" style="font-size: 0.75rem;">{{ e.client.company.name|default:"Direct Project" }}</small>
+                        </td>
+                        <td>
+                            <div class="text-dark fw-semibold" style="font-size: 0.85rem;">{{ e.description|default:"-" }}</div>
+                        <td>
+                            <span class="badge {% if e.spend_mode == 'cash' %}bg-success{% else %}bg-primary{% endif %} bg-opacity-8 {% if e.spend_mode == 'cash' %}text-white{% else %}text-white{% endif %} rounded-pill px-3 fw-bold" style="font-size: 0.65rem;">
+                                {{ e.spend_mode|upper }}
+                            </span>
+                            {% if e.bank %}<div class="text-muted mt-1" style="font-size: 0.85rem;">{{ e.bank.name }}</div>{% endif %}
+                        </td>
+                        <td class="pe-4 text-end">
+                            <span class="fw-black text-danger fs-5">₹ {{ e.amount|floatformat:0 }}</span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5">
+                            <div class="text-muted mb-2"><i class="bi bi-inbox fs-1"></i></div>
+                            <span class="text-muted fw-bold">No salary entries found for this selection.</span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    body { background-color: #fbfbfb; }
+    .fw-black { font-weight: 900; }
+    .tracking-wider { letter-spacing: 0.5px; }
+    .table thead th { border-top: none; }
+    .avatar-xs { font-size: 0.85rem; }
+    .form-select, .form-control { border-radius: 8px; font-size: 0.9rem; }
+</style>
+
+{% endblock %}

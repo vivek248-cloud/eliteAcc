@@ -2,37 +2,140 @@
 {% block title %}Client Info{% endblock %}
 
 {% block content %}
-<div class="mb-3" style=" max-height:100vh;overflow-y:auto;overflow-x:hidden;">
+<div class="mb-3" >
     <h4>Client Info</h4>
 
 
 
 
-<h4 class="mb-3">Client Details</h4>
 
-<div class="card mb-4">
-    <div class="card-body">
-        <h5>{{ client.name }}</h5>
-        <p class="mb-1"><strong>Company:</strong> {{ client.company.name }}</p>
-        <p class="mb-1"><strong>Project value:</strong> ₹ {{ client.budget|floatformat:2 }}</p>
-        <p class="mb-1 text-success">
-            <strong>Total paid:</strong> ₹ {{ client.total_paid|floatformat:2 }}
-        </p>
-        <p class="mb-1 text-warning">
-            <strong>Total Expenses:</strong> ₹ {{ client.total_expenses|floatformat:2 }}
-        </p>
-        <p class="mb-1 fw-semibold
-            {% if client.balance > 0 %}text-danger{% else %}text-success{% endif %}">
-            <strong>Balance:</strong> ₹ {{ client.balance|floatformat:2 }}
-        </p>
+
+<div class="card border-0 shadow-sm rounded-4 " style="background: #ffffff;">
+    <div class="card-body p-3">
+        <div class="row align-items-center g-0">
+            
+            <div class="col-lg-3">
+                <div class="d-flex align-items-center">
+                    <div class="avatar-sm rounded-circle d-flex align-items-center justify-content-center me-3" 
+                         style="width: 48px; height: 48px; background: #eef2ff;">
+                        <i class="bi bi-person-badge text-primary fs-4"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-black text-dark mb-0" style="letter-spacing: -0.5px; font-size: 1.25rem;">{{ client.name }}</h5>
+                        <p class="text-muted small mb-0 d-flex align-items-center">
+                            <i class="bi bi-building me-1"></i> {{ client.company.name }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-2 text-center">
+                <span class="text-uppercase text-muted fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Project Value</span>
+                <h5 class="fw-bold mt-1 mb-0" style="color: #2d3436;">₹ {{ client.budget|floatformat:0 }}</h5>
+            </div>
+
+            <div class="col-lg-2 text-center">
+                <span class="text-uppercase text-muted fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Total Paid</span>
+                <h5 class="fw-bold mt-1 mb-0" style="color: #10ac84;">₹ {{ client.total_paid|floatformat:0 }}</h5>
+            </div>
+
+            <div class="col-lg-3 text-center">
+                <span class="text-uppercase text-muted fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Net Balance</span>
+                <div class="d-flex align-items-center justify-content-center mt-1">
+                    <h5 class="fw-bold mb-0 {% if client.balance < 0 %}text-danger{% else %}text-primary{% endif %}">
+                        ₹ {{ client.balance|floatformat:0 }}
+                    </h5>
+                    {% if client.balance < 0 %}
+                        <span class="badge bg-danger bg-opacity-10 text-danger ms-2 rounded-pill" style="font-size: 0.6rem; padding: 0.3em 0.7em;">OVER SPEND</span>
+                    {% else %}
+                        <span class="badge bg-success bg-opacity-10 text-success ms-2 rounded-pill" style="font-size: 0.6rem; padding: 0.3em 0.7em;">PROFITABLE</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-lg-2 text-end pe-3 border-start">
+                <span class="text-uppercase text-muted fw-bold" style="font-size: 0.65rem; letter-spacing: 0.5px;">
+                    Remaining <i class="bi bi-question-circle ms-1" style="font-size: 0.6rem;"></i>
+                </span>
+                <h5 class="fw-bold mt-1 mb-0 {% if client.yet_to_pay > 0 %}text-warning{% else %}text-success{% endif %}" style="font-size: 1.4rem;">
+                    ₹{{ client.yet_to_pay|floatformat:0 }}
+                </h5>
+                <div class="mt-1">
+                    {% if client.yet_to_pay > 0 %}
+                        <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 rounded-pill" style="font-size: 0.55rem; padding: 0.25em 0.8em;">PENDING</span>
+                    {% elif client.yet_to_pay < 0 %}
+                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 rounded-pill" style="font-size: 0.55rem; padding: 0.25em 0.8em;">OVERPAID</span>
+                    {% else %}
+                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill" style="font-size: 0.55rem; padding: 0.25em 0.8em;">CLEARED</span>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+    
+    <div class="progress rounded-0 shadow-sm" style="height: 10px; cursor: help;" 
+        data-bs-toggle="tooltip" 
+        data-bs-html="true" 
+        data-bs-placement="top"
+        title="
+            <div class='p-1'>
+                <div class='d-flex justify-content-between gap-4'>
+                    <span>Spent:</span> 
+                    <strong>₹ {{ client.total_expenses|floatformat:0 }}</strong>
+                </div>
+                <div class='d-flex justify-content-between gap-4'>
+                    <span>Budget:</span> 
+                    <strong>₹ {{ client.budget|floatformat:0 }}</strong>
+                </div>
+                <hr class='my-1 border-white opacity-25'>
+                <div class='text-center'>
+                    <strong>{% widthratio client.total_expenses client.budget 100 %}% Consumed</strong>
+                </div>
+            </div>
+        ">
+        
+        <div class="progress-bar {% if client.total_expenses > client.budget %}bg-danger{% else %}bg-primary{% endif %} progress-bar-striped progress-bar-animated" 
+            role="progressbar" 
+            style="width: {% widthratio client.total_expenses client.budget 100 %}% ; border-radius: 20px;" 
+            aria-valuenow="{{ client.total_expenses }}" 
+            aria-valuemin="0" 
+            aria-valuemax="{{ client.budget }}">
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
+            })
+        });
+    </script>
+</div>
+
+<div class="d-flex justify-content-center" style="position: sticky; top: 80px; z-index: 1050;">
+    <div class="shadow-lg border-0 rounded-pill px-4 py-2 d-inline-flex align-items-center animate__animated animate__fadeInDown" 
+         style="background: rgba(13, 110, 253, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2) !important;">
+        
+        <div class="bg-white rounded-circle d-flex align-items-center justify-content-center me-3" 
+             style="width: 32px; height: 32px;">
+            <i class="bi bi-calculator-fill text-primary" style="font-size: 1rem;"></i>
+        </div>
+
+        <div class="text-white">
+            <span class="text-uppercase fw-bold opacity-5 me-2" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                Selected Total
+            </span>
+            <span class="fs-5 fw-black" style="font-family: 'Monaco', monospace;">
+                ₹ <span id="selectedTotal">0.00</span>
+            </span>
+        </div>
     </div>
 </div>
 
-<div class="alert alert-info fw-bold mb-2" >
-    Selected Total: ₹ <span id="selectedTotal">0.00</span>
-</div>
-
-<h6 class="fw-bold">Payment Filters</h6>
+<h6 class="fw-bold mb-3 mt-3"><i class="bi bi-filter-circle me-2"></i>Payment Filters</h6>
 
 <form method="get" class="row g-2 mb-4">
 
@@ -83,8 +186,8 @@
 
 <!-- PAYMENTS -->
 <h5>Payments</h5>
-<table class="table table-bordered table-sm">
-    <thead class="table-light">
+<table class="table table-bordered table-sm" style="margin-bottom: 2rem;max-height:500px;overflow-y:auto; ">
+    <thead class="table-primary">
         <tr>
             <th>Date</th>
             
@@ -140,9 +243,9 @@
     </tbody>
 </table>
 
+<hr>
 
-
-<h6 class="fw-bold">Expense Filters</h6>
+<h6 class="fw-bold mt-3 mb-3"><i class="bi bi-filter-circle me-2"></i>Expense Filters</h6>
 
 <form method="get" class="row g-2 mb-4">
 
@@ -156,36 +259,78 @@
         </select>
     </div>
 
+    <!-- 🏷 CATEGORY -->
+    <div class="col-md-3">
+        <label class="form-label">Category</label>
+        <select name="category" id="categorySelect" class="form-select">
+            <option value="">All Categories</option>
+            {% for cat in categories %}
+                <option value="{{ cat.id }}"
+                        data-name="{{ cat.name|lower }}"
+                        {% if selected_category == cat.id|stringformat:"s" %}selected{% endif %}>
+                    {{ cat.name }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- 👷 WORKER -->
+    <div class="col-md-3 d-none" id="workerFilter">
+        <label class="form-label">Worker</label>
+        <select name="worker" class="form-select">
+            <option value="">All Workers</option>
+            {% for w in workers %}
+                <option value="{{ w.id }}"
+                    {% if selected_worker == w.id|stringformat:"s" %}selected{% endif %}>
+                    {{ w.name }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
+
     <!-- 📅 START DATE -->
     <div class="col-md-3">
         <label class="form-label">Start Date</label>
-        <input type="date"
-               name="expense_start_date"
-               value="{{ expense_start_date }}"
-               class="form-control">
+        <input type="date" name="start_date" value="{{ start_date }}" class="form-control">
     </div>
 
     <!-- 📅 END DATE -->
     <div class="col-md-3">
         <label class="form-label">End Date</label>
-        <input type="date"
-               name="expense_end_date"
-               value="{{ expense_end_date }}"
-               class="form-control">
+        <input type="date" name="end_date" value="{{ end_date }}" class="form-control">
     </div>
 
     <!-- 🔘 ACTIONS -->
     <div class="col-md-3 d-flex gap-2 align-items-end">
         <button class="btn btn-danger w-100">Apply</button>
-
-        <!-- 🔄 RESET EXPENSE FILTERS -->
-        <a href="{% url 'client_info' client.id %}"
-           class="btn btn-secondary w-100">
-            Reset
-        </a>
+        <a href="{% url 'client_info' client.id %}" class="btn btn-secondary w-100">Reset</a>
     </div>
 
 </form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const categorySelect = document.getElementById('categorySelect');
+    const workerFilter = document.getElementById('workerFilter');
+
+    function toggleWorker() {
+        const option = categorySelect.options[categorySelect.selectedIndex];
+        const name = option?.dataset.name || '';
+
+        if (name === 'salary') {
+            workerFilter.classList.remove('d-none');
+        } else {
+            workerFilter.classList.add('d-none');
+        }
+    }
+
+    categorySelect.addEventListener('change', toggleWorker);
+
+    // 🔁 On page load
+    toggleWorker();
+});
+</script>
 
 
 
@@ -193,10 +338,11 @@
 
 <!-- EXPENSES -->
 <h5 class="mt-4">Expenses</h5>
-<table class="table table-bordered table-sm">
-    <thead class="table-light">
+<table class="table table-bordered table-sm" style="margin-bottom: 2rem;max-height:500px;overflow-y:auto;">
+    <thead class="table-danger">
         <tr>
             <th>Date</th>
+            <th>Worker</th>
             <th>Description</th>
             <th class="text-end">Spent Before</th>
             <th class="text-end">Spend Now</th>
@@ -211,6 +357,17 @@
         <tr>
             <!-- DATE -->
             <td>{{ e.date }}</td>
+
+            <!-- WORKER -->
+            <td>
+                {% if e.worker %}
+                    <span class="fw-semibold text-primary">
+                        {{ e.worker }}
+                    </span>
+                {% else %}
+                    —
+                {% endif %}
+            </td>
 
             <!-- DESCRIPTION -->
             <td>
@@ -275,7 +432,7 @@
 </table>
 
 <div class="d-flex justify-content-between">
-    <a href="{% url 'client_index' %}" class="btn btn-secondary mt-3 mb-3">
+    <a href="{% url 'client_index' %}" class="btn btn-primary mt-3 mb-3">
         ← Back to Clients
     </a>
 
@@ -289,23 +446,72 @@
 
 
 <script>
-document.querySelector('[name="filter_type"]').addEventListener('change', function () {
-    const type = this.value;
+document.addEventListener('DOMContentLoaded', function () {
 
-    document.querySelector('[name="date"]').disabled = type !== 'day';
-    document.querySelector('[name="month"]').disabled = type !== 'month';
-    document.querySelector('[name="year"]').disabled = type === 'day';
+    /* ============================
+       📅 FILTER TYPE LOGIC
+    ============================ */
+    const filterType = document.querySelector('[name="filter_type"]');
+    const dateInput  = document.querySelector('[name="date"]');
+    const monthInput = document.querySelector('[name="month"]');
+    const yearInput  = document.querySelector('[name="year"]');
+
+    function updateDateFilters() {
+        if (!filterType) return;
+
+        const type = filterType.value;
+
+        if (dateInput)  dateInput.disabled  = type !== 'day';
+        if (monthInput) monthInput.disabled = type !== 'month';
+        if (yearInput)  yearInput.disabled  = (type === 'day');
+    }
+
+    if (filterType) {
+        filterType.addEventListener('change', updateDateFilters);
+        updateDateFilters(); // 🔁 initial state
+    }
+
+    /* ============================
+       🧩 BOOTSTRAP TOOLTIPS
+    ============================ */
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+
+    tooltipTriggerList.forEach(function (el) {
+        new bootstrap.Tooltip(el, {
+            trigger: 'hover',
+            boundary: 'window'
+        });
+    });
+
 });
 </script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const tooltipTriggerList = [].slice.call(
-        document.querySelectorAll('[data-bs-toggle="tooltip"]')
+
+    const filterFields = document.querySelectorAll(
+        'select[name], input[name]'
     );
-    tooltipTriggerList.forEach(function (el) {
-        new bootstrap.Tooltip(el);
+
+    function updateHighlight(el) {
+        if (!el) return;
+
+        if (el.value && el.value !== '') {
+            el.classList.add('filter-active');
+        } else {
+            el.classList.remove('filter-active');
+        }
+    }
+
+    // Initial highlight on page load
+    filterFields.forEach(el => updateHighlight(el));
+
+    // Update highlight on change / input
+    filterFields.forEach(el => {
+        el.addEventListener('change', () => updateHighlight(el));
+        el.addEventListener('input', () => updateHighlight(el));
     });
+
 });
 </script>
 

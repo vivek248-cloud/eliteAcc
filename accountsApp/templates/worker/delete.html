@@ -1,0 +1,77 @@
+{% extends "layout/base.html" %}
+{% block title %}Delete Worker{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            
+            <div class="text-center mb-4">
+                <div class="avatar-md bg-danger bg-opacity-10 text-danger rounded-circle d-inline-flex align-items-center justify-content-center mb-3 pulse-danger" style="width: 72px; height: 72px;">
+                    <i class="bi bi-person-x-fill fs-1"></i>
+                </div>
+                <h3 class="fw-black text-dark mb-1">Remove Worker</h3>
+                <p class="text-muted small px-4">This will remove the worker from your active directory and may impact historical reporting.</p>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="background: #ffffff; border: 1px solid #f8d7da !important;">
+                <div class="card-body p-4 p-lg-5">
+                    <div class="text-center mb-4">
+                        <p class="mb-1 text-muted small text-uppercase fw-bold tracking-wider">Confirming deletion for:</p>
+                        <h4 class="text-dark fw-black">{{ worker.name }}</h4>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger fw-bold py-2 rounded-3 shadow-sm">
+                                <i class="bi bi-trash3 me-1"></i> Yes, Permanently Delete
+                            </button>
+                            <a href="{% url 'worker_index' %}" class="btn btn-light border py-2 rounded-3 fw-semibold text-muted">
+                                No, Keep Worker
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <a href="{% url 'worker_index' %}" class="text-decoration-none small text-white bg-primary  px-3 py-2 rounded-3 d-inline-block">
+                    <i class="bi bi-arrow-left me-1"></i> Return to Worker List
+                </a>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<style>
+    body { background-color: #fcfcfc; }
+    .fw-black { font-weight: 900; }
+    .tracking-wider { letter-spacing: 1px; }
+    
+    /* Subtle danger pulse to draw attention */
+    .pulse-danger {
+        animation: shadow-pulse 2s infinite;
+    }
+
+    @keyframes shadow-pulse {
+        0% { box-shadow: 0 0 0 0px rgba(220, 53, 69, 0.2); }
+        70% { box-shadow: 0 0 0 15px rgba(220, 53, 69, 0); }
+        100% { box-shadow: 0 0 0 0px rgba(220, 53, 69, 0); }
+    }
+
+    .btn-danger {
+        background-color: #dc3545;
+        border: none;
+        transition: all 0.2s ease;
+    }
+
+    .btn-danger:hover {
+        background-color: #bb2d3b;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.2);
+    }
+</style>
+{% endblock %}

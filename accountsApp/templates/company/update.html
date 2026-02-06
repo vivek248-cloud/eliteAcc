@@ -1,37 +1,88 @@
 {% extends "layout/base.html" %}
-
 {% block title %}Update Company{% endblock %}
 
 {% block content %}
-<div class="card shadow-sm">
-    <div class="card-header bg-warning">
-        <h5 class="mb-0">Update Company</h5>
-    </div>
-
-    <div class="card-body">
-        <form method="POST">
-            {% csrf_token %}
-
-            <div class="mb-3">
-                <label class="form-label">Company Name</label>
-                <input
-                    type="text"
-                    name="name"
-                    class="form-control"
-                    value="{{ company.name }}"
-                    required
-                >
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            
+            <div class="text-center mb-4">
+                <div class="avatar-md bg-warning bg-opacity-10 text-warning rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+                    <i class="bi bi-pencil-square fs-2"></i>
+                </div>
+                <h3 class="fw-black text-dark mb-1">Update Company</h3>
+                <p class="text-muted small">Modifying the legal name for <strong>{{ company.name }}</strong></p>
             </div>
 
-            <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-save"></i> Update
-                </button>
-                <a href="{% url 'company_index' %}" class="btn btn-secondary">
-                    <i class="bi bi-arrow-left"></i> Back
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="background: #ffffff; border: 1px solid #eee !important;">
+                <div class="card-body p-4 p-lg-5">
+                    <form method="POST">
+                        {% csrf_token %}
+
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-uppercase text-muted" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                Company Name
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-light-subtle text-muted">
+                                    <i class="bi bi-building"></i>
+                                </span>
+                                <input type="text" 
+                                       name="name" 
+                                       class="form-control border-light-subtle shadow-none bg-light bg-opacity-50 py-2" 
+                                       value="{{ company.name }}"
+                                       required>
+                            </div>
+                            <div class="form-text mt-2 small text-muted">
+                                <i class="bi bi-info-circle me-1"></i> This name will update across all linked clients and invoices.
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-5">
+                            <button type="submit" class="btn btn-primary fw-bold py-3 rounded-3 shadow-sm text-uppercase tracking-wider">
+                                <i class="bi bi-arrow-repeat me-2"></i> Save Changes
+                            </button>
+                            <a href="{% url 'company_index' %}" class="btn btn-light border py-2 rounded-3 fw-semibold text-muted">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <a href="{% url 'company_index' %}" class="text-decoration-none small text-white bg-primary  px-3 py-2 rounded-3 d-inline-block">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Directory
                 </a>
             </div>
-        </form>
+            
+        </div>
     </div>
 </div>
+
+<style>
+    body { background-color: #fbfbfb; }
+    .fw-black { font-weight: 900; }
+    .tracking-wider { letter-spacing: 1px; }
+    .form-control:focus {
+        background-color: #fff !important;
+        border-color: #4361ee !important;
+        box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.05) !important;
+    }
+    .input-group-text {
+        border-radius: 10px 0 0 10px !important;
+        border-color: #dee2e6;
+    }
+    .form-control {
+        border-radius: 0 10px 10px 0 !important;
+    }
+    .btn-primary {
+        background-color: #4361ee;
+        border: none;
+    }
+    .btn-primary:hover {
+        background-color: #374fc7;
+        transform: translateY(-1px);
+    }
+</style>
 {% endblock %}

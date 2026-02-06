@@ -1,58 +1,94 @@
 {% extends "layout/base.html" %}
-
-{% block title %}Company List{% endblock %}
+{% block title %}Company Directory | Elite Accounts{% endblock %}
 
 {% block content %}
-<h4 class="mb-3">Company List</h4>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold text-dark mb-1">Company Directory</h4>
+        <p class="text-muted small mb-0">Manage and monitor all registered business entities</p>
+    </div>
+    <a href="{% url 'company_create' %}" class="btn btn-primary px-4 rounded-3 shadow-sm">
+        <i class="bi bi-plus-circle me-2"></i>Add New Company
+    </a>
+</div>
 
-<a href="{% url 'company_create' %}" class="btn btn-primary mb-3">
-    + Add Company
-</a>
+<div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead style="background: #1a76d1; border-bottom: 1px solid #e4e3e3;">
+                    <tr>
+                        <th class="ps-4 py-3 text-muted small fw-bold" style="width: 80px;">#</th>
+                        <th class="py-3 text-muted small fw-bold">COMPANY DETAILS</th>
+                        <th class="py-3 text-muted small fw-bold text-center">CLIENT BASE</th>
+                        <th class="pe-4 py-3 text-muted small fw-bold text-end">ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for company in companies %}
+                    <tr>
+                        <td class="ps-4 text-muted small">#{{ forloop.counter|stringformat:"02d" }}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm me-3 bg-primary bg-opacity-10 rounded-3 d-flex align-items-center justify-content-center" 
+                                     style="width: 42px; height: 42px; border: 1px solid rgba(13, 110, 253, 0.1);">
+                                    <span class="text-primary fw-bold">{{ company.name|slice:":2"|upper }}</span>
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold text-dark mb-0">{{ company.name }}</h6>
+                                    <small class="text-muted">Entity ID: {{ company.id }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge rounded-pill bg-light text-dark border px-3 py-2 fw-medium">
+                                <i class="bi bi-people-fill text-primary me-1"></i> 
+                                {{ company.clients.count }} Clients
+                            </span>
+                        </td>
+                        <td class="pe-4 text-end">
+                            <div class="d-flex justify-content-end gap-2">
+                                <a href="{% url 'company_update' company.id %}" 
+                                   class="btn btn-sm btn-light border shadow-xs text-dark rounded-2" 
+                                   title="Edit Company">
+                                    <i class="bi bi-pencil-square me-1"></i> Edit
+                                </a>
+                                <a href="{% url 'company_delete' company.id %}" 
+                                   class="btn btn-sm btn-outline-danger border-0 rounded-2" 
+                                   title="Delete Company">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5">
+                            <div class="py-4">
+                                <i class="bi bi-building-exclamation text-muted display-4"></i>
+                                <p class="text-muted mt-3">No companies found in the directory.</p>
+                                <a href="{% url 'company_create' %}" class="btn btn-sm btn-primary mt-2">Create your first company</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
-<table class="table table-bordered table-hover align-middle">
-    <thead class="table-light">
-        <tr>
-            <th>#</th>
-            <th>Company Name</th>
-            <th>Total Clients</th>
-            <th>Action</th>
-        </tr>
-    </thead>
-
-    <tbody>
-        {% for company in companies %}
-        <tr>
-            <td>{{ forloop.counter }}</td>
-
-            <td>
-                <strong>{{ company.name }}</strong>
-            </td>
-
-            <td>
-                {{ company.clients.count }}
-            </td>
-
-            <td class="d-flex gap-2">
-                <a href="{% url 'company_update' company.id %}"
-                class="btn btn-sm btn-outline-warning">
-                    Edit
-                </a>
-
-                <a href="{% url 'company_delete' company.id %}"
-                class="btn btn-sm btn-outline-danger">
-                    Delete
-                </a>
-            </td>
-
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="4" class="text-center text-muted">
-                No companies found
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-
+<div class="row mt-4">
+    <div class="col-md-4">
+        <div class="p-3 bg-white rounded-3 shadow-xs d-flex align-items-center border">
+            <div class="bg-success bg-opacity-10 p-2 rounded-2 me-3">
+                <i class="bi bi-check-circle text-success"></i>
+            </div>
+            <div>
+                <p class="text-muted small mb-0">Total Entities</p>
+                <h6 class="fw-bold mb-0">{{ companies.count }} Companies</h6>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
