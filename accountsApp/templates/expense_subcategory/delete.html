@@ -1,0 +1,83 @@
+{% extends "layout/base.html" %}
+{% block title %}Delete Sub-Category{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+
+            <!-- HEADER -->
+            <div class="text-center mb-4">
+                <div class="avatar-md bg-danger bg-opacity-10 text-danger rounded-circle 
+                            d-inline-flex align-items-center justify-content-center mb-3"
+                     style="width:64px;height:64px;">
+                    <i class="bi bi-trash3-fill fs-3"></i>
+                </div>
+
+                <h3 class="fw-black text-dark mb-1">Delete Sub-Category</h3>
+                <p class="text-muted small mb-0">
+                    This action cannot be undone
+                </p>
+            </div>
+
+            <!-- CARD -->
+            <div class="card border-0 shadow-sm rounded-4"
+                 style="background:#ffffff;border:1px solid #eee !important;">
+                <div class="card-body p-4 p-lg-5 text-center">
+
+                    <!-- CONFIRM MESSAGE -->
+                    <p class="mb-3 text-dark">
+                        Are you sure you want to delete
+                    </p>
+
+                    <h5 class="fw-bold text-danger mb-3">
+                        “{{ subcategory.name }}”
+                    </h5>
+
+                    <div class="p-3 rounded-3 mb-4"
+                         style="background:#fff3f3;border:1px dashed #f5c2c7;">
+                        <small class="text-muted" style="font-size:0.8rem;">
+                            <i class="bi bi-exclamation-triangle-fill text-danger me-1"></i>
+                            If this sub-category is linked to any expenses,
+                            those records may become invalid.
+                        </small>
+                    </div>
+
+                    <!-- ACTIONS -->
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2">
+                            <button type="submit"
+                                    class="btn btn-danger fw-bold py-2 rounded-3 shadow-sm">
+                                <i class="bi bi-trash3 me-1"></i>
+                                Yes, Delete Sub-Category
+                            </button>
+
+                            <a href="{% url 'expense_subcategory_index' %}"
+                               class="btn btn-light border py-2 rounded-3 fw-semibold text-muted">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- BACK LINK -->
+            <div class="text-center mt-4">
+                <a href="{% url 'expense_subcategory_index' %}"
+                   class="text-decoration-none small text-white bg-danger
+                          px-3 py-2 rounded-3 d-inline-block">
+                    <i class="bi bi-arrow-left me-1"></i>
+                    Back to Sub-Categories
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    body { background-color:#fbfbfb; }
+    .fw-black { font-weight:900; }
+</style>
+{% endblock %}

@@ -90,6 +90,7 @@
     {% if txn_type != 'payment' %}
         <th>Total Paid</th>
         <th>Spend Details</th>
+        <th>Salary Info</th> 
         <th>Spend Amount</th>
         <th>Balance</th>
     {% endif %}
@@ -103,7 +104,7 @@
     <td>{{ r.date }}</td>
     <td>{{ r.client }}</td>
     <td>{{ r.company }}</td>
-    <td class="text-end">₹ {{ r.budget|floatformat:2 }}</td>
+    <td class="text-end selectable-amount" data-amount="{{ r.budget }}">₹ {{ r.budget|floatformat:2 }}</td>
 
 {% if txn_type != 'expense' %}
 <td class="text-end text-muted highlight-cell selectable-amount"
@@ -129,6 +130,9 @@
 </td>
 <td class="highlight-cell3">{{ r.spend_detail }}</td>
 
+<td class="highlight-cell3 text-danger fw-bold">
+    {{ r.salary_info }}
+</td>
 <td class="text-end text-danger highlight-cell3 selectable-amount"
     data-amount="{{ r.spend_amount|default:0 }}" data-col="spend_amount">
     {% if r.spend_amount %}₹ {{ r.spend_amount|floatformat:2 }}{% else %}—{% endif %}
@@ -144,9 +148,112 @@
 </tr>
 {% empty %}
 <tr>
-    <td colspan="10" class="text-center text-muted">No data found</td>
+    <td colspan="12" class="text-center text-muted">No data found</td>
 </tr>
 {% endfor %}
+
+{% if rows %}
+<tr class="table-secondary fw-bold" style="font-size: 1.05rem; border-top: 2px solid rgba(0,0,0,.3);">
+
+{% if txn_type == "all" %}
+
+    <!-- 1-3 -->
+    <td colspan="3" class="text-end">TOTAL</td>
+
+    <!-- 4 Budget -->
+    <td class="text-end">
+        ₹ {{ total_project_value|floatformat:2 }}
+    </td>
+
+    <!-- 5 Previous Paid -->
+    <td></td>
+
+    <!-- 6 Paid Now -->
+    <td></td>
+
+    <!-- 7 Yet To Pay -->
+    <td class="text-end text-danger">
+        ₹ {{ total_yet_to_pay|floatformat:2 }}
+    </td>
+
+    <!-- 8 Total Paid -->
+    <td class="text-end text-success">
+        ₹ {{ total_paid|floatformat:2 }}
+    </td>
+
+    <!-- 9 Spend Detail -->
+    <td></td>
+
+    <!-- 10 Salary Info -->
+    <td></td>
+
+    <!-- 11 Spend Amount -->
+    <td class="text-end text-danger">
+        ₹ {{ total_spend|floatformat:2 }}
+    </td>
+
+    <!-- 12 Balance -->
+    <td class="text-end {% if grand_balance < 0 %}text-danger{% else %}text-success{% endif %}">
+        ₹ {{ grand_balance|floatformat:2 }}
+    </td>
+
+{% elif txn_type == "payment" %}
+
+    <!-- Columns: Date, Client, Company -->
+    <td colspan="3" class="text-end">TOTAL</td>
+
+    <!-- Budget -->
+    <td class="text-end">
+        ₹ {{ total_project_value|floatformat:2 }}
+    </td>
+
+    <!-- Previous Paid -->
+    <td></td>
+
+    <!-- Paid Now -->
+    <td class="text-end text-success">
+        ₹ {{ total_paid|floatformat:2 }}
+    </td>
+
+    <!-- Yet To Pay -->
+    <td class="text-end text-danger">
+        ₹ {{ total_yet_to_pay|floatformat:2 }}
+    </td>
+
+{% elif txn_type == "expense" %}
+
+    <td colspan="3" class="text-end">TOTAL</td>
+
+    <!-- Budget -->
+    <td class="text-end">
+        ₹ {{ total_project_value|floatformat:2 }}
+    </td>
+
+    <!-- Total Paid -->
+    <td class="text-end text-success">
+        ₹ {{ total_paid|floatformat:2 }}
+    </td>
+
+    <!-- Empty for alignment -->
+    <td></td>
+    <td></td>
+
+    <!-- Spend Amount -->
+    <td class="text-end text-danger">
+        ₹ {{ total_spend|floatformat:2 }}
+    </td>
+
+    <!-- Balance -->
+    <td class="text-end {% if grand_balance < 0 %}text-danger{% else %}text-success{% endif %}">
+        ₹ {{ grand_balance|floatformat:2 }}
+    </td>
+
+{% endif %}
+
+</tr>
+{% endif %}
+
+
 </tbody>
 
 </table>

@@ -18,7 +18,26 @@
                 <div class="card-body p-4 p-lg-5">
                     <form method="post">
                         {% csrf_token %}
+                        <!-- 🏢 COMPANY -->
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-uppercase text-muted"
+                                style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                Company Name
+                            </label>
 
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-light-subtle text-muted">
+                                    <i class="bi bi-building"></i>
+                                </span>
+                                <input type="text"
+                                    class="form-control border-light-subtle shadow-none bg-light bg-opacity-50 py-2"
+                                    value="{{ selected_company.name }}"
+                                    readonly>
+                            </div>
+                        </div>
+
+                         <!-- 🏷 CATEGORY NAME -->
+                         
                         <div class="mb-4">
                             <label class="form-label small fw-bold text-uppercase text-muted" style="font-size: 0.7rem; letter-spacing: 0.5px;">
                                 Category Name

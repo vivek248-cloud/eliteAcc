@@ -19,36 +19,67 @@
                     <form method="post">
                         {% csrf_token %}
 
+                        <!-- 🏢 COMPANY -->
                         <div class="mb-4">
-                            <label class="form-label small fw-bold text-uppercase text-muted" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                            <label class="form-label small fw-bold text-uppercase text-muted"
+                                style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                Company Name
+                            </label>
+
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-light-subtle text-muted">
+                                    <i class="bi bi-building"></i>
+                                </span>
+                                <input type="text"
+                                    class="form-control border-light-subtle shadow-none bg-light bg-opacity-50 py-2"
+                                    value="{{ selected_company.name }}"
+                                    readonly>
+                            </div>
+                        </div>
+
+                        <!-- 🏷 CATEGORY NAME -->
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-uppercase text-muted"
+                                style="font-size: 0.7rem; letter-spacing: 0.5px;">
                                 Category Name
                             </label>
+
                             <div class="input-group">
                                 <span class="input-group-text bg-light border-light-subtle text-muted">
                                     <i class="bi bi-tag"></i>
                                 </span>
-                                <input type="text" 
-                                       name="name" 
-                                       class="form-control border-light-subtle shadow-none bg-light bg-opacity-50 py-2" 
-                                       placeholder="e.g. Office Rent, Transport..."
-                                       required>
+                                <input type="text"
+                                    name="name"
+                                    class="form-control border-light-subtle shadow-none bg-light bg-opacity-50 py-2"
+                                    placeholder="e.g. Office Rent, Transport..."
+                                    required>
                             </div>
                         </div>
 
-                        <div class="p-3 rounded-3 mb-4" style="background-color: #f8f9fa; border: 1px dashed #dee2e6;">
+                        <!-- ℹ INFO BOX -->
+                        <div class="p-3 rounded-3 mb-4"
+                            style="background-color: #f8f9fa; border: 1px dashed #dee2e6;">
                             <div class="d-flex align-items-center">
                                 <i class="bi bi-info-circle text-primary me-2"></i>
                                 <small class="text-muted" style="font-size: 0.8rem;">
-                                    Use <span class="badge bg-primary bg-opacity-10 text-primary fw-bold">personal</span> for home/private expenses to keep them separate from business audits.
+                                    Use
+                                    <span class="badge bg-primary bg-opacity-10 text-primary fw-bold">
+                                        personal
+                                    </span>
+                                    for home/private expenses to keep them separate from business audits.
                                 </small>
                             </div>
                         </div>
 
+                        <!-- 🔘 BUTTONS -->
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary fw-bold py-2 rounded-3 shadow-sm">
+                            <button type="submit"
+                                    class="btn btn-primary fw-bold py-2 rounded-3 shadow-sm">
                                 <i class="bi bi-save me-1"></i> Save Category
                             </button>
-                            <a href="{% url 'expense_category_index' %}" class="btn btn-light border py-2 rounded-3 fw-semibold text-muted">
+
+                            <a href="{% url 'expense_category_index' %}"
+                            class="btn btn-light border py-2 rounded-3 fw-semibold text-muted">
                                 Cancel
                             </a>
                         </div>

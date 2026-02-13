@@ -15,9 +15,6 @@
                 <option value="{{ c.id }}"
                     {% if selected_client == c.id|stringformat:"s" %}selected{% endif %}>
                     {{ c.name }}
-                    {% if c.company %}
-                        ({{ c.company.name }})
-                    {% endif %}
                 </option>
             {% endfor %}
         </select>
@@ -38,13 +35,27 @@
         </select>
     </div>
 
+    <!-- 🏷 SUBCATEGORY -->
+    <div class="col-md-3">
+        <label class="form-label">Sub Category</label>
+        <select name="subcategory" class="form-select" id="subcategorySelect">
+            <option value="">All Sub Categories</option>
+            {% for sub in subcategories %}
+                <option value="{{ sub.id }}"
+                    data-category="{{ sub.category.id }}"
+                    data-name="{{ sub.name|lower }}"
+                    {% if selected_subcategory == sub.id|stringformat:"s" %}selected{% endif %}>
+                    {{ sub.name }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
 
-
-    <!-- 👷 WORKER (NEW) -->
+    <!-- 👷 WORKER TEAM -->
     <div class="col-md-3 d-none" id="workerFilter">
-        <label class="form-label">Worker</label>
+        <label class="form-label">Salary Team</label>
         <select name="worker" class="form-select" id="workerSelect">
-            <option value="">All Workers</option>
+            <option value="">All Teams</option>
             {% for w in workers %}
                 <option value="{{ w.id }}"
                     {% if selected_worker == w.id|stringformat:"s" %}selected{% endif %}>
@@ -54,34 +65,20 @@
         </select>
     </div>
 
-
-    <script>
-    document.addEventListener('DOMContentLoaded', function () {
-
-        const categorySelect = document.getElementById('categorySelect');
-        const workerFilter = document.getElementById('workerFilter');
-        const workerSelect = document.getElementById('workerSelect');
-
-        function toggleWorkerFilter() {
-            const selectedOption = categorySelect.options[categorySelect.selectedIndex];
-            const categoryName = selectedOption?.dataset.name || '';
-
-            if (categoryName === 'salary') {
-                workerFilter.classList.remove('d-none');
-            } else {
-                workerFilter.classList.add('d-none');
-                workerSelect.value = ''; // reset worker when hidden
-            }
-        }
-
-        // On change
-        categorySelect.addEventListener('change', toggleWorkerFilter);
-
-        // On page load (important!)
-        toggleWorkerFilter();
-    });
-    </script>
-
+    <!-- 👤 WORKER NAME -->
+    <div class="col-md-3 d-none" id="workerNameFilter">
+        <label class="form-label">Salary Worker</label>
+        <select name="worker_name" class="form-select" id="workerNameSelect">
+            <option value="">All Workers</option>
+            {% for wn in worker_names %}
+                <option value="{{ wn.id }}"
+                    data-worker="{{ wn.worker.id }}"
+                    {% if selected_worker_name == wn.id|stringformat:"s" %}selected{% endif %}>
+                    {{ wn.name }}
+                </option>
+            {% endfor %}
+        </select>
+    </div>
 
     <!-- 💳 SPEND MODE (NEW) -->
     <div class="col-md-2">
@@ -142,6 +139,100 @@
 </form>
 
 
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const categorySelect = document.getElementById('categorySelect');
+    const subcategorySelect = document.getElementById('subcategorySelect');
+
+    const workerFilter = document.getElementById('workerFilter');
+    const workerNameFilter = document.getElementById('workerNameFilter');
+
+    const workerSelect = document.getElementById('workerSelect');
+    const workerNameSelect = document.getElementById('workerNameSelect');
+
+    // =============================
+    // SHOW/HIDE SALARY FILTERS
+    // =============================
+    function toggleSalaryFilters() {
+
+        const selectedCategory =
+            categorySelect.options[categorySelect.selectedIndex]?.dataset.name || '';
+
+        const selectedSubcategory =
+            subcategorySelect.options[subcategorySelect.selectedIndex]?.dataset.name || '';
+
+        const isSalary =
+            selectedCategory === 'salary' ||
+            selectedSubcategory === 'salary';
+
+        if (isSalary) {
+            workerFilter.classList.remove('d-none');
+            workerNameFilter.classList.remove('d-none');
+        } else {
+            workerFilter.classList.add('d-none');
+            workerNameFilter.classList.add('d-none');
+            workerSelect.value = '';
+            workerNameSelect.value = '';
+        }
+    }
+
+    // =============================
+    // FILTER SUBCATEGORIES
+    // =============================
+    function filterSubcategories() {
+
+        const categoryId = categorySelect.value;
+
+        Array.from(subcategorySelect.options).forEach(option => {
+            if (!option.dataset.category) return;
+
+            const match = option.dataset.category === categoryId;
+            option.hidden = !match;
+            option.disabled = !match;
+        });
+
+        toggleSalaryFilters();
+    }
+
+    // =============================
+    // FILTER WORKER NAMES BY TEAM
+    // =============================
+    function filterWorkerNames() {
+
+        const teamId = workerSelect.value;
+
+        Array.from(workerNameSelect.options).forEach(option => {
+            if (!option.dataset.worker) return;
+
+            const match = option.dataset.worker === teamId;
+            option.hidden = !match;
+            option.disabled = !match;
+        });
+    }
+
+    // =============================
+    // EVENTS
+    // =============================
+    categorySelect.addEventListener('change', filterSubcategories);
+    subcategorySelect.addEventListener('change', toggleSalaryFilters);
+    workerSelect.addEventListener('change', filterWorkerNames);
+
+    // =============================
+    // INITIAL LOAD
+    // =============================
+    filterSubcategories();
+    filterWorkerNames();
+    toggleSalaryFilters();
+
+});
+</script>
+
+
+
+
+
 <div class="d-flex justify-content-center" style="position: sticky; top: 80px; z-index: 1050;">
     <div class="shadow-lg border-0 rounded-pill px-4 py-2 d-inline-flex align-items-center animate__animated animate__fadeInDown" 
          style="background: rgba(13, 110, 253, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2) !important;">
@@ -182,7 +273,8 @@
             <th>#</th>
             <th>Client</th>
             <th>Category</th>
-            <th>Salary for</th> 
+            <th>Sub category</th>
+            <th>Salary To</th>
             <th>Description</th>
             <th>Bank</th>
             <th class="text-end">Amount</th>
@@ -204,15 +296,27 @@
                 {{ expense.category.name|default:"—" }}
             </td>
 
+            <!-- 🏷 SUBCATEGORY -->
+            <td>
+                {{ expense.subcategory.name|default:"—" }}
+            </td>
             <td>
                 {% if expense.salary_to %}
                     <span class="fw-semibold text-primary">
                         {{ expense.salary_to.name }}
-                    </span>
+                    </span>/
+                    {% if expense.worker_name %}
+                        {{ expense.worker_name.name }}
+                    {% else %}
+                        —
+                    {% endif %}
                 {% else %}
                     —
                 {% endif %}
             </td>
+
+
+
             <td>{{ expense.description }}</td>
 
             <td class="highlight-cell3">{{ expense.bank.name|default:"Cash" }}</td>

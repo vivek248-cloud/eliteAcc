@@ -6,6 +6,9 @@ urlpatterns = [
     
 
     path('', login_view, name='login'),
+
+    path('switch-company/<int:pk>/', switch_company, name='switch_company'),
+
     path('dashboard/', home, name='dashboard'),
     path('logout/', logout_view, name='logout'),
 
@@ -60,11 +63,21 @@ urlpatterns = [
     path('expense-categories/<int:pk>/update/', expense_category_update, name='expense_category_update'),
     path('expense-categories/<int:pk>/delete/', expense_category_delete, name='expense_category_delete'),
 
+    path('expense-subcategories/', expense_subcategory_index, name='expense_subcategory_index'),
+    path('expense-subcategories/create/', expense_subcategory_create, name='expense_subcategory_create'),
+    path('expense-subcategories/update/<int:pk>/', expense_subcategory_update, name='expense_subcategory_update'),
+    path('expense-subcategories/delete/<int:pk>/', expense_subcategory_delete, name='expense_subcategory_delete'),
+
 
     path('workers/', worker_index, name='worker_index'),
     path('workers/create/', worker_create, name='worker_create'),
     path('workers/<int:pk>/update/', worker_update, name='worker_update'),
     path('workers/<int:pk>/delete/', worker_delete, name='worker_delete'),
+
+    path('worker-names/', worker_name_index, name='worker_name_index'),
+    path('worker-names/create/', worker_name_create, name='worker_name_create'),
+    path('worker-names/<int:pk>/update/', worker_name_update, name='worker_name_update'),
+    path('worker-names/<int:pk>/delete/', worker_name_delete, name='worker_name_delete'),
 
     path('salary/', salary_index, name='salary_index'),
     path('salary/pdf/', salary_pdf, name='salary_pdf'),

@@ -1,3 +1,4 @@
+from urllib import request
 from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import *
@@ -10,17 +11,25 @@ from django.contrib.auth.decorators import login_required
 from django.db.models.functions import TruncDate
 from django.utils.dateparse import parse_date
 
-from django.contrib.auth import authenticate, login, logout
-from django.contrib import messages
+from django.contrib.auth import authenticate, login
 from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
+
 
 def login_view(request):
 
+    # Already logged in
     if request.user.is_authenticated:
         return redirect('dashboard')
 
+    # Show session expired message
+    if request.session.pop('session_expired', False):
+        messages.warning(request, "⏳ Your session expired. Please login again.")
+
     if request.method == 'POST':
+
         username = request.POST.get('username')
         password = request.POST.get('password')
 
@@ -29,9 +38,23 @@ def login_view(request):
         if user and user.is_staff:
             login(request, user)
 
+            # 🔐 Get last page safely
             redirect_to = request.session.pop('last_page', None)
 
-            if redirect_to:
+            # Prevent redirect to login/logout
+            blocked_paths = [
+                reverse('login'),
+                reverse('logout'),
+            ]
+
+            if (
+                redirect_to
+                and url_has_allowed_host_and_scheme(
+                    redirect_to,
+                    allowed_hosts={request.get_host()}
+                )
+                and not any(redirect_to.startswith(p) for p in blocked_paths)
+            ):
                 return redirect(redirect_to)
 
             return redirect('dashboard')
@@ -45,8 +68,13 @@ def login_view(request):
 
 
 
+
+from django.contrib.auth import logout
+from django.shortcuts import redirect
+
 def logout_view(request):
     logout(request)
+    request.session.flush()  # optional but cleaner
     return redirect('login')
 
 
@@ -54,10 +82,55 @@ def logout_view(request):
 
 
 
+
+from django.urls import reverse
+
+
+from django.http import HttpResponseRedirect
+from django.urls import reverse
+from django.shortcuts import get_object_or_404, redirect
+
+def switch_company(request, pk):
+
+    company = get_object_or_404(Company, pk=pk)
+
+    # ✅ Save selected company
+    request.session['selected_company_id'] = company.id
+
+    # ✅ Get previous page safely
+    next_url = request.META.get('HTTP_REFERER')
+
+    if not next_url:
+        return redirect('dashboard')
+
+    blocked_paths = [
+        reverse('login'),
+        reverse('logout'),
+    ]
+
+    if any(next_url.startswith(p) for p in blocked_paths):
+        return redirect('dashboard')
+
+    return HttpResponseRedirect(next_url)
+
+
+
+
+from django.utils.timezone import now
+from django.db.models.functions import TruncMonth
+
 @login_required(login_url='login')
 def home(request):
+
     companies = Company.objects.all().order_by('name')
-    selected_company_id = request.GET.get('company') or None
+
+
+
+    selected_company_id = request.session.get('selected_company_id')
+    selected_company = Company.objects.filter(
+        id=selected_company_id
+    ).first()
+
     selected_bank_id = request.GET.get('bank')
 
     start_date = request.GET.get('start_date')
@@ -66,163 +139,164 @@ def home(request):
     sd = parse_date(start_date) if start_date else None
     ed = parse_date(end_date) if end_date else None
 
-    clients = Client.objects.none()
-    banks = []
+    if not selected_company_id:
+        return render(request, 'dashboard.html', {
+            'companies': companies,
+            'selected_company_id': None,
+        })
 
-    total_cash = Decimal('0.00')
-    total_bank = Decimal('0.00')
+    # =========================
+    # BASE QUERYSETS
+    # =========================
+    payment_qs = Payment.objects.filter(
+        client__company_id=selected_company_id
+    )
+
+    expense_qs = Expense.objects.filter(
+        client__company_id=selected_company_id
+    )
+
+    if sd:
+        payment_qs = payment_qs.filter(payment_date__gte=sd)
+        expense_qs = expense_qs.filter(expense_date__gte=sd)
+
+    if ed:
+        payment_qs = payment_qs.filter(payment_date__lte=ed)
+        expense_qs = expense_qs.filter(expense_date__lte=ed)
+
+    # =========================
+    # TOTAL PAYMENTS & EXPENSES
+    # =========================
+    totals = payment_qs.aggregate(
+        total_payments=Sum('amount')
+    )
+
+    total_payments = totals['total_payments'] or Decimal('0.00')
+
+    total_expenses = expense_qs.aggregate(
+        total=Sum('amount')
+    )['total'] or Decimal('0.00')
+
+    # =========================
+    # RECEIVABLES (NO LOOP)
+    # =========================
+    clients = Client.objects.filter(
+        company_id=selected_company_id
+    ).annotate(
+        paid_total=Sum('payments__amount')
+    )
+
     total_balance = Decimal('0.00')
 
-    total_payments = Decimal('0.00')
-    total_expenses = Decimal('0.00')
+    for c in clients:
+        paid = c.paid_total or Decimal('0.00')
+        total_balance += (c.budget - paid)
 
-    selected_bank = None
-    display_bank_balance = Decimal('0.00')
+    # =========================
+    # BANKS (COMPANY SAFE)
+    # =========================
+    banks = Bank.objects.filter(
+        company_id=selected_company_id
+    )
 
-    total_profit = Decimal('0.00')
-    profit_percentage = 0
-    recent_expenses = (
-            Expense.objects
-            .filter(client__company_id=selected_company_id)
-            .select_related('client', 'category')
-            .order_by('-expense_date')[:5]
+    for bank in banks:
+
+        payment_total = bank.payments.filter(
+            client__company_id=selected_company_id
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+
+        expense_total = bank.expenses.filter(
+            client__company_id=selected_company_id
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+
+        bank.available_balance = (
+            bank.opening_balance + payment_total - expense_total
         )
-    
-    recent_payments = []
 
-    payment_labels = []
-    payment_values = []
-    expense_labels = []
-    expense_values = []
+    total_bank = sum((b.available_balance for b in banks), Decimal('0.00'))
 
-    all_dates = []
+    # Selected bank
+    selected_bank = None
+    if selected_bank_id:
+        selected_bank = banks.filter(id=selected_bank_id).first()
+        display_bank_balance = (
+            selected_bank.available_balance if selected_bank else Decimal('0.00')
+        )
+    else:
+        display_bank_balance = total_bank
+
+    # =========================
+    # PROFIT
+    # =========================
+    total_profit = total_payments - total_expenses
+    profit_percentage = (
+        (total_profit / total_payments) * 100
+        if total_payments > 0 else 0
+    )
+
+    # =========================
+    # RECENT DATA
+    # =========================
+    recent_payments = payment_qs.select_related(
+        'client', 'bank'
+    ).order_by('-payment_date')[:5]
+
+    recent_expenses = expense_qs.select_related(
+        'client', 'category'
+    ).order_by('-expense_date')[:5]
+
+    # =========================
+    # RECENT CYCLE TOTAL
+    # =========================
+    recent_total = recent_payments.aggregate(
+        total=Sum('amount')
+    )['total'] or Decimal('0.00')
+
+    # =========================
+    # CURRENT MONTH RECEIVED
+    # =========================
+    today = now()
+
+    monthly_received_total = payment_qs.filter(
+        payment_date__year=today.year,
+        payment_date__month=today.month
+    ).aggregate(
+        total=Sum('amount')
+    )['total'] or Decimal('0.00')
+
+    # =========================
+    # GRAPH DATA
+    # =========================
+    payment_chart = (
+        payment_qs
+        .annotate(day=TruncDate('payment_date'))
+        .values('day')
+        .annotate(total=Sum('amount'))
+        .order_by('day')
+    )
+
+    expense_chart = (
+        expense_qs
+        .annotate(day=TruncDate('expense_date'))
+        .values('day')
+        .annotate(total=Sum('amount'))
+        .order_by('day')
+    )
+
+    payment_labels = [str(p['day']) for p in payment_chart]
+    payment_values = [float(p['total']) for p in payment_chart]
+
+    expense_labels = [str(e['day']) for e in expense_chart]
+    expense_values = [float(e['total']) for e in expense_chart]
+
+    all_dates = sorted(set(payment_labels + expense_labels))
     profit_trend_data = []
 
-    if selected_company_id:
-
-        clients = Client.objects.filter(company_id=selected_company_id)
-
-        # =========================
-        # 📊 BASE QUERYSETS (DATE AWARE)
-        # =========================
-        payment_qs = Payment.objects.filter(client__company_id=selected_company_id)
-        expense_qs = Expense.objects.filter(client__company_id=selected_company_id)
-
-        if sd:
-            payment_qs = payment_qs.filter(payment_date__gte=sd)
-            expense_qs = expense_qs.filter(expense_date__gte=sd)
-
-        if ed:
-            payment_qs = payment_qs.filter(payment_date__lte=ed)
-            expense_qs = expense_qs.filter(expense_date__lte=ed)
-
-        # =========================
-        # 💰 TOTALS
-        # =========================
-        total_payments = payment_qs.aggregate(
-            total=Sum('amount')
-        )['total'] or Decimal('0.00')
-
-        total_expenses = expense_qs.aggregate(
-            total=Sum('amount')
-        )['total'] or Decimal('0.00')
-
-        # =========================
-        # 📥 RECEIVABLES (DATE AWARE)
-        # =========================
-        total_balance = Decimal('0.00')
-
-        for c in clients:
-            paid_qs = c.payments.all()
-
-            if sd:
-                paid_qs = paid_qs.filter(payment_date__gte=sd)
-            if ed:
-                paid_qs = paid_qs.filter(payment_date__lte=ed)
-
-            paid_sum = paid_qs.aggregate(
-                total=Sum('amount')
-            )['total'] or Decimal('0.00')
-
-            total_balance += c.budget - paid_sum
-
-        # =========================
-        # 🏦 CASH + BANK
-        # =========================
-        cash_bank = Bank.objects.filter(name__iexact='cash').first()
-        total_cash = cash_bank.available_balance if cash_bank else Decimal('0.00')
-
-        banks = Bank.objects.all()
-
-        for bank in banks:
-            bank.available_balance = bank.calculated_balance()
-
-        total_bank = sum(
-            (b.available_balance for b in banks),
-            Decimal('0.00')
-        )
-
-
-        if selected_bank_id:
-            selected_bank = banks.filter(id=selected_bank_id).first()
-            display_bank_balance = selected_bank.available_balance if selected_bank else total_bank
-        else:
-            display_bank_balance = total_bank
-
-        # =========================
-        # 📈 PROFIT
-        # =========================
-        total_profit = total_payments - total_expenses
-
-        if total_payments > 0:
-            profit_percentage = (total_profit / total_payments) * 100
-
-        # =========================
-        # 🧾 RECENT PAYMENTS (DATE AWARE)
-        # =========================
-        recent_payments = (
-            payment_qs
-            .select_related('client', 'bank')
-            .order_by('-payment_date')[:5]
-        )
-
-        # =========================
-
-
-
-        # =========================
-        # 📊 GRAPH DATA
-        # =========================
-        payment_chart = (
-            payment_qs
-            .annotate(day=TruncDate('payment_date'))
-            .values('day')
-            .annotate(total=Sum('amount'))
-            .order_by('day')
-        )
-
-        expense_chart = (
-            expense_qs
-            .annotate(day=TruncDate('expense_date'))
-            .values('day')
-            .annotate(total=Sum('amount'))
-            .order_by('day')
-        )
-
-        payment_labels = [str(p['day']) for p in payment_chart]
-        payment_values = [float(p['total']) for p in payment_chart]
-
-        expense_labels = [str(e['day']) for e in expense_chart]
-        expense_values = [float(e['total']) for e in expense_chart]
-
-
-        all_dates = sorted(set(payment_labels + expense_labels))
-
-        profit_trend_data = []
-        for d in all_dates:
-            p = payment_values[payment_labels.index(d)] if d in payment_labels else 0
-            e = expense_values[expense_labels.index(d)] if d in expense_labels else 0
-            profit_trend_data.append(p - e)
+    for d in all_dates:
+        p = payment_values[payment_labels.index(d)] if d in payment_labels else 0
+        e = expense_values[expense_labels.index(d)] if d in expense_labels else 0
+        profit_trend_data.append(p - e)
+    current_date = now()
 
 
     return render(request, 'dashboard.html', {
@@ -232,7 +306,6 @@ def home(request):
         'clients': clients,
         'banks': banks,
 
-        'total_cash': total_cash,
         'total_bank': total_bank,
         'display_bank_balance': display_bank_balance,
         'selected_bank': selected_bank,
@@ -245,12 +318,15 @@ def home(request):
         'recent_payments': recent_payments,
         'recent_expenses': recent_expenses,
 
-
         'start_date': start_date,
         'end_date': end_date,
 
         'total_profit': total_profit,
         'profit_percentage': profit_percentage,
+        'recent_total': recent_total,
+        'monthly_received_total': monthly_received_total,
+        'current_date': current_date,
+
 
         'profit_trend_labels': json.dumps(all_dates),
         'profit_trend_values': json.dumps(profit_trend_data),
@@ -260,6 +336,7 @@ def home(request):
         'expense_labels': json.dumps(expense_labels),
         'expense_values': json.dumps(expense_values),
     })
+
 
 
 
@@ -356,17 +433,33 @@ def company_update(request, pk):
 
 #client views will be added here
 
-from django.db.models import Sum
+from django.db.models import Sum, Q
 from decimal import Decimal
-from django.db.models import Q
+from django.contrib.auth.decorators import login_required
 
+
+@login_required(login_url='login')
 def client_index(request):
-    expense_type = request.GET.get('expense_type', 'all')  # business | personal | all
-    PERSONAL_CATEGORIES = ['home', 'personal']
 
-    clients = Client.objects.select_related('company')
+    selected_company_id = request.session.get('selected_company_id')
+
+    if not selected_company_id:
+        return render(request, 'client/index.html', {
+            'clients': [],
+            'expense_type': request.GET.get('expense_type', 'all'),
+        })
+
+    expense_type = request.GET.get('expense_type', 'all')
+
+    clients = Client.objects.filter(
+        company_id=selected_company_id
+    ).select_related('company')
+
     client_data = []
 
+    # =========================
+    # BUILD CLIENT DATA FIRST
+    # =========================
     for client in clients:
 
         payments_total = client.payments.aggregate(
@@ -375,22 +468,17 @@ def client_index(request):
 
         expenses_qs = client.expenses.select_related('category')
 
-        # 🔘 FILTER LOGIC
         if expense_type == 'business':
-            # exclude home/personal
             expenses_qs = expenses_qs.exclude(
                 Q(category__name__iexact='home') |
                 Q(category__name__iexact='personal')
             )
 
         elif expense_type == 'personal':
-            # only home/personal
             expenses_qs = expenses_qs.filter(
                 Q(category__name__iexact='home') |
                 Q(category__name__iexact='personal')
             )
-
-        # expense_type == 'all' → no filter
 
         expenses_total = expenses_qs.aggregate(
             total=Sum('amount')
@@ -410,9 +498,24 @@ def client_index(request):
             'yet_to_pay': yet_to_pay,
         })
 
+    # =========================
+    # CALCULATE TOTALS AFTER LOOP
+    # =========================
+    total_project_budget = sum(c['budget'] for c in client_data)
+    total_paid = sum(c['total_paid'] for c in client_data)
+    total_spend = sum(c['total_expenses'] for c in client_data)
+
+    total_balance = total_paid - total_spend
+    total_yet_to_receive = total_project_budget - total_paid
+
     return render(request, 'client/index.html', {
         'clients': client_data,
         'expense_type': expense_type,
+        'total_project_budget': total_project_budget,
+        'total_paid': total_paid,
+        'total_spend': total_spend,
+        'total_balance': total_balance,
+        'total_yet_to_receive': total_yet_to_receive,
     })
 
 
@@ -420,45 +523,78 @@ def client_index(request):
 
 
 
+
+
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
+from decimal import Decimal
+
+
+@login_required(login_url='login')
 def client_create(request):
-    companies = Company.objects.all()
+
+    # 🏢 COMPANY FROM SESSION
+    selected_company_id = request.session.get('selected_company_id')
+
+    if not selected_company_id:
+        # No company selected → redirect safely
+        return redirect('dashboard')
+
+    company = Company.objects.filter(id=selected_company_id).first()
 
     if request.method == 'POST':
-        company_id = request.POST.get('company')
         name = request.POST.get('name')
         budget = request.POST.get('budget')
 
-        if company_id and name and budget:
+        if name and budget:
             Client.objects.create(
-                company_id=company_id,
+                company=company,
                 name=name,
-                budget=budget
+                budget=Decimal(budget)
             )
             return redirect('client_index')
 
     return render(request, 'client/create.html', {
-        'companies': companies
+        'company': company,   # single company only
     })
 
 
 
 
+
+
+
+
+@login_required(login_url='login')
 def client_update(request, pk):
-    client = get_object_or_404(Client, pk=pk)
-    companies = Company.objects.all()
+
+    # 🏢 COMPANY FROM SESSION
+    selected_company_id = request.session.get('selected_company_id')
+
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    company = get_object_or_404(Company, id=selected_company_id)
+
+    # 🔒 Fetch client ONLY from selected company
+    client = get_object_or_404(
+        Client,
+        pk=pk,
+        company_id=selected_company_id
+    )
 
     if request.method == 'POST':
-        client.company_id = request.POST.get('company')
         client.name = request.POST.get('name')
-        client.budget = request.POST.get('budget')
+        client.budget = Decimal(request.POST.get('budget'))
         client.save()
 
         return redirect('client_index')
 
     return render(request, 'client/update.html', {
         'client': client,
-        'companies': companies
+        'company': company,
     })
+
 
 
 
@@ -479,51 +615,106 @@ from django.utils.dateparse import parse_date
 
 from decimal import Decimal
 
+
 from decimal import Decimal
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render, redirect
 from django.utils.dateparse import parse_date
 
+
 def client_info(request, pk):
-    client = get_object_or_404(Client, pk=pk)
+
+    # =========================
+    # 🏢 COMPANY SESSION CHECK
+    # =========================
+    selected_company_id = request.session.get('selected_company_id')
+
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    # 🔐 Client must belong to selected company
+    client = get_object_or_404(
+        Client,
+        pk=pk,
+        company_id=selected_company_id
+    )
 
     payments_qs = client.payments.select_related('bank')
-    expenses_qs = client.expenses.select_related('bank', 'category', 'salary_to')
 
+    expenses_qs = client.expenses.select_related(
+        'bank',
+        'category',
+        'subcategory',
+        'salary_to',
+        'worker_name'
+    )
+
+    # =========================
     # 🔍 FILTER VALUES
+    # =========================
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
-    payment_mode = request.GET.get('payment_mode')
     spend_mode = request.GET.get('spend_mode')
     category_id = request.GET.get('category')
+    subcategory_id = request.GET.get('subcategory')
     worker_id = request.GET.get('worker')
+    worker_name_id = request.GET.get('worker_name')
 
+    # =========================
     # 📅 DATE FILTERS
+    # =========================
     if start_date:
         sd = parse_date(start_date)
-        payments_qs = payments_qs.filter(payment_date__gte=sd)
         expenses_qs = expenses_qs.filter(expense_date__gte=sd)
 
     if end_date:
         ed = parse_date(end_date)
-        payments_qs = payments_qs.filter(payment_date__lte=ed)
         expenses_qs = expenses_qs.filter(expense_date__lte=ed)
 
-    # 💳 MODE FILTERS
-    if payment_mode:
-        payments_qs = payments_qs.filter(payment_mode=payment_mode)
-
+    # =========================
+    # 💳 SPEND MODE
+    # =========================
     if spend_mode:
         expenses_qs = expenses_qs.filter(spend_mode=spend_mode)
 
-    # 🏷 CATEGORY FILTER
+    # =========================
+    # 🏷 CATEGORY (company safe)
+    # =========================
     if category_id:
-        expenses_qs = expenses_qs.filter(category_id=category_id)
+        expenses_qs = expenses_qs.filter(
+            category_id=category_id,
+            category__company_id=selected_company_id
+        )
 
-    # 👷 WORKER FILTER (salary only)
+    # =========================
+    # 🏷 SUBCATEGORY (company safe)
+    # =========================
+    if subcategory_id:
+        expenses_qs = expenses_qs.filter(
+            subcategory_id=subcategory_id,
+            subcategory__company_id=selected_company_id
+        )
+
+    # =========================
+    # 👷 WORKER TEAM
+    # =========================
     if worker_id:
-        expenses_qs = expenses_qs.filter(salary_to_id=worker_id)
+        expenses_qs = expenses_qs.filter(
+            salary_to_id=worker_id,
+            salary_to__company_id=selected_company_id
+        )
 
-    # 🔁 ORDER
+    # =========================
+    # 👤 WORKER NAME
+    # =========================
+    if worker_name_id:
+        expenses_qs = expenses_qs.filter(
+            worker_name_id=worker_name_id,
+            worker_name__worker__company_id=selected_company_id
+        )
+
+    # =========================
+    # ORDER
+    # =========================
     payments_qs = payments_qs.order_by('payment_date', 'id')
     expenses_qs = expenses_qs.order_by('expense_date', 'id')
 
@@ -550,7 +741,7 @@ def client_info(request, pk):
     # =========================
     # 🔴 EXPENSE CUMULATIVE
     # =========================
-    total_paid = sum(p['amount'] for p in payment_rows)
+    total_paid = running_paid
     running_spent = Decimal('0.00')
     expense_rows = []
 
@@ -559,16 +750,30 @@ def client_info(request, pk):
         running_spent += e.amount
         remaining = total_paid - running_spent
 
+        if e.salary_to:
+            team_name = e.salary_to.name
+            worker_name = e.worker_name.name if e.worker_name else None
+            worker_display = f"{team_name} / {worker_name}" if worker_name else team_name
+        else:
+            worker_display = None
+
         expense_rows.append({
             'date': e.expense_date,
             'description': e.description,
+            'category': e.category.name if e.category else None,
+            'subcategory': e.subcategory.name if e.subcategory else None,
             'before': before,
             'now': e.amount,
             'remaining': remaining,
             'mode': e.spend_mode,
             'bank': e.bank.name if e.bank else 'Cash',
-            'worker': e.salary_to.name if e.salary_to else None,
+            'worker': worker_display,
         })
+
+    # ✅ Correct totals AFTER loop
+    total_spend = running_spent
+    net_balance = total_paid - total_spend
+    remaining_amount = client.budget - total_paid
 
     return render(request, 'client/clientinfo.html', {
         'client': client,
@@ -578,15 +783,33 @@ def client_info(request, pk):
         # filters
         'start_date': start_date,
         'end_date': end_date,
-        'payment_mode': payment_mode,
         'spend_mode': spend_mode,
+        'total_spend': total_spend,
+        'net_balance': net_balance,
+        'remaining_amount': remaining_amount,
         'selected_category': category_id,
+        'selected_subcategory': subcategory_id,
         'selected_worker': worker_id,
+        'selected_worker_name': worker_name_id,
 
         # dropdown data
-        'categories': ExpenseCategory.objects.all(),
-        'workers': Worker.objects.all(),
+        'categories': ExpenseCategory.objects.filter(
+            company_id=selected_company_id
+        ),
+
+        'subcategories': ExpenseSubCategory.objects.filter(
+            company_id=selected_company_id
+        ).select_related('category'),
+
+        'workers': Worker.objects.filter(
+            company_id=selected_company_id
+        ),
+
+        'worker_names': WorkerName.objects.filter(
+            worker__company_id=selected_company_id
+        ).select_related('worker'),
     })
+
 
 
 
@@ -596,26 +819,41 @@ def client_info(request, pk):
 
 
 from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer, PageBreak
+    SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer
 )
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from django.http import HttpResponse
 from decimal import Decimal
 from django.utils.dateparse import parse_date
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.db.models import Sum
 
 
 def client_info_pdf(request, pk):
 
-    client = get_object_or_404(Client, pk=pk)
+    # =========================
+    # 🏢 COMPANY SESSION CHECK
+    # =========================
+    selected_company_id = request.session.get('selected_company_id')
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    client = get_object_or_404(
+        Client,
+        pk=pk,
+        company_id=selected_company_id
+    )
 
     payments_qs = client.payments.select_related('bank')
-    expenses_qs = client.expenses.select_related('bank')
+    expenses_qs = client.expenses.select_related(
+        'bank', 'salary_to', 'worker_name'
+    )
 
+    # =========================
     # 🔍 FILTERS
+    # =========================
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
     payment_mode = request.GET.get('payment_mode')
@@ -642,6 +880,13 @@ def client_info_pdf(request, pk):
 
     styles = getSampleStyleSheet()
 
+    header_style = ParagraphStyle(
+        'header_style',
+        parent=styles['Title'],
+        fontSize=20,
+        spaceAfter=10
+    )
+
     # =========================
     # 💰 PAYMENTS
     # =========================
@@ -655,19 +900,14 @@ def client_info_pdf(request, pk):
 
         payment_rows.append([
             p.payment_date.strftime('%d-%m-%Y'),
-            f"Rs. {before:.2f}",
-            f"Rs. {p.amount:.2f}",
-            f"Rs. {remaining:.2f}",
+            f"Rs. {before:,.2f}",
+            f"Rs. {p.amount:,.2f}",
+            f"Rs. {remaining:,.2f}",
             p.payment_mode.capitalize(),
             p.bank.name if p.bank else 'Cash'
         ])
 
     total_paid = running_paid
-
-    # 🏦 Bank wise payment totals
-    bank_totals = payments_qs.values('bank__name').annotate(
-        total=Sum('amount')
-    )
 
     # =========================
     # 🔴 EXPENSES
@@ -680,12 +920,21 @@ def client_info_pdf(request, pk):
         running_spent += e.amount
         remaining = total_paid - running_spent
 
+        # 👷 Worker Display
+        if e.salary_to:
+            team = e.salary_to.name
+            name = e.worker_name.name if e.worker_name else None
+            worker_display = f"{team} / {name}" if name else team
+        else:
+            worker_display = '—'
+
         expense_rows.append([
             e.expense_date.strftime('%d-%m-%Y'),
+            e.category.name if e.category else '—',
             e.description,
-            f"Rs. {before:.2f}",
-            f"Rs. {e.amount:.2f}",
-            f"Rs. {remaining:.2f}",
+            worker_display,
+            f"Rs.{e.amount:,.2f}",
+            f"Rs.{remaining:,.2f}",
             e.spend_mode.capitalize(),
             e.bank.name if e.bank else 'Cash'
         ])
@@ -694,14 +943,14 @@ def client_info_pdf(request, pk):
     final_balance = total_paid - total_spent
 
     # =========================
-    # 📄 PDF SETUP
+    # 📄 PDF SETUP (LANDSCAPE)
     # =========================
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="{client.name}_statement.pdf"'
 
     doc = SimpleDocTemplate(
         response,
-        pagesize=A4,
+        pagesize=landscape(A4),
         rightMargin=30,
         leftMargin=30,
         topMargin=30,
@@ -713,115 +962,91 @@ def client_info_pdf(request, pk):
     # =========================
     # 🧾 HEADER
     # =========================
-    elements.append(Paragraph("Client Statement", styles['Title']))
+    elements.append(Paragraph("CLIENT FINANCIAL STATEMENT", header_style))
+    elements.append(Spacer(1, 6))
     elements.append(
-        Paragraph(
-            f"{client.name} — Project Value Rs. {client.budget:.2f}",
-            styles['Normal']
-        )
+        Paragraph(f"<b>Client:</b> {client.name}", styles['Normal'])
     )
-
-    if start_date or end_date:
-        elements.append(
-            Paragraph(
-                f"Period: {start_date or '—'} to {end_date or '—'}",
-                styles['Italic']
-            )
-        )
-
-    elements.append(Spacer(1, 12))
+    elements.append(
+        Paragraph(f"<b>Project Value:</b> Rs. {client.budget:,.2f}", styles['Normal'])
+    )
+    elements.append(Spacer(1, 20))
 
     # =========================
     # 💰 PAYMENTS TABLE
     # =========================
-    elements.append(Paragraph("Payments", styles['Heading2']))
+    elements.append(Paragraph("PAYMENTS", styles['Heading2']))
+    elements.append(Spacer(1, 8))
 
     payment_table = Table(
-        [['Date', 'Before', 'Paid Now', 'Remaining', 'Mode', 'Bank']] + payment_rows,
-        colWidths=[65, 70, 70, 80, 55, 75]
+        [['Date', 'Before', 'Paid', 'Remaining', 'Mode', 'Bank']]
+        + payment_rows,
+        colWidths=[90, 110, 110, 120, 90, 120]
     )
 
     payment_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.lightblue),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1F4E79')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
         ('ALIGN', (1, 1), (-1, -1), 'RIGHT'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1),
+         [colors.whitesmoke, colors.transparent]),
     ]))
 
     elements.append(payment_table)
-    elements.append(Spacer(1, 6))
-
-    elements.append(
-        Paragraph(f"<b>Total Paid:</b> Rs. {total_paid:.2f}", styles['Normal'])
-    )
-
-    # 🏦 Bank totals display
-    for b in bank_totals:
-        bank_name = b['bank__name'] or 'Cash'
-        elements.append(
-            Paragraph(
-                f"{bank_name} Total : Rs. {b['total']:.2f}",
-                styles['Normal']
-            )
-        )
-
-    # -------------------------
-    elements.append(Spacer(1, 12))
-    elements.append(Paragraph("<hr/>", styles['Normal']))
-    elements.append(Spacer(1, 12))
-    # -------------------------
+    elements.append(Spacer(1, 20))
 
     # =========================
     # 🔴 EXPENSES TABLE
     # =========================
-    elements.append(Paragraph("Expenses", styles['Heading2']))
+    elements.append(Paragraph("EXPENSES", styles['Heading2']))
+    elements.append(Spacer(1, 8))
 
     expense_table = Table(
-        [['Date', 'Description', 'Before', 'Spent', 'Remaining', 'Mode', 'Bank']]
+        [['Date', 'Category','Description', 'Worker', 'Spent', 'Remaining', 'Mode', 'Bank']]
         + expense_rows,
-        colWidths=[60, 120, 60, 65, 75, 50, 60]
+        colWidths=[70, 100, 140, 110, 95, 110, 70, 90]
     )
 
     expense_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.pink),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#7A1F1F')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-        ('ALIGN', (2, 1), (-1, -1), 'RIGHT'),
+        ('ALIGN', (3, 1), (-1, -1), 'RIGHT'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1),
+         [colors.whitesmoke, colors.transparent]),
     ]))
 
     elements.append(expense_table)
-    elements.append(Spacer(1, 6))
-
-    elements.append(
-        Paragraph(f"<b>Total Spent:</b> Rs. {total_spent:.2f}", styles['Normal'])
-    )
-
-    elements.append(Spacer(1, 15))
+    elements.append(Spacer(1, 25))
 
     # =========================
     # 📦 SUMMARY BOX
     # =========================
     summary_table = Table(
         [
-            ['TOTAL PAID', f"Rs. {total_paid:.2f}"],
-            ['TOTAL SPENT', f"Rs. {total_spent:.2f}"],
-            ['FINAL BALANCE', f"Rs. {final_balance:.2f}"],
+            ['TOTAL PAID', f"Rs. {total_paid:,.2f}"],
+            ['TOTAL SPENT', f"Rs. {total_spent:,.2f}"],
+            ['FINAL BALANCE', f"Rs. {final_balance:,.2f}"],
         ],
-        colWidths=[180, 140]
+        colWidths=[250, 200]
     )
 
     summary_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F2F2F2')),
         ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('BACKGROUND', (0, 0), (-1, -1), colors.whitesmoke),
         ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
         ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
-        ('PADDING', (0, 0), (-1, -1), 8),
+        ('PADDING', (0, 0), (-1, -1), 10),
     ]))
 
     elements.append(summary_table)
 
     doc.build(elements)
     return response
+
 
 
 
@@ -847,34 +1072,46 @@ from .models import Client, Payment, Expense
 
 
 from decimal import Decimal
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.utils.dateparse import parse_date
-from .models import Client
+from django.contrib.auth.decorators import login_required
 
 
+@login_required(login_url='login')
 def all_client_index(request):
+
+    selected_company_id = request.session.get('selected_company_id')
+
+    if not selected_company_id:
+        return redirect('dashboard')
+
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
-    order = request.GET.get('order', 'new')      # new | old
-    txn_type = request.GET.get('txn_type', 'all')  # all | payment | expense
+    order = request.GET.get('order', 'new')
+    txn_type = request.GET.get('txn_type', 'all')
+
+    sd = parse_date(start_date) if start_date else None
+    ed = parse_date(end_date) if end_date else None
 
     rows = []
 
-    clients = Client.objects.select_related('company')
+    clients = Client.objects.filter(
+        company_id=selected_company_id
+    ).select_related('company')
 
+    # =========================
+    # BUILD ROWS
+    # =========================
     for client in clients:
 
-        payments = client.payments.select_related('bank')
-        expenses = client.expenses.select_related('bank')
+        payments = client.payments.all()
+        expenses = client.expenses.all()
 
-        # 📅 DATE FILTER
-        if start_date:
-            sd = parse_date(start_date)
+        if sd:
             payments = payments.filter(payment_date__gte=sd)
             expenses = expenses.filter(expense_date__gte=sd)
 
-        if end_date:
-            ed = parse_date(end_date)
+        if ed:
             payments = payments.filter(payment_date__lte=ed)
             expenses = expenses.filter(expense_date__lte=ed)
 
@@ -884,7 +1121,7 @@ def all_client_index(request):
         running_paid = Decimal('0.00')
         running_spent = Decimal('0.00')
 
-        # 🟢 PAYMENTS
+        # PAYMENTS
         for p in payments:
             before_paid = running_paid
             running_paid += p.amount
@@ -892,49 +1129,97 @@ def all_client_index(request):
             rows.append({
                 'date': p.payment_date,
                 'client': client.name,
-                'company': client.company.name if client.company else '—',
+                'company': client.company.name,
                 'budget': client.budget,
-
                 'previous_paid': before_paid,
                 'paid_now': p.amount,
                 'yet_to_pay': client.budget - running_paid,
-
                 'total_paid': running_paid,
                 'spend_detail': '—',
+                'salary_info': '—',
                 'spend_amount': Decimal('0.00'),
-
                 'balance': running_paid - running_spent,
                 'type': 'payment',
             })
 
-        # 🔴 EXPENSES
+        # EXPENSES
         for e in expenses:
             running_spent += e.amount
+
+            if e.category and e.category.name.lower() == 'salary':
+                team_name = e.salary_to.name if e.salary_to else ''
+                worker_name = e.worker_name.name if e.worker_name else ''
+                salary_info = f"{team_name}"
+                if worker_name:
+                    salary_info += f" / {worker_name}"
+            else:
+                salary_info = '—'
 
             rows.append({
                 'date': e.expense_date,
                 'client': client.name,
-                'company': client.company.name if client.company else '—',
+                'company': client.company.name,
                 'budget': client.budget,
-
                 'previous_paid': running_paid,
                 'paid_now': Decimal('0.00'),
                 'yet_to_pay': client.budget - running_paid,
-
                 'total_paid': running_paid,
                 'spend_detail': e.description,
+                'salary_info': salary_info,
                 'spend_amount': e.amount,
-
                 'balance': running_paid - running_spent,
                 'type': 'expense',
             })
 
-    # 🔘 TYPE FILTER
+    # =========================
+    # TOTAL CALCULATIONS (CORRECT LOCATION)
+    # =========================
+
+    total_project_value = Decimal('0.00')
+    total_paid = Decimal('0.00')
+    total_spend = Decimal('0.00')
+    total_yet_to_pay = Decimal('0.00')
+
+    for client in clients:
+
+        client_payments = client.payments.all()
+        client_expenses = client.expenses.all()
+
+        if sd:
+            client_payments = client_payments.filter(payment_date__gte=sd)
+            client_expenses = client_expenses.filter(expense_date__gte=sd)
+
+        if ed:
+            client_payments = client_payments.filter(payment_date__lte=ed)
+            client_expenses = client_expenses.filter(expense_date__lte=ed)
+
+        client_paid_total = client_payments.aggregate(
+            total=Sum('amount')
+        )['total'] or Decimal('0.00')
+
+        client_spend_total = client_expenses.aggregate(
+            total=Sum('amount')
+        )['total'] or Decimal('0.00')
+
+        total_project_value += client.budget
+        total_paid += client_paid_total
+        total_spend += client_spend_total
+        total_yet_to_pay += (client.budget - client_paid_total)
+
+    grand_balance = total_paid - total_spend
+
+    # =========================
+    # FILTER TRANSACTION TYPE
+    # =========================
     if txn_type != 'all':
         rows = [r for r in rows if r['type'] == txn_type]
 
-    # 🔃 SORT
-    rows = sorted(rows, key=lambda x: x['date'], reverse=(order == 'new'))
+    # SORT
+    rows = sorted(
+        rows,
+        key=lambda x: x['date'],
+        reverse=(order == 'new')
+    )
 
     return render(request, 'client/all_clients_statement.html', {
         'rows': rows,
@@ -942,7 +1227,16 @@ def all_client_index(request):
         'end_date': end_date,
         'order': order,
         'txn_type': txn_type,
+        'total_project_value': total_project_value,
+        'total_paid': total_paid,
+        'total_spend': total_spend,
+        'total_yet_to_pay': total_yet_to_pay,
+        'grand_balance': grand_balance,
     })
+
+
+
+
 
 
 
@@ -977,21 +1271,36 @@ def add_page_numbers(canvas, doc):
 
 
 
+from decimal import Decimal
+from django.http import HttpResponse
+from django.shortcuts import redirect
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib import colors
+
+
 def all_client_info_pdf(request):
+
+    selected_company_id = request.session.get('selected_company_id')
+    if not selected_company_id:
+        return redirect('dashboard')
 
     start_date = clean_date(request.GET.get('start_date'))
     end_date = clean_date(request.GET.get('end_date'))
     order = request.GET.get('order', 'new')
     txn_type = request.GET.get('txn_type', 'all')
 
-    clients = Client.objects.select_related('company')
+    clients = Client.objects.filter(
+        company_id=selected_company_id
+    ).select_related('company')
 
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="all_clients_statement.pdf"'
 
     doc = SimpleDocTemplate(
         response,
-        pagesize=landscape(A4),   # ✅ LANDSCAPE MODE
+        pagesize=landscape(A4),
         rightMargin=20,
         leftMargin=20,
         topMargin=20,
@@ -1002,12 +1311,6 @@ def all_client_info_pdf(request):
     elements = []
 
     elements.append(Paragraph("<b>All Clients Financial Statement</b>", styles['Title']))
-
-    if start_date or end_date:
-        elements.append(
-            Paragraph(f"Period: {start_date or '—'} to {end_date or '—'}", styles['Normal'])
-        )
-
     elements.append(Spacer(1, 12))
 
     table_data = [[
@@ -1035,104 +1338,129 @@ def all_client_info_pdf(request):
             payments = payments.filter(payment_date__lte=end_date)
             expenses = expenses.filter(expense_date__lte=end_date)
 
+        ledger = []
+
+        for p in payments:
+            ledger.append({
+                'type': 'payment',
+                'date': p.payment_date,
+                'amount': p.amount,
+                'obj': p
+            })
+
+        for e in expenses:
+            ledger.append({
+                'type': 'expense',
+                'date': e.expense_date,
+                'amount': e.amount,
+                'obj': e
+            })
+
+        ledger = sorted(
+            ledger,
+            key=lambda x: x['date'],
+            reverse=(order == 'new')
+        )
+
         running_paid = Decimal('0.00')
         running_spent = Decimal('0.00')
 
-        client_start_row = row_index
+        for entry in ledger:
 
-        rows = []
+            if txn_type != 'all' and entry['type'] != txn_type:
+                continue
 
-        for p in payments.order_by('payment_date', 'id'):
-            before = running_paid
-            running_paid += p.amount
-            grand_paid += p.amount
+            prev_paid = running_paid
 
-            rows.append([
-                client.name,
-                client.company.name if client.company else '—',
-                str(p.payment_date),
-                f"Rs. {before:.2f}",
-                f"Rs. {p.amount:.2f}",
-                f"Rs. {client.budget - running_paid:.2f}",
-                '—',
-                '—',
-                f"Rs. {running_paid - running_spent:.2f}",
-            ])
+            if entry['type'] == 'payment':
 
-        for e in expenses.order_by('expense_date', 'id'):
-            running_spent += e.amount
-            grand_spent += e.amount
+                running_paid += entry['amount']
+                grand_paid += entry['amount']
 
-            rows.append([
-                client.name,
-                client.company.name if client.company else '—',
-                str(e.expense_date),
-                f"Rs. {running_paid:.2f}",
-                '—',
-                f"Rs. {client.budget - running_paid:.2f}",
-                e.description,
-                f"Rs. {e.amount:.2f}",
-                f"Rs. {running_paid - running_spent:.2f}",
-            ])
+                yet_to_pay = client.budget - running_paid
+                balance = running_paid - running_spent
 
-        if not rows:
-            continue
+                table_data.append([
+                    client.name,
+                    client.company.name,
+                    str(entry['date']),
+                    f"Rs. {prev_paid:.2f}",
+                    f"Rs. {entry['amount']:.2f}",
+                    f"Rs. {yet_to_pay:.2f}",
+                    '—',
+                    '—',
+                    f"Rs. {balance:.2f}",
+                ])
 
-        for r in rows:
-            table_data.append(r)
+            else:  # expense
+
+                running_spent += entry['amount']
+                grand_spent += entry['amount']
+
+                yet_to_pay = client.budget - running_paid
+                balance = running_paid - running_spent
+
+                table_data.append([
+                    client.name,
+                    client.company.name,
+                    str(entry['date']),
+                    f"Rs. {prev_paid:.2f}",
+                    '—',
+                    f"Rs. {yet_to_pay:.2f}",
+                    entry['obj'].description,
+                    f"Rs. {entry['amount']:.2f}",
+                    f"Rs. {balance:.2f}",
+                ])
+
+            # 🔴 Highlight negative Yet To Pay (column index 5)
+            if yet_to_pay < 0:
+                row_styles.append(('TEXTCOLOR', (5, row_index), (5, row_index), colors.red))
+
+            # 🔴 Highlight negative Balance (column index 8)
+            if balance < 0:
+                row_styles.append(('TEXTCOLOR', (8, row_index), (8, row_index), colors.red))
+
             row_index += 1
 
-        # 🎨 GROUP BACKGROUND COLOR PER CLIENT
-        row_styles.append((
-            'BACKGROUND',
-            (0, client_start_row),
-            (-1, row_index - 1),
-            colors.whitesmoke if client_start_row % 2 else colors.transparent
-        ))
+        # =========================
+        # CLIENT TOTAL
+        # =========================
+        client_balance = running_paid - running_spent
 
-        # 📊 CLIENT TOTAL ROW
         table_data.append([
-            f"{client.name} TOTAL", '', '', '', 
+            f"{client.name} TOTAL", '', '', '',
             f"Rs. {running_paid:.2f}", '',
             '', f"Rs. {running_spent:.2f}",
-            f"Rs. {running_paid - running_spent:.2f}",
+            f"Rs. {client_balance:.2f}",
         ])
 
-        row_styles.append((
-            'FONTNAME',
-            (0, row_index),
-            (-1, row_index),
-            'Helvetica-Bold'
-        ))
+        row_styles.append(('FONTNAME', (0, row_index), (-1, row_index), 'Helvetica-Bold'))
+
+        if client_balance < 0:
+            row_styles.append(('TEXTCOLOR', (8, row_index), (8, row_index), colors.red))
 
         row_index += 1
 
     # =========================
-    # 🧮 GRAND TOTAL
+    # GRAND TOTAL
     # =========================
+    grand_balance = grand_paid - grand_spent
+
     table_data.append([
         'GRAND TOTAL', '', '', '',
         f"Rs. {grand_paid:.2f}", '',
         '', f"Rs. {grand_spent:.2f}",
-        f"Rs. {grand_paid - grand_spent:.2f}",
+        f"Rs. {grand_balance:.2f}",
     ])
 
-    row_styles.append((
-        'BACKGROUND',
-        (0, row_index),
-        (-1, row_index),
-        colors.lightgrey
-    ))
+    row_styles.append(('BACKGROUND', (0, row_index), (-1, row_index), colors.lightgrey))
+    row_styles.append(('FONTNAME', (0, row_index), (-1, row_index), 'Helvetica-Bold'))
 
-    row_styles.append((
-        'FONTNAME',
-        (0, row_index),
-        (-1, row_index),
-        'Helvetica-Bold'
-    ))
+    if grand_balance < 0:
+        row_styles.append(('TEXTCOLOR', (8, row_index), (8, row_index), colors.red))
 
     # =========================
-    # 📄 TABLE
+    # TABLE STYLE
     # =========================
     table = Table(
         table_data,
@@ -1140,21 +1468,26 @@ def all_client_info_pdf(request):
         colWidths=[90, 90, 70, 75, 75, 75, 150, 80, 80]
     )
 
-    base_style = [
+    table.setStyle(TableStyle([
         ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
         ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
         ('ALIGN', (3,1), (-1,-1), 'RIGHT'),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-    ]
-
-    table.setStyle(TableStyle(base_style + row_styles))
+    ] + row_styles))
 
     elements.append(table)
 
-    doc.build(elements, onFirstPage=add_page_numbers, onLaterPages=add_page_numbers)
+    doc.build(
+        elements,
+        onFirstPage=add_page_numbers,
+        onLaterPages=add_page_numbers
+    )
 
     return response
+
+
+
 
 
 
@@ -1166,15 +1499,30 @@ def all_client_info_pdf(request):
 #bank views will be added here
 
 
-from django.db.models import Sum
+from django.db.models import Sum, Max, Q
 from django.utils.timezone import now
+from decimal import Decimal
+from django.shortcuts import redirect
 
-from django.db.models import Sum, Max
-from django.utils.timezone import now
 
 def bank_index(request):
-    banks = Bank.objects.all()
 
+    # 🏢 COMPANY FROM SESSION
+    selected_company_id = request.session.get('selected_company_id')
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    # =========================
+    # 🔍 FIND BANKS USED BY THIS COMPANY
+    # =========================
+
+    banks = Bank.objects.filter(
+        company_id=selected_company_id
+    )
+
+    # =========================
+    # 🔘 FILTERS
+    # =========================
     selected_bank = request.GET.get('bank')
     filter_type = request.GET.get('filter_type')
     filter_date = request.GET.get('date')
@@ -1184,13 +1532,24 @@ def bank_index(request):
     if selected_bank:
         banks = banks.filter(id=selected_bank)
 
-    total_bank = 0
+    total_bank = Decimal('0.00')
 
     for bank in banks:
-        payments = bank.payments.all()
-        expenses = bank.expenses.all()
 
+        # =========================
+        # 📊 BASE QUERYSETS (COMPANY AWARE)
+        # =========================
+        payments = bank.payments.filter(
+            client__company_id=selected_company_id
+        )
+
+        expenses = bank.expenses.filter(
+            client__company_id=selected_company_id
+        )
+
+        # =========================
         # 📅 DATE FILTERS
+        # =========================
         if filter_type == 'day' and filter_date:
             payments = payments.filter(payment_date=filter_date)
             expenses = expenses.filter(expense_date=filter_date)
@@ -1209,14 +1568,24 @@ def bank_index(request):
             payments = payments.filter(payment_date__year=int(filter_year))
             expenses = expenses.filter(expense_date__year=int(filter_year))
 
-        payment_total = payments.aggregate(total=Sum('amount'))['total'] or 0
-        expense_total = expenses.aggregate(total=Sum('amount'))['total'] or 0
+        # =========================
+        # 💰 CALCULATIONS
+        # =========================
+        payment_total = payments.aggregate(
+            total=Sum('amount')
+        )['total'] or Decimal('0.00')
+
+        expense_total = expenses.aggregate(
+            total=Sum('amount')
+        )['total'] or Decimal('0.00')
 
         bank.filtered_balance = (
             bank.opening_balance + payment_total - expense_total
         )
 
+        # =========================
         # 🗓 LAST TRANSACTION DATE
+        # =========================
         last_payment_date = payments.aggregate(
             d=Max('payment_date')
         )['d']
@@ -1250,38 +1619,93 @@ def bank_index(request):
 
 
 
+
+
+from decimal import Decimal
+from django.shortcuts import render, redirect
+from django.contrib import messages
+
+
 def bank_create(request):
+
+    selected_company_id = request.session.get('selected_company_id')
+
+    if not selected_company_id:
+        return redirect('dashboard')
+
     if request.method == 'POST':
-        name = request.POST.get('name')
+
+        name = request.POST.get('name', '').strip()
         opening_balance = Decimal(request.POST.get('opening_balance') or 0)
 
-        if name:
-            bank = Bank.objects.create(
-                name=name,
-                opening_balance=opening_balance,
-                available_balance=opening_balance  # ✅ SYNC ON CREATE
-            )
-            return redirect('bank_index')
+        if not name:
+            messages.error(request, "Bank name is required.")
+            return redirect('bank_create')
+
+        # 🔐 Prevent duplicate bank inside same company
+        if Bank.objects.filter(
+            company_id=selected_company_id,
+            name__iexact=name
+        ).exists():
+            messages.error(request, "Bank with this name already exists.")
+            return redirect('bank_create')
+
+        Bank.objects.create(
+            company_id=selected_company_id,
+            name=name,
+            opening_balance=opening_balance,
+            available_balance=opening_balance
+        )
+
+        messages.success(request, "Bank created successfully.")
+        return redirect('bank_index')
 
     return render(request, 'bank/create.html')
 
 
 
+from django.shortcuts import get_object_or_404
+
+
 def bank_update(request, pk):
-    bank = get_object_or_404(Bank, pk=pk)
+
+    selected_company_id = request.session.get('selected_company_id')
+
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    # 🔐 Ensure bank belongs to selected company
+    bank = get_object_or_404(
+        Bank,
+        pk=pk,
+        company_id=selected_company_id
+    )
 
     if request.method == 'POST':
-        bank.name = request.POST.get('name').strip()
-        bank.opening_balance = Decimal(
-            request.POST.get('opening_balance') or 0
-        )
 
-        # ✅ SAVE BASIC FIELDS FIRST
+        name = request.POST.get('name', '').strip()
+        opening_balance = Decimal(request.POST.get('opening_balance') or 0)
+
+        if not name:
+            messages.error(request, "Bank name is required.")
+            return redirect('bank_update', pk=bank.id)
+
+        # 🔐 Prevent duplicate rename
+        if Bank.objects.filter(
+            company_id=selected_company_id,
+            name__iexact=name
+        ).exclude(id=bank.id).exists():
+            messages.error(request, "Another bank with this name already exists.")
+            return redirect('bank_update', pk=bank.id)
+
+        bank.name = name
+        bank.opening_balance = opening_balance
         bank.save(update_fields=['name', 'opening_balance'])
 
-        # ✅ THEN RECALCULATE BALANCE
+        # 🔁 Always recalc after updating opening balance
         bank.recalculate_balance()
 
+        messages.success(request, "Bank updated successfully.")
         return redirect('bank_index')
 
     return render(request, 'bank/update.html', {
@@ -1309,25 +1733,46 @@ def bank_delete(request, pk):
 from itertools import chain
 from django.db.models import F, Value, DecimalField
 from django.db.models.functions import Coalesce
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, render, redirect
 from django.utils.dateparse import parse_date
 
+
 def bank_log(request, pk):
+
+    # 🏢 COMPANY FROM SESSION
+    selected_company_id = request.session.get('selected_company_id')
+    if not selected_company_id:
+        return redirect('dashboard')
+
     bank = get_object_or_404(Bank, pk=pk)
 
     client_id = request.GET.get('client')
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
 
-    payments = Payment.objects.filter(bank=bank).select_related('client')
-    expenses = Expense.objects.filter(bank=bank).select_related('client', 'category')
+    # =========================
+    # 📊 BASE QUERYSETS (COMPANY AWARE)
+    # =========================
+    payments = Payment.objects.filter(
+        bank=bank,
+        client__company_id=selected_company_id
+    ).select_related('client')
 
+    expenses = Expense.objects.filter(
+        bank=bank,
+        client__company_id=selected_company_id
+    ).select_related('client', 'category')
+
+    # =========================
     # 👤 CLIENT FILTER
+    # =========================
     if client_id:
         payments = payments.filter(client_id=client_id)
         expenses = expenses.filter(client_id=client_id)
 
+    # =========================
     # 📅 DATE FILTERS
+    # =========================
     if start_date:
         sd = parse_date(start_date)
         payments = payments.filter(payment_date__gte=sd)
@@ -1338,7 +1783,9 @@ def bank_log(request, pk):
         payments = payments.filter(payment_date__lte=ed)
         expenses = expenses.filter(expense_date__lte=ed)
 
+    # =========================
     # 🔵 PAYMENTS → CREDIT
+    # =========================
     payment_rows = payments.annotate(
         txn_date=F('payment_date'),
         txn_type=Value('Payment'),
@@ -1360,7 +1807,9 @@ def bank_log(request, pk):
         'client_name',
     )
 
+    # =========================
     # 🔴 EXPENSES → DEBIT
+    # =========================
     expense_rows = expenses.annotate(
         txn_date=F('expense_date'),
         txn_type=Value('Spend'),
@@ -1382,14 +1831,19 @@ def bank_log(request, pk):
         'client_name',
     )
 
+    # =========================
     # 🔗 MERGE + SORT
+    # =========================
     transactions = sorted(
         chain(payment_rows, expense_rows),
         key=lambda x: x['txn_date']
     )
 
+    # =========================
     # 💰 RUNNING BALANCE
+    # =========================
     balance = bank.opening_balance
+
     for row in transactions:
         if row['credit']:
             balance += row['credit']
@@ -1400,7 +1854,12 @@ def bank_log(request, pk):
     return render(request, 'bank/bank_log.html', {
         'bank': bank,
         'logs': transactions,
-        'clients': Client.objects.all(),
+
+        # 👇 only company clients
+        'clients': Client.objects.filter(
+            company_id=selected_company_id
+        ),
+
         'selected_client': client_id,
         'start_date': start_date,
         'end_date': end_date,
@@ -1408,17 +1867,17 @@ def bank_log(request, pk):
 
 
 
-# bank log pdf
 
-from reportlab.lib.pagesizes import A4
+
+from reportlab.lib.pagesizes import A4, landscape
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer
 )
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect
 from decimal import Decimal
-from itertools import chain
 from django.utils.dateparse import parse_date
 
 
@@ -1427,6 +1886,12 @@ def clean_param(value):
 
 
 def bank_log_pdf(request, pk):
+
+    # 🏢 COMPANY FROM SESSION
+    selected_company_id = request.session.get('selected_company_id')
+    if not selected_company_id:
+        return redirect('dashboard')
+
     bank = get_object_or_404(Bank, pk=pk)
 
     # ✅ CLEAN QUERY PARAMS
@@ -1434,8 +1899,18 @@ def bank_log_pdf(request, pk):
     start_date = clean_param(request.GET.get('start_date'))
     end_date = clean_param(request.GET.get('end_date'))
 
-    payments = Payment.objects.filter(bank=bank).select_related('client')
-    expenses = Expense.objects.filter(bank=bank).select_related('client', 'category')
+    # =========================
+    # 📊 BASE QUERYSETS (COMPANY AWARE)
+    # =========================
+    payments = Payment.objects.filter(
+        bank=bank,
+        client__company_id=selected_company_id
+    ).select_related('client')
+
+    expenses = Expense.objects.filter(
+        bank=bank,
+        client__company_id=selected_company_id
+    ).select_related('client', 'category')
 
     # 👤 CLIENT FILTER
     if client_id:
@@ -1453,12 +1928,14 @@ def bank_log_pdf(request, pk):
         payments = payments.filter(payment_date__lte=ed)
         expenses = expenses.filter(expense_date__lte=ed)
 
+    # =========================
     # 🔁 NORMALIZE TRANSACTIONS
+    # =========================
     rows = []
 
-    for p in payments:
+    for p in payments.order_by('payment_date', 'id'):
         rows.append({
-            'date': p.payment_date,
+            'date': p.payment_date.strftime('%d-%m-%Y'),
             'client': p.client.name,
             'type': 'Payment',
             'desc': 'Client Payment',
@@ -1466,9 +1943,9 @@ def bank_log_pdf(request, pk):
             'debit': Decimal('0.00'),
         })
 
-    for e in expenses:
+    for e in expenses.order_by('expense_date', 'id'):
         rows.append({
-            'date': e.expense_date,
+            'date': e.expense_date.strftime('%d-%m-%Y'),
             'client': e.client.name,
             'type': 'Spend',
             'desc': e.description,
@@ -1478,7 +1955,9 @@ def bank_log_pdf(request, pk):
 
     rows = sorted(rows, key=lambda x: x['date'])
 
+    # =========================
     # 💰 RUNNING BALANCE
+    # =========================
     balance = bank.opening_balance
     for r in rows:
         balance += r['credit']
@@ -1486,57 +1965,95 @@ def bank_log_pdf(request, pk):
         r['balance'] = balance
 
     # =========================
-    # 📄 PDF GENERATION
+    # 📄 PDF GENERATION (LANDSCAPE)
     # =========================
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = (
         f'attachment; filename="{bank.name}_bank_log.pdf"'
     )
 
-    doc = SimpleDocTemplate(response, pagesize=A4)
+    doc = SimpleDocTemplate(
+        response,
+        pagesize=landscape(A4),   # ✅ LANDSCAPE
+        rightMargin=25,
+        leftMargin=25,
+        topMargin=25,
+        bottomMargin=25
+    )
+
     styles = getSampleStyleSheet()
     elements = []
 
-    elements.append(Paragraph(
-        f"<b>Bank  – {bank.name}</b>",
-        styles['Title']
-    ))
+    # =========================
+    # 🧾 HEADER
+    # =========================
+    elements.append(
+        Paragraph(f"<b>Bank Statement – {bank.name}</b>", styles['Title'])
+    )
 
-    elements.append(Paragraph(
-        f"Opening Balance: Rs. {bank.opening_balance:.2f}",
-        styles['Normal']
-    ))
+    elements.append(
+        Paragraph(
+            f"Opening Balance: <b>Rs. {bank.opening_balance:.2f}</b>",
+            styles['Normal']
+        )
+    )
 
-    elements.append(Spacer(1, 12))
+    if start_date or end_date:
+        elements.append(
+            Paragraph(
+                f"Period: {start_date or '—'} to {end_date or '—'}",
+                styles['Italic']
+            )
+        )
 
+    elements.append(Spacer(1, 14))
+
+    # =========================
+    # 📊 TABLE
+    # =========================
     table_data = [[
-        'Date', 'Client', 'Type', 'Description',
-        'Credit', 'Debit', 'Balance'
+        'Date',
+        'Client',
+        'Type',
+        'Description',
+        'Credit (Rs.)',
+        'Debit (Rs.)',
+        'Balance (Rs.)'
     ]]
 
     for r in rows:
         table_data.append([
-            str(r['date']),
+            r['date'],
             r['client'],
             r['type'],
             r['desc'],
-            f"Rs. {r['credit']:.2f}" if r['credit'] else '—',
-            f"Rs. {r['debit']:.2f}" if r['debit'] else '—',
-            f"Rs. {r['balance']:.2f}",
+            f"{r['credit']:.2f}" if r['credit'] else '—',
+            f"{r['debit']:.2f}" if r['debit'] else '—',
+            f"{r['balance']:.2f}",
         ])
 
-    table = Table(table_data, repeatRows=1)
+    table = Table(
+        table_data,
+        repeatRows=1,
+        colWidths=[85, 120, 80, 220, 90, 90, 95]
+    )
+
     table.setStyle(TableStyle([
         ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-        ('BACKGROUND', (0, 0), (-1, 0), colors.lightblue),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#E8F0FE')),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('ALIGN', (4, 1), (-1, -1), 'RIGHT'),
-        ('FONT', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+        ('TOPPADDING', (0, 0), (-1, 0), 10),
     ]))
 
     elements.append(table)
-    doc.build(elements)
 
+    doc.build(elements)
     return response
+
+
 
 
 
@@ -1774,33 +2291,101 @@ def cash_delete(request, pk):
 
 
 from django.db.models import Sum, Max
-from django.shortcuts import render
-from .models import Bank, Payment
+from django.shortcuts import render, redirect
+from decimal import Decimal
+
+from .models import Bank, Payment, Expense
+
 
 def available_amount(request):
 
-    # 🔁 Recalculate all banks before display
-    for bank in Bank.objects.all():
-        bank.recalculate_balance()
+    # 🏢 COMPANY FROM SESSION
+    selected_company_id = request.session.get('selected_company_id')
+    if not selected_company_id:
+        return redirect('dashboard')
 
-    # 💵 CASH
+    # =========================
+    # 💵 CASH BANK (COMPANY BASED)
+    # =========================
     cash_bank = Bank.objects.filter(name__iexact='cash').first()
-    total_cash = cash_bank.available_balance if cash_bank else 0
 
+    total_cash = Decimal('0.00')
     last_cash_date = None
-    if cash_bank:
-        last_cash_date = Payment.objects.filter(bank=cash_bank).aggregate(
-            latest=Max('payment_date')
-        )['latest']
 
-    # 🏦 CHEQUE BANKS
-    cheque_banks = Bank.objects.exclude(name__iexact='cash').annotate(
-        last_transaction_date=Max('payments__payment_date')
+    if cash_bank:
+        cash_payments = Payment.objects.filter(
+            bank=cash_bank,
+            client__company_id=selected_company_id
+        )
+
+        cash_expenses = Expense.objects.filter(
+            bank=cash_bank,
+            client__company_id=selected_company_id
+        )
+
+        total_cash = (
+            cash_bank.opening_balance
+            + (cash_payments.aggregate(t=Sum('amount'))['t'] or Decimal('0.00'))
+            - (cash_expenses.aggregate(t=Sum('amount'))['t'] or Decimal('0.00'))
+        )
+
+        last_cash_date = max(
+            filter(None, [
+                cash_payments.aggregate(d=Max('payment_date'))['d'],
+                cash_expenses.aggregate(d=Max('expense_date'))['d'],
+            ]),
+            default=None
+        )
+
+    # =========================
+    # 🏦 CHEQUE BANKS (ONLY USED BY COMPANY)
+    # =========================
+    cheque_banks = (
+        Bank.objects
+        .exclude(name__iexact='cash')
+        .filter(
+            payments__client__company_id=selected_company_id
+        )
+        .distinct()
     )
 
-    total_bank = cheque_banks.aggregate(
-        total=Sum('available_balance')
-    )['total'] or 0
+    total_bank = Decimal('0.00')
+
+    for bank in cheque_banks:
+
+        payments = Payment.objects.filter(
+            bank=bank,
+            client__company_id=selected_company_id
+        )
+
+        expenses = Expense.objects.filter(
+            bank=bank,
+            client__company_id=selected_company_id
+        )
+
+        payment_total = payments.aggregate(
+            total=Sum('amount')
+        )['total'] or Decimal('0.00')
+
+        expense_total = expenses.aggregate(
+            total=Sum('amount')
+        )['total'] or Decimal('0.00')
+
+        # ✅ REAL AVAILABLE BALANCE
+        bank.available_balance = (
+            bank.opening_balance + payment_total - expense_total
+        )
+
+        # 🗓 LAST TRANSACTION DATE
+        bank.last_transaction_date = max(
+            filter(None, [
+                payments.aggregate(d=Max('payment_date'))['d'],
+                expenses.aggregate(d=Max('expense_date'))['d'],
+            ]),
+            default=None
+        )
+
+        total_bank += bank.available_balance
 
     return render(request, 'accounts/available_amount.html', {
         'total_cash': total_cash,
@@ -1814,83 +2399,89 @@ def available_amount(request):
 
 
 
+
 #payment 
 
-from itertools import chain
-from django.utils.timezone import make_aware
-from datetime import datetime
-
-from itertools import chain
+from django.shortcuts import render, redirect
 from django.utils.dateparse import parse_date
 
-# def payment_index(request):
-#     start_date = request.GET.get('start_date')
-#     end_date = request.GET.get('end_date')
-#     client_id = request.GET.get('client')
-#     mode = request.GET.get('mode')  # cash / cheque
+from .models import Payment, Client, Bank
 
-#     payments = Payment.objects.select_related('client', 'bank')
-
-#     # 📅 DATE FILTERS
-#     if start_date:
-#         payments = payments.filter(payment_date__gte=parse_date(start_date))
-#     if end_date:
-#         payments = payments.filter(payment_date__lte=parse_date(end_date))
-
-#     # 👤 CLIENT FILTER
-#     if client_id:
-#         payments = payments.filter(client_id=client_id)
-
-#     # 💳 MODE FILTER
-#     if mode in ['cash', 'cheque']:
-#         payments = payments.filter(payment_mode=mode)
-
-#     payments = payments.order_by('-payment_date')
-
-#     return render(request, 'payment/index.html', {
-#         'payments': payments,
-#         'start_date': start_date,
-#         'end_date': end_date,
-#         'selected_client': client_id,
-#         'selected_mode': mode,
-#         'clients': Client.objects.all(),
-#     })
 
 def payment_index(request):
+
+    # 🏢 COMPANY FROM SESSION
+    selected_company_id = request.session.get('selected_company_id')
+    if not selected_company_id:
+        return redirect('dashboard')
+
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
     client_id = request.GET.get('client')
     mode = request.GET.get('mode')        # cash / cheque
     bank_id = request.GET.get('bank')
 
-    payments = Payment.objects.select_related('client', 'bank')
+    # =========================
+    # 📊 BASE QUERYSET (COMPANY AWARE)
+    # =========================
+    payments = Payment.objects.filter(
+        client__company_id=selected_company_id
+    ).select_related('client', 'bank')
 
+    # =========================
     # 📅 DATE FILTERS
+    # =========================
     if start_date:
-        payments = payments.filter(payment_date__gte=parse_date(start_date))
-    if end_date:
-        payments = payments.filter(payment_date__lte=parse_date(end_date))
+        payments = payments.filter(
+            payment_date__gte=parse_date(start_date)
+        )
 
+    if end_date:
+        payments = payments.filter(
+            payment_date__lte=parse_date(end_date)
+        )
+
+    # =========================
     # 👤 CLIENT FILTER
+    # =========================
     if client_id:
         payments = payments.filter(client_id=client_id)
 
+    # =========================
     # 💳 MODE FILTER
+    # =========================
     if mode in ['cash', 'cheque']:
         payments = payments.filter(payment_mode=mode)
 
-    # 🏦 BANK FILTER (SAFE)
+    # =========================
+    # 🏦 BANK FILTER
+    # =========================
     if bank_id:
         payments = payments.filter(bank_id=bank_id)
 
-    payments = payments.order_by('-payment_date')
+    payments = payments.order_by('-payment_date', '-id')
+
+    # =========================
+    # 📥 DROPDOWN DATA (COMPANY AWARE)
+    # =========================
+    clients = Client.objects.filter(
+        company_id=selected_company_id
+    )
+
+    cheque_banks = Bank.objects.filter(
+        payments__client__company_id=selected_company_id
+    ).exclude(
+        name__iexact='cash'
+    ).distinct()
+
+    cash_bank = Bank.objects.filter(name__iexact='cash').first()
 
     return render(request, 'payment/index.html', {
         'payments': payments,
-        'clients': Client.objects.select_related('company'),  # ✅ IMPORTANT,
 
-        'banks': Bank.objects.exclude(name__iexact='cash'),   # cheque banks
-        'cash_bank': Bank.objects.filter(name__iexact='cash').first(),
+        'clients': clients,
+        'banks': cheque_banks,
+        'cash_bank': cash_bank,
 
         'start_date': start_date,
         'end_date': end_date,
@@ -1903,33 +2494,71 @@ def payment_index(request):
 
 
 
-from decimal import Decimal
-from django.shortcuts import render, redirect
+
+
+
+from django.db.models import Sum
 from django.contrib import messages
 from django.db import transaction
-
-
+from decimal import Decimal
+from django.shortcuts import redirect, render
 
 def payment_create(request):
-    # clients = Client.objects.all()
-    clients = Client.objects.select_related('company')  # ✅ IMPORTANT
-    banks = Bank.objects.all()
+
+    selected_company_id = request.session.get('selected_company_id')
+
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    clients = Client.objects.filter(company_id=selected_company_id)
+    banks = Bank.objects.filter(
+        company_id=selected_company_id
+    ).order_by('name')
+
 
     if request.method == 'POST':
+
         client_id = request.POST.get('client')
         bank_id = request.POST.get('bank')
         amount = Decimal(request.POST.get('amount'))
         payment_mode = request.POST.get('payment_mode')
         payment_date = request.POST.get('payment_date')
 
+        client = Client.objects.get(
+            id=client_id,
+            company_id=selected_company_id
+        )
+
+        # 🔥 Get total already paid
+        total_paid = client.payments.aggregate(
+            total=Sum('amount')
+        )['total'] or Decimal('0.00')
+
+        new_total = total_paid + amount
+
+        # ❌ VALIDATION
+        if new_total > client.budget:
+            messages.error(
+                request,
+                f"❌ Payment exceeds project value! "
+                f"Remaining allowed: ₹ {client.budget - total_paid:,.2f}"
+            )
+            return render(request, 'payment/create.html', {
+                'clients': clients,
+                'banks': banks
+            })
+
         with transaction.atomic():
 
-            # 💵 CASH PAYMENT → BANK = "Cash"
+            # 💵 CASH MODE
             if payment_mode == 'cash':
-                cash_bank = Bank.objects.get(name__iexact='cash')
+                cash_bank = Bank.objects.get(
+                    name__iexact='cash',
+                    company_id=selected_company_id
+                )
 
                 Payment.objects.create(
-                    client_id=client_id,
+                    client=client,
                     bank=cash_bank,
                     amount=amount,
                     payment_mode=Payment.CASH,
@@ -1938,8 +2567,9 @@ def payment_create(request):
 
                 cash_bank.recalculate_balance()
 
-            # 🔵 CHEQUE PAYMENT
+            # 🔵 CHEQUE MODE
             elif payment_mode == 'cheque':
+
                 if not bank_id:
                     messages.error(request, "Select a bank for cheque payment")
                     return render(request, 'payment/create.html', {
@@ -1947,10 +2577,13 @@ def payment_create(request):
                         'banks': banks
                     })
 
-                bank = Bank.objects.get(id=bank_id)
+                bank = Bank.objects.get(
+                    id=bank_id,
+                    company_id=selected_company_id
+                )
 
                 Payment.objects.create(
-                    client_id=client_id,
+                    client=client,
                     bank=bank,
                     amount=amount,
                     payment_mode=Payment.CHEQUE,
@@ -1959,6 +2592,7 @@ def payment_create(request):
 
                 bank.recalculate_balance()
 
+        messages.success(request, "✅ Payment added successfully")
         return redirect('payment_index')
 
     return render(request, 'payment/create.html', {
@@ -1972,29 +2606,69 @@ def payment_create(request):
 
 
 
-from django.db import transaction
 
-from django.shortcuts import get_object_or_404
+from django.db.models import Sum
+from django.contrib import messages
+from decimal import Decimal
 from django.db import transaction
+from django.shortcuts import get_object_or_404, render, redirect
 
 def payment_update(request, pk):
-    payment = get_object_or_404(Payment, pk=pk)
-    # clients = Client.objects.all()
-    clients = Client.objects.select_related('company')  # ✅ IMPORTANT
-    banks = Bank.objects.all()
+
+    selected_company_id = request.session.get('selected_company_id')
+
+    payment = get_object_or_404(
+        Payment,
+        pk=pk,
+        client__company_id=selected_company_id
+    )
+
+    clients = Client.objects.filter(company_id=selected_company_id)
+    banks = Bank.objects.filter(
+        company_id=selected_company_id
+    ).order_by('name')
+
 
     old_bank = payment.bank
 
     if request.method == 'POST':
+
         client_id = request.POST.get('client')
         bank_id = request.POST.get('bank')
         new_amount = Decimal(request.POST.get('amount'))
         new_mode = request.POST.get('payment_mode')
         new_date = request.POST.get('payment_date')
 
+        client = get_object_or_404(
+            Client,
+            id=client_id,
+            company_id=selected_company_id
+        )
+
+        # 🔥 Get total paid EXCLUDING this payment
+        total_paid = client.payments.exclude(id=payment.id).aggregate(
+            total=Sum('amount')
+        )['total'] or Decimal('0.00')
+
+        new_total = total_paid + new_amount
+
+        # ❌ VALIDATION
+        if new_total > client.budget:
+            remaining_allowed = client.budget - total_paid
+            messages.error(
+                request,
+                f"❌ Payment exceeds project value! "
+                f"Remaining allowed: ₹ {remaining_allowed:,.2f}"
+            )
+            return render(request, 'payment/update.html', {
+                'payment': payment,
+                'clients': clients,
+                'banks': banks
+            })
+
         with transaction.atomic():
 
-            # 🔁 REMOVE OLD BANK EFFECT
+            # 🔁 Remove old bank effect
             if old_bank:
                 old_bank.recalculate_balance()
 
@@ -2017,14 +2691,15 @@ def payment_update(request, pk):
                 payment.bank = Bank.objects.get(id=bank_id)
                 payment.payment_mode = Payment.CHEQUE
 
-            payment.client_id = client_id
+            payment.client = client
             payment.amount = new_amount
             payment.payment_date = new_date
             payment.save()
 
-            # 🔁 APPLY NEW BANK EFFECT
+            # 🔁 Apply new bank effect
             payment.bank.recalculate_balance()
 
+        messages.success(request, "✅ Payment updated successfully")
         return redirect('payment_index')
 
     return render(request, 'payment/update.html', {
@@ -2057,8 +2732,22 @@ def payment_delete(request, pk):
 
 #worker views will be added here
 
+
+
 def worker_index(request):
-    workers = Worker.objects.all().order_by('name')
+
+    # 🏢 COMPANY FROM SESSION
+    selected_company_id = request.session.get('selected_company_id')
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    # 👷 Workers only for selected company
+    workers = (
+        Worker.objects
+        .filter(company_id=selected_company_id)
+        .order_by('name')
+    )
+
     return render(request, 'worker/index.html', {
         'workers': workers
     })
@@ -2068,16 +2757,18 @@ def worker_index(request):
 def worker_create(request):
     if request.method == 'POST':
         name = request.POST.get('name')
+        company = request.session.get('selected_company_id')  # 👈 COMPANY FROM SESSION
 
         if not name:
             messages.error(request, "Worker name is required")
         else:
-            Worker.objects.create(name=name)
+            Worker.objects.create(name=name, company_id=company)  #👈 ASSOCIATE WITH COMPANY
             messages.success(request, "Worker added successfully")
             return redirect('worker_index')
 
     return render(request, 'worker/create.html', {
-        'title': 'Add Worker'
+        'title': 'Add Worker',
+        'company': Company.objects.get(id=request.session.get('selected_company_id'))
     })
 
 
@@ -2087,18 +2778,21 @@ def worker_update(request, pk):
 
     if request.method == 'POST':
         name = request.POST.get('name')
+        company = request.session.get('selected_company_id')
 
         if not name:
             messages.error(request, "Worker name is required")
         else:
             worker.name = name
+            worker.company_id = company  # Ensure worker remains associated with the company
             worker.save()
             messages.success(request, "Worker updated successfully")
             return redirect('worker_index')
 
     return render(request, 'worker/update.html', {
         'title': 'Update Worker',
-        'worker': worker
+        'worker': worker,
+        'company': Company.objects.get(id=request.session.get('selected_company_id'))
     })
 
 
@@ -2117,11 +2811,122 @@ def worker_delete(request, pk):
     })
 
 
+def worker_name_index(request):
+
+    selected_company_id = request.session.get('selected_company_id')
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    worker_id = request.GET.get('worker')  # string or None
+
+    # 🏢 Workers of selected company
+    workers = Worker.objects.filter(company_id=selected_company_id)
+
+    # 👥 Worker names ONLY under selected company
+    names = WorkerName.objects.select_related('worker').filter(
+        worker__company_id=selected_company_id
+    )
+
+    # 🔎 Apply filter if worker selected
+    if worker_id:
+        names = names.filter(worker_id=worker_id)
+
+    return render(request, 'worker_name/index.html', {
+        'workers': workers,
+        'worker_names': names,
+        'selected_worker': worker_id,
+    })
+
+
+
+def worker_name_create(request):
+
+    selected_company_id = request.session.get('selected_company_id')
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    workers = Worker.objects.filter(company_id=selected_company_id)
+
+    if request.method == 'POST':
+        worker_id = request.POST.get('worker')
+        name = request.POST.get('name', '').strip()
+
+        if not worker_id or not name:
+            messages.error(request, "Worker and name are required")
+        else:
+            WorkerName.objects.create(
+                worker_id=worker_id,
+                name=name
+            )
+            messages.success(request, "Worker name added")
+            return redirect('worker_name_index')
+
+    return render(request, 'worker_name/create.html', {
+        'workers': workers
+    })
+
+
+
+from django.shortcuts import get_object_or_404, redirect, render
+from django.contrib import messages
+
+def worker_name_update(request, pk):
+
+    # 👤 WorkerName object
+    worker_name = get_object_or_404(WorkerName, pk=pk)
+
+    # 🏢 COMPANY FROM SESSION
+    selected_company_id = request.session.get('selected_company_id')
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    # 👷 Workers under selected company
+    workers = Worker.objects.filter(company_id=selected_company_id)
+
+    if request.method == 'POST':
+        worker_id = request.POST.get('worker')
+        name = request.POST.get('name', '').strip()
+
+        # ❌ Validation
+        if not worker_id or not name:
+            messages.error(request, "Worker and name are required")
+        else:
+            # ✅ Ensure worker belongs to same company
+            worker = get_object_or_404(
+                Worker,
+                id=worker_id,
+                company_id=selected_company_id
+            )
+
+            # ✅ Update
+            worker_name.worker = worker
+            worker_name.name = name
+            worker_name.save()
+
+            messages.success(request, "Worker name updated successfully")
+            return redirect('worker_name_index')
+
+    return render(request, 'worker_name/update.html', {
+        'worker_name': worker_name,
+        'workers': workers,
+    })
 
 
 
 
 
+
+def worker_name_delete(request, pk):
+    worker_name = get_object_or_404(WorkerName, pk=pk)
+
+    if request.method == 'POST':
+        worker_name.delete()
+        messages.success(request, "Worker name deleted successfully")
+        return redirect('worker_name_index')
+
+    return render(request, 'worker_name/delete.html', {
+        'worker_name': worker_name
+    })
 
 
 
@@ -2131,34 +2936,62 @@ from .models import ExpenseCategory
 
 # 📄 INDEX
 def expense_category_index(request):
-    categories = ExpenseCategory.objects.order_by('name')
+
+    selected_company_id = request.session.get('selected_company_id')
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    categories = ExpenseCategory.objects.filter(
+        company_id=selected_company_id
+    ).order_by('name')
+
     return render(request, 'expense_category/index.html', {
         'categories': categories
     })
 
 
+
 # ➕ CREATE
 def expense_category_create(request):
+
+    selected_company_id = request.session.get('selected_company_id')
+    if not selected_company_id:
+        return redirect('dashboard')
+
     if request.method == 'POST':
-        name = request.POST.get('name')
+        name = request.POST.get('name', '').strip()
 
         if not name:
             messages.error(request, "Category name is required")
             return redirect('expense_category_create')
 
-        ExpenseCategory.objects.create(name=name)
+        ExpenseCategory.objects.create(
+            company_id=selected_company_id,
+            name=name
+        )
+
         messages.success(request, "Category created successfully")
         return redirect('expense_category_index')
 
     return render(request, 'expense_category/create.html')
 
 
+
 # ✏️ UPDATE
 def expense_category_update(request, pk):
-    category = get_object_or_404(ExpenseCategory, pk=pk)
+
+    selected_company_id = request.session.get('selected_company_id')
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    category = get_object_or_404(
+        ExpenseCategory,
+        pk=pk,
+        company_id=selected_company_id
+    )
 
     if request.method == 'POST':
-        name = request.POST.get('name')
+        name = request.POST.get('name', '').strip()
 
         if not name:
             messages.error(request, "Category name is required")
@@ -2191,95 +3024,311 @@ def expense_category_delete(request, pk):
 
 
 
+# 📄 INDEX
+def expense_subcategory_index(request):
 
-#expense views will be added here
+    selected_company_id = request.session.get('selected_company_id')
+    if not selected_company_id:
+        return redirect('dashboard')
 
-from django.utils.dateparse import parse_date
+    category_id = request.GET.get('category')
 
-
-
-def expense_index(request):
-
-    expenses = Expense.objects.select_related(
-        'client', 'bank', 'category', 'salary_to'
+    # ✅ COMPANY FILTER
+    categories = ExpenseCategory.objects.filter(
+        company_id=selected_company_id
     )
 
-    # 🔍 FILTER VALUES
-    start_date = request.GET.get('start_date')
-    end_date = request.GET.get('end_date')
-    client_id = request.GET.get('client')
-    category_id = request.GET.get('category')
-    spend_mode = request.GET.get('spend_mode')
-    bank_id = request.GET.get('bank')
-    worker_id = request.GET.get('worker')   # 👈 NEW
+    subcategories = ExpenseSubCategory.objects.select_related('category').filter(
+        company_id=selected_company_id
+    )
 
-    # 📅 DATE FILTERS
-    if start_date:
-        expenses = expenses.filter(expense_date__gte=parse_date(start_date))
-    if end_date:
-        expenses = expenses.filter(expense_date__lte=parse_date(end_date))
-
-    # 👤 CLIENT FILTER
-    if client_id:
-        expenses = expenses.filter(client_id=client_id)
-
-    # 🏷 CATEGORY FILTER
     if category_id:
-        expenses = expenses.filter(category_id=category_id)
+        subcategories = subcategories.filter(category_id=category_id)
 
-    # 💳 SPEND MODE FILTER
-    if spend_mode in ['cash', 'cheque']:
-        expenses = expenses.filter(spend_mode=spend_mode)
-
-    # 🏦 BANK FILTER
-    if bank_id:
-        expenses = expenses.filter(bank_id=bank_id)
-
-    # 👷 WORKER FILTER (NEW)
-    if worker_id:
-        expenses = expenses.filter(salary_to_id=worker_id)
-
-    expenses = expenses.order_by('-expense_date')
-
-    return render(request, 'expense/index.html', {
-        'expenses': expenses,
-
-        # selected values
-        'start_date': start_date,
-        'end_date': end_date,
-        'selected_client': client_id,
+    return render(request, 'expense_subcategory/index.html', {
+        'categories': categories,
+        'subcategories': subcategories,
         'selected_category': category_id,
-        'selected_spend_mode': spend_mode,
-        'selected_bank': bank_id,
-        'selected_worker': worker_id,   # 👈 NEW
-
-        # dropdown data
-        'clients': Client.objects.select_related('company'),
-        'categories': ExpenseCategory.objects.all(),
-        'workers': Worker.objects.all(),    # 👈 NEW
-
-        'cash_bank': Bank.objects.filter(name__iexact='cash').first(),
-        'banks': Bank.objects.exclude(name__iexact='cash'),
     })
 
 
 
+# ➕ CREATE
+def expense_subcategory_create(request):
+
+    selected_company_id = request.session.get('selected_company_id')
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    categories = ExpenseCategory.objects.filter(
+        company_id=selected_company_id
+    )
+
+    if request.method == 'POST':
+        category_id = request.POST.get('category')
+        name = request.POST.get('name', '').strip()
+
+        if not category_id or not name:
+            messages.error(request, "Category and Sub-category name are required")
+        else:
+            ExpenseSubCategory.objects.create(
+                company_id=selected_company_id,   # ✅ IMPORTANT
+                category_id=category_id,
+                name=name
+            )
+            messages.success(request, "Sub-category added successfully")
+            return redirect('expense_subcategory_index')
+
+    return render(request, 'expense_subcategory/create.html', {
+        'categories': categories
+    })
+
+
+
+# ✏️ UPDATE
+def expense_subcategory_update(request, pk):
+
+    selected_company_id = request.session.get('selected_company_id')
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    subcategory = get_object_or_404(
+        ExpenseSubCategory,
+        pk=pk,
+        company_id=selected_company_id   # ✅ SECURITY
+    )
+
+    categories = ExpenseCategory.objects.filter(
+        company_id=selected_company_id
+    )
+
+    if request.method == 'POST':
+        category_id = request.POST.get('category')
+        name = request.POST.get('name', '').strip()
+
+        if not name or not category_id:
+            messages.error(request, "All fields are required")
+        else:
+            subcategory.category_id = category_id
+            subcategory.name = name
+            subcategory.save()
+
+            
+            return redirect('expense_subcategory_index')
+
+    return render(request, 'expense_subcategory/update.html', {
+        'subcategory': subcategory,
+        'categories': categories
+    })
+
+
+
+# 🗑 DELETE
+def expense_subcategory_delete(request, pk):
+    subcategory = get_object_or_404(ExpenseSubCategory, pk=pk)
+
+    if request.method == 'POST':
+        subcategory.delete()
+        messages.success(request, "Sub-category deleted")
+        return redirect('expense_subcategory_index')
+
+    return render(request, 'expense_subcategory/delete.html', {
+        'subcategory': subcategory
+    })
+
+
+
+#expense views will be added here
+
+from django.shortcuts import render, redirect
+from django.utils.dateparse import parse_date
+
+
+def expense_index(request):
+
+    # 🏢 COMPANY FROM SESSION
+    selected_company_id = request.session.get('selected_company_id')
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    # =========================
+    # 📊 BASE QUERYSET
+    # =========================
+    expenses = Expense.objects.select_related(
+        'client',
+        'bank',
+        'category',
+        'subcategory',
+        'salary_to',
+        'worker_name'
+    ).filter(
+        client__company_id=selected_company_id
+    )
+
+    # =========================
+    # 🔍 FILTER VALUES
+    # =========================
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    client_id = request.GET.get('client')
+    category_id = request.GET.get('category')
+    subcategory_id = request.GET.get('subcategory')
+    spend_mode = request.GET.get('spend_mode')
+    bank_id = request.GET.get('bank')
+    worker_id = request.GET.get('worker')
+    worker_name_id = request.GET.get('worker_name')
+
+    # =========================
+    # 📅 DATE FILTERS
+    # =========================
+    if start_date:
+        expenses = expenses.filter(
+            expense_date__gte=parse_date(start_date)
+        )
+
+    if end_date:
+        expenses = expenses.filter(
+            expense_date__lte=parse_date(end_date)
+        )
+
+    # =========================
+    # 👤 CLIENT FILTER
+    # =========================
+    if client_id:
+        expenses = expenses.filter(client_id=client_id)
+
+    # =========================
+    # 🏷 CATEGORY FILTER
+    # =========================
+    if category_id:
+        expenses = expenses.filter(category_id=category_id)
+
+    # =========================
+    # 🏷 SUBCATEGORY FILTER
+    # =========================
+    if subcategory_id:
+        expenses = expenses.filter(subcategory_id=subcategory_id)
+
+    # =========================
+    # 💳 SPEND MODE FILTER
+    # =========================
+    if spend_mode in ['cash', 'cheque']:
+        expenses = expenses.filter(spend_mode=spend_mode)
+
+    # =========================
+    # 🏦 BANK FILTER
+    # =========================
+    if bank_id:
+        expenses = expenses.filter(bank_id=bank_id)
+
+    # =========================
+    # 👷 SALARY TEAM FILTER
+    # =========================
+    if worker_id:
+        expenses = expenses.filter(salary_to_id=worker_id)
+
+    # =========================
+    # 👤 SALARY WORKER NAME FILTER
+    # =========================
+    if worker_name_id:
+        expenses = expenses.filter(worker_name_id=worker_name_id)
+
+    # =========================
+    # 📅 ORDERING
+    # =========================
+    expenses = expenses.order_by('-expense_date')
+
+    # =========================
+    # 📋 DROPDOWN DATA
+    # =========================
+    clients = Client.objects.filter(
+        company_id=selected_company_id
+    )
+
+    categories = ExpenseCategory.objects.filter(
+        company_id=selected_company_id
+    )
+
+    subcategories = ExpenseSubCategory.objects.filter(
+        category__company_id=selected_company_id
+    )
+
+    workers = Worker.objects.filter(
+        company_id=selected_company_id
+    )
+
+    worker_names = WorkerName.objects.filter(
+        worker__company_id=selected_company_id
+    ).select_related('worker')
+
+    cash_bank = Bank.objects.filter(
+        name__iexact='cash'
+    ).first()
+
+    banks = Bank.objects.exclude(
+        name__iexact='cash'
+    )
+
+    # =========================
+    # 📤 RENDER
+    # =========================
+    return render(request, 'expense/index.html', {
+        'expenses': expenses,
+
+        # Selected values (for form state persistence)
+        'start_date': start_date,
+        'end_date': end_date,
+        'selected_client': client_id,
+        'selected_category': category_id,
+        'selected_subcategory': subcategory_id,
+        'selected_spend_mode': spend_mode,
+        'selected_bank': bank_id,
+        'selected_worker': worker_id,
+        'selected_worker_name': worker_name_id,
+
+        # Dropdowns
+        'clients': clients,
+        'categories': categories,
+        'subcategories': subcategories,
+        'workers': workers,
+        'worker_names': worker_names,
+        'cash_bank': cash_bank,
+        'banks': banks,
+    })
+
+
+
+
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer
-from reportlab.lib.pagesizes import A4
+from reportlab.lib.pagesizes import landscape, A4
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
 from django.http import HttpResponse
+from django.shortcuts import redirect
 from django.utils.dateparse import parse_date
 from decimal import Decimal
 
 
 def expense_pdf_export(request):
 
+    selected_company_id = request.session.get('selected_company_id')
+    if not selected_company_id:
+        return redirect('dashboard')
+
     expenses = Expense.objects.select_related(
-        'client', 'bank', 'category', 'salary_to'
+        'client',
+        'bank',
+        'category',
+        'subcategory',
+        'salary_to',
+        'worker_name'
+    ).filter(
+        client__company_id=selected_company_id
     )
 
-    # 🔍 SAME FILTERS
+    # =============================
+    # FILTERS
+    # =============================
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
     client_id = request.GET.get('client')
@@ -2290,6 +3339,7 @@ def expense_pdf_export(request):
 
     if start_date:
         expenses = expenses.filter(expense_date__gte=parse_date(start_date))
+
     if end_date:
         expenses = expenses.filter(expense_date__lte=parse_date(end_date))
 
@@ -2310,28 +3360,30 @@ def expense_pdf_export(request):
 
     expenses = expenses.order_by('expense_date')
 
-    # =====================
-    # 📄 PDF SETUP
-    # =====================
+    # =============================
+    # PDF SETUP
+    # =============================
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="expenses_report.pdf"'
 
     doc = SimpleDocTemplate(
         response,
-        pagesize=A4,
-        rightMargin=25,
-        leftMargin=25,
-        topMargin=25,
-        bottomMargin=25
+        pagesize=landscape(A4),
+        rightMargin=30,
+        leftMargin=30,
+        topMargin=30,
+        bottomMargin=30
     )
 
     styles = getSampleStyleSheet()
     elements = []
 
-    # =====================
-    # 🧾 HEADER
-    # =====================
-    elements.append(Paragraph("Expense Report", styles['Title']))
+    company = Company.objects.get(id=selected_company_id)
+
+    elements.append(Paragraph(
+        f"<b>Expense Report – {company.name}</b>",
+        styles['Title']
+    ))
 
     if start_date or end_date:
         elements.append(
@@ -2341,38 +3393,39 @@ def expense_pdf_export(request):
             )
         )
 
-    elements.append(Spacer(1, 10))
+    elements.append(Spacer(1, 15))
 
-    # =====================
-    # 📊 TABLE DATA
-    # =====================
+    # =============================
+    # TABLE DATA
+    # =============================
     table_data = [[
-        'Date', 'Client', 'Category', 'Worker',
+        'Date', 'Client', 'Category', 'Sub-Category',
+        'Worker Team', 'Worker Name',
         'Mode', 'Bank', 'Amount'
     ]]
 
     total_amount = Decimal('0.00')
 
     for e in expenses:
+
         total_amount += e.amount
 
         table_data.append([
             e.expense_date.strftime('%d-%m-%Y'),
             e.client.name,
             e.category.name if e.category else '—',
+            e.subcategory.name if e.subcategory else '—',
             e.salary_to.name if e.salary_to else '—',
+            e.worker_name.name if e.worker_name else '—',
             e.spend_mode.capitalize(),
             e.bank.name if e.bank else 'Cash',
             f"{e.amount:.2f}"
         ])
 
-    # =====================
-    # 📄 TABLE
-    # =====================
     table = Table(
         table_data,
-        colWidths=[65, 80, 70, 70, 55, 70, 65],
-        repeatRows=1
+        repeatRows=1,
+        colWidths=[70, 100, 90, 100, 90, 90, 60, 90, 80]
     )
 
     table.setStyle(TableStyle([
@@ -2384,14 +3437,14 @@ def expense_pdf_export(request):
     ]))
 
     elements.append(table)
-    elements.append(Spacer(1, 12))
+    elements.append(Spacer(1, 15))
 
-    # =====================
-    # 💰 TOTAL BOX
-    # =====================
+    # =============================
+    # TOTAL BOX
+    # =============================
     total_table = Table(
         [['TOTAL EXPENSE', f"Rs. {total_amount:.2f}"]],
-        colWidths=[200, 120]
+        colWidths=[300, 150]
     )
 
     total_table.setStyle(TableStyle([
@@ -2413,47 +3466,113 @@ def expense_pdf_export(request):
 
 
 
+
+
 from decimal import Decimal
 from django.db import transaction
 from django.contrib import messages
+from django.shortcuts import redirect
+from django.db.models import Q
 
 def expense_create(request):
-    clients = Client.objects.select_related('company')
-    banks = Bank.objects.all()
-    categories = ExpenseCategory.objects.all()
-    workers = Worker.objects.all()   # ✅ NEW
 
+    # 🏢 COMPANY FROM SESSION
+    selected_company_id = request.session.get('selected_company_id')
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    # =========================
+    # 📋 DROPDOWNS (COMPANY AWARE)
+    # =========================
+    clients = Client.objects.filter(company_id=selected_company_id)
+
+    categories = ExpenseCategory.objects.filter(
+        company_id=selected_company_id
+    )
+
+    subcategories = ExpenseSubCategory.objects.filter(
+        category__company_id=selected_company_id
+    )
+
+    workers = Worker.objects.filter(company_id=selected_company_id)
+
+    banks = Bank.objects.filter(
+        company_id=selected_company_id
+    ).order_by('name')
+
+    cash_bank = Bank.objects.filter(name__iexact='cash').first()
+
+    workers = Worker.objects.filter(company_id=selected_company_id)
+
+    worker_names = WorkerName.objects.filter(
+            worker__company_id=selected_company_id
+        ).select_related('worker')
+    
+    # =========================
+    # 📩 POST
+    # =========================
     if request.method == 'POST':
+
         client_id = request.POST.get('client')
         bank_id = request.POST.get('bank')
         category_id = request.POST.get('category')
-        salary_to_id = request.POST.get('salary_to')   # ✅ NEW
-        description = request.POST.get('description')
-        amount = Decimal(request.POST.get('amount'))
+        subcategory_id = request.POST.get('subcategory')
+        salary_to_id = request.POST.get('salary_to')
+        worker_name_id = request.POST.get('worker_name')
+        description = request.POST.get('description', '').strip()
         spend_mode = request.POST.get('spend_mode')
         expense_date = request.POST.get('expense_date')
+
+        try:
+            amount = Decimal(request.POST.get('amount'))
+        except:
+            messages.error(request, "Invalid amount")
+            return redirect('expense_create')
+
+        # =========================
+        # 🔐 VALIDATIONS
+        # =========================
+        client = clients.filter(id=client_id).first()
+        if not client:
+            messages.error(request, "Invalid client")
+            return redirect('expense_create')
+
+        category = categories.filter(id=category_id).first() if category_id else None
+
+        subcategory = None
+        if subcategory_id:
+            subcategory = subcategories.filter(
+                id=subcategory_id,
+                category_id=category_id
+            ).first()
+
+            if not subcategory:
+                messages.error(request, "Invalid sub-category selection")
+                return redirect('expense_create')
+
+        worker = workers.filter(id=salary_to_id).first() if salary_to_id else None
+
 
         with transaction.atomic():
 
             # 💵 CASH
             if spend_mode == Expense.CASH:
-                bank = Bank.objects.get(name__iexact='cash')
+                bank = cash_bank
+
+            # 🏦 CHEQUE
             else:
-                if not bank_id:
-                    messages.error(request, "Please select a bank")
-                    return render(request, 'expense/create.html', {
-                        'clients': clients,
-                        'banks': banks,
-                        'categories': categories,
-                        'workers': workers
-                    })
-                bank = Bank.objects.get(id=bank_id)
+                bank = banks.filter(id=bank_id).first()
+                if not bank:
+                    messages.error(request, "Invalid bank")
+                    return redirect('expense_create')
 
             Expense.objects.create(
-                client_id=client_id,
-                category_id=category_id,
-                salary_to_id=salary_to_id if salary_to_id else None,  # ✅
+                client=client,
                 bank=bank,
+                category=category,
+                subcategory=subcategory,
+                salary_to=worker,
+                worker_name_id=worker_name_id,
                 description=description,
                 amount=amount,
                 spend_mode=spend_mode,
@@ -2462,83 +3581,24 @@ def expense_create(request):
 
             bank.recalculate_balance()
 
+        messages.success(request, "Expense added successfully")
         return redirect('expense_index')
 
     return render(request, 'expense/create.html', {
         'clients': clients,
         'banks': banks,
+        'cash_bank': cash_bank,
         'categories': categories,
-        'workers': workers   # ✅
+        'subcategories': subcategories,
+        'workers': workers,
+        selected_company_id: selected_company_id,
+        'worker_names': worker_names,
     })
 
 
 
 
 
-# from django.shortcuts import get_object_or_404
-# from django.db import transaction
-
-# def expense_update(request, pk):
-#     expense = get_object_or_404(Expense, pk=pk)
-
-#     clients = Client.objects.select_related('company')
-#     banks = Bank.objects.all()
-#     categories = ExpenseCategory.objects.all()
-
-#     old_bank = expense.bank
-
-#     if request.method == 'POST':
-#         client_id = request.POST.get('client')
-#         bank_id = request.POST.get('bank')
-#         category_id = request.POST.get('category')
-#         description = request.POST.get('description')
-#         new_amount = Decimal(request.POST.get('amount'))
-#         spend_mode = request.POST.get('spend_mode')
-#         expense_date = request.POST.get('expense_date')
-
-#         with transaction.atomic():
-
-#             # 🔁 REVERSE OLD BANK EFFECT
-#             if old_bank:
-#                 old_bank.recalculate_balance()
-
-#             # 💵 CASH MODE → BANK = "Cash"
-#             if spend_mode == Expense.CASH:
-#                 bank = Bank.objects.get(name__iexact='cash')
-
-#             # 🔵 CHEQUE MODE
-#             else:
-#                 if not bank_id:
-#                     messages.error(request, "Please select a bank")
-#                     return render(request, 'expense/update.html', {
-#                         'expense': expense,
-#                         'clients': clients,
-#                         'banks': banks,
-#                         'categories': categories
-#                     })
-#                 bank = Bank.objects.get(id=bank_id)
-
-#             # ✅ ALWAYS ALLOW UPDATE (NEGATIVE BALANCE OK)
-#             expense.client_id = client_id
-#             expense.category_id = category_id
-#             expense.bank = bank
-#             expense.description = description
-#             expense.amount = new_amount
-#             expense.spend_mode = spend_mode
-#             expense.expense_date = expense_date
-#             expense.save()
-
-#             # 🔁 Recalculate → can go negative
-#             bank.recalculate_balance()
-
-#         return redirect('expense_index')
-
-#     return render(request, 'expense/update.html', {
-#         'expense': expense,
-#         'clients': clients,
-#         'banks': banks,
-#         'categories': categories
-#     })
 
 
 
@@ -2547,88 +3607,219 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.db import transaction
 from django.contrib import messages
 from decimal import Decimal
+from django.db.models import Q
 
 def expense_update(request, pk):
-    expense = get_object_or_404(Expense, pk=pk)
 
-    clients = Client.objects.select_related('company')
-    banks = Bank.objects.all()
-    categories = ExpenseCategory.objects.all()
-    workers = Worker.objects.all()   # ✅ NEW
+    # 🏢 COMPANY FROM SESSION
+    selected_company_id = request.session.get('selected_company_id')
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    # 🔐 Only allow editing company-related expense
+    expense = get_object_or_404(
+        Expense,
+        pk=pk,
+        client__company_id=selected_company_id
+    )
+
+    # =========================
+    # 📋 DROPDOWNS (COMPANY AWARE)
+    # =========================
+    clients = Client.objects.filter(company_id=selected_company_id)
+
+    categories = ExpenseCategory.objects.filter(
+        company_id=selected_company_id
+    )
+
+    subcategories = ExpenseSubCategory.objects.filter(
+        category__company_id=selected_company_id
+    )
+
+    workers = Worker.objects.filter(company_id=selected_company_id)
+
+    worker_names = WorkerName.objects.filter(
+            worker__company_id=selected_company_id
+        ).select_related('worker')
+
+    banks = Bank.objects.filter(
+        company_id=selected_company_id
+    ).order_by('name')
+
+    cash_bank = Bank.objects.filter(name__iexact='cash').first()
 
     old_bank = expense.bank
 
+    # =========================
+    # 📩 POST
+    # =========================
+
+    print("POST:", request.POST)
+
     if request.method == 'POST':
+
         client_id = request.POST.get('client')
-        bank_id = request.POST.get('bank')
         category_id = request.POST.get('category')
-        salary_to_id = request.POST.get('salary_to')  # ✅ NEW
-        description = request.POST.get('description')
-        new_amount = Decimal(request.POST.get('amount'))
+        subcategory_id = request.POST.get('subcategory')
+        salary_to_id = request.POST.get('salary_to')
+        worker_name_id = request.POST.get('worker_name')
+        bank_id = request.POST.get('bank')
+        description = request.POST.get('description', '').strip()
         spend_mode = request.POST.get('spend_mode')
         expense_date = request.POST.get('expense_date')
 
+        try:
+            new_amount = Decimal(request.POST.get('amount'))
+        except:
+            messages.error(request, "Invalid amount")
+            return redirect('expense_update', pk=pk)
+
+        # 🔐 VALIDATION
+        client = clients.filter(id=client_id).first()
+        if not client:
+            messages.error(request, "Invalid client")
+            return redirect('expense_update', pk=pk)
+
+        if category_id:
+            category = categories.filter(id=category_id).first()
+            if not category:
+                messages.error(request, "Invalid category selected")
+                return redirect('expense_update', pk=pk)
+        else:
+            category = expense.category  # KEEP OLD
+
+
+        if subcategory_id:
+            subcategory = subcategories.filter(
+                id=subcategory_id,
+                category_id=category_id
+            ).first()
+
+            if not subcategory:
+                messages.error(request, "Invalid sub-category selection")
+                return redirect('expense_update', pk=pk)
+        else:
+            subcategory = expense.subcategory  # KEEP OLD
+
+
+        worker = None
+        worker_name = None
+
+        # Only allow worker fields if category is Salary
+        if category and category.name.lower() == "salary":
+
+            if salary_to_id:
+                worker = workers.filter(id=salary_to_id).first()
+                if not worker:
+                    messages.error(request, "Invalid worker team selected")
+                    return redirect('expense_update', pk=pk)
+
+            if worker_name_id:
+                worker_name = worker_names.filter(
+                    id=worker_name_id,
+                    worker=worker
+                ).first()
+
+                if not worker_name:
+                    messages.error(request, "Invalid worker name selected")
+                    return redirect('expense_update', pk=pk)
+
+        else:
+            # 🚀 Not salary → force remove worker info
+            worker = None
+            worker_name = None
+
+
+
+
         with transaction.atomic():
 
-            # 🔁 REVERSE OLD BANK EFFECT
+            # 🔁 Reverse old bank effect
             if old_bank:
                 old_bank.recalculate_balance()
 
-            # 💵 CASH MODE → BANK = Cash
+            # 💵 CASH MODE
             if spend_mode == Expense.CASH:
-                bank = Bank.objects.get(name__iexact='cash')
+                bank = cash_bank
 
-            # 🔵 CHEQUE MODE
+            # 🏦 CHEQUE MODE
             else:
-                if not bank_id:
-                    messages.error(request, "Please select a bank")
-                    return render(request, 'expense/update.html', {
-                        'expense': expense,
-                        'clients': clients,
-                        'banks': banks,
-                        'categories': categories,
-                        'workers': workers
-                    })
-                bank = Bank.objects.get(id=bank_id)
+                bank = banks.filter(id=bank_id).first()
+                if not bank:
+                    messages.error(request, "Invalid bank")
+                    return redirect('expense_update', pk=pk)
 
             # 🧾 UPDATE EXPENSE
-            expense.client_id = client_id
-            expense.category_id = category_id
-            expense.salary_to_id = salary_to_id if salary_to_id else None  # ✅
+            expense.client = client
+            expense.category = category
+            expense.subcategory = subcategory
+            expense.salary_to = worker
+            expense.worker_name = worker_name
             expense.bank = bank
             expense.description = description
             expense.amount = new_amount
             expense.spend_mode = spend_mode
             expense.expense_date = expense_date
+            print("Worker:", worker)
+            print("Worker Name:", worker_name)
+
             expense.save()
 
-            # 🔁 APPLY NEW BANK EFFECT
+            # 🔁 Apply new bank balance
             bank.recalculate_balance()
 
+        messages.success(request, "Expense updated successfully")
         return redirect('expense_index')
 
     return render(request, 'expense/update.html', {
         'expense': expense,
         'clients': clients,
         'banks': banks,
+        'cash_bank': cash_bank,
         'categories': categories,
-        'workers': workers   # ✅
+        'subcategories': subcategories,
+        'workers': workers,
+        'worker_names': worker_names,
+        'selected_company_id': selected_company_id,
     })
 
 
 
 
 
+
+
+from django.shortcuts import get_object_or_404, redirect, render
+from django.contrib import messages
+from django.db import transaction
+
+
 def expense_delete(request, pk):
-    expense = get_object_or_404(Expense, pk=pk)
+
+    # 🏢 COMPANY FROM SESSION
+    selected_company_id = request.session.get('selected_company_id')
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    # 🔒 Only allow deleting expense from selected company
+    expense = get_object_or_404(
+        Expense,
+        pk=pk,
+        client__company_id=selected_company_id
+    )
+
     bank = expense.bank
 
     if request.method == 'POST':
         with transaction.atomic():
+
             expense.delete()
 
+            # 🔁 Recalculate bank after delete
             if bank:
                 bank.recalculate_balance()
+
+        messages.success(request, "Expense deleted successfully")
 
         return redirect('expense_index')
 
@@ -2639,46 +3830,78 @@ def expense_delete(request, pk):
 
 
 
-from django.shortcuts import render
+
+from django.shortcuts import render, redirect
 from django.utils.dateparse import parse_date
 from django.db.models import Sum
 from decimal import Decimal
 
+
 def salary_index(request):
 
+    # 🏢 COMPANY FROM SESSION
+    selected_company_id = request.session.get('selected_company_id')
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    # =========================
+    # 📊 BASE QUERYSET (ONLY SALARY)
+    # =========================
     expenses = Expense.objects.select_related(
-        'client', 'bank', 'category', 'salary_to'
+        'client', 'bank', 'category', 'salary_to', 'worker_name'
     ).filter(
+        client__company_id=selected_company_id,
         category__name__iexact='salary'
     )
 
+    # =========================
     # 🔍 FILTER VALUES
-    worker_id = request.GET.get('worker')
+    # =========================
+    worker_team_id = request.GET.get('worker')          # Team
+    worker_name_id = request.GET.get('worker_name')     # Individual
     client_id = request.GET.get('client')
     spend_mode = request.GET.get('spend_mode')
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
 
-    # 👷 WORKER FILTER
-    if worker_id:
-        expenses = expenses.filter(salary_to_id=worker_id)
+    # =========================
+    # 👷 TEAM FILTER
+    # =========================
+    if worker_team_id:
+        expenses = expenses.filter(salary_to_id=worker_team_id)
 
+    # =========================
+    # 👷‍♂️ WORKER NAME FILTER
+    # =========================
+    if worker_name_id:
+        expenses = expenses.filter(worker_name_id=worker_name_id)
+
+    # =========================
     # 👤 CLIENT FILTER
+    # =========================
     if client_id:
         expenses = expenses.filter(client_id=client_id)
 
+    # =========================
     # 💳 SPEND MODE FILTER
+    # =========================
     if spend_mode in ['cash', 'cheque']:
         expenses = expenses.filter(spend_mode=spend_mode)
 
+    # =========================
     # 📅 DATE FILTERS
+    # =========================
     if start_date:
         expenses = expenses.filter(expense_date__gte=parse_date(start_date))
+
     if end_date:
         expenses = expenses.filter(expense_date__lte=parse_date(end_date))
 
     expenses = expenses.order_by('-expense_date')
 
+    # =========================
+    # 💰 TOTAL SALARY
+    # =========================
     total_salary = expenses.aggregate(
         total=Sum('amount')
     )['total'] or Decimal('0.00')
@@ -2687,21 +3910,33 @@ def salary_index(request):
         'expenses': expenses,
         'total_salary': total_salary,
 
-        # filters
-        'selected_worker': worker_id,
+        # selected filters
+        'selected_worker': worker_team_id,
+        'selected_worker_name': worker_name_id,
         'selected_client': client_id,
         'selected_spend_mode': spend_mode,
         'start_date': start_date,
         'end_date': end_date,
 
-        # dropdown data
-        'workers': Worker.objects.all(),
-        'clients': Client.objects.select_related('company'),
+        # DROPDOWNS
+        'workers': Worker.objects.filter(
+            company_id=selected_company_id
+        ),
+
+        'worker_names': WorkerName.objects.filter(
+            worker__company_id=selected_company_id
+        ).select_related('worker'),
+
+        'clients': Client.objects.filter(
+            company_id=selected_company_id
+        ),
     })
 
 
+
+
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.utils.dateparse import parse_date
 from django.db.models import Sum
 from decimal import Decimal
@@ -2709,37 +3944,57 @@ from decimal import Decimal
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer
 )
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
 
 def salary_pdf(request):
 
+    # =========================
+    # 🏢 COMPANY CHECK
+    # =========================
+    selected_company_id = request.session.get('selected_company_id')
+    if not selected_company_id:
+        return redirect('dashboard')
+
     worker_id = request.GET.get('worker')
+    worker_name_id = request.GET.get('worker_name')
+    client_id = request.GET.get('client')
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
     spend_mode = request.GET.get('spend_mode')
 
-    if not worker_id:
-        return HttpResponse("Worker is required", status=400)
-
-    worker = get_object_or_404(Worker, id=worker_id)
-
+    # =========================
+    # 📊 BASE QUERYSET
+    # =========================
     expenses = Expense.objects.select_related(
-        'client', 'bank', 'salary_to', 'category'
+        'client', 'bank', 'salary_to', 'worker_name', 'category'
     ).filter(
-        category__name__iexact='salary',
-        salary_to_id=worker_id
+        client__company_id=selected_company_id,
+        category__name__iexact='salary'
     )
 
-    # 💳 SPEND MODE
+    # 👷 Worker Team Filter
+    if worker_id:
+        expenses = expenses.filter(salary_to_id=worker_id)
+
+    # 👤 Worker Name Filter
+    if worker_name_id:
+        expenses = expenses.filter(worker_name_id=worker_name_id)
+
+    # 👥 Client Filter
+    if client_id:
+        expenses = expenses.filter(client_id=client_id)
+
+    # 💳 Spend Mode
     if spend_mode in ['cash', 'cheque']:
         expenses = expenses.filter(spend_mode=spend_mode)
 
-    # 📅 DATE FILTERS
+    # 📅 Date Filters
     if start_date:
         expenses = expenses.filter(expense_date__gte=parse_date(start_date))
+
     if end_date:
         expenses = expenses.filter(expense_date__lte=parse_date(end_date))
 
@@ -2749,21 +4004,19 @@ def salary_pdf(request):
         total=Sum('amount')
     )['total'] or Decimal('0.00')
 
-        # =========================
+    # =========================
     # 📄 PDF RESPONSE
     # =========================
     response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = (
-        f'attachment; filename="salary_{worker.name}.pdf"'
-    )
+    response['Content-Disposition'] = 'attachment; filename="salary_statement.pdf"'
 
     doc = SimpleDocTemplate(
         response,
-        pagesize=A4,
-        rightMargin=40,
-        leftMargin=40,
-        topMargin=40,
-        bottomMargin=40
+        pagesize=landscape(A4),
+        rightMargin=25,
+        leftMargin=25,
+        topMargin=30,
+        bottomMargin=30
     )
 
     styles = getSampleStyleSheet()
@@ -2772,109 +4025,111 @@ def salary_pdf(request):
     # =========================
     # 🧾 HEADER
     # =========================
-    elements.append(
-        Paragraph("<b>Salary Statement</b>", styles['Title'])
+    header_style = ParagraphStyle(
+        'HeaderStyle',
+        parent=styles['Title'],
+        fontSize=18,
+        spaceAfter=6
     )
+
+    elements.append(Paragraph("Salary Statement Report", header_style))
     elements.append(Spacer(1, 6))
 
-    elements.append(
-        Paragraph(
-            f"<b>Worker:</b> {worker.name}",
-            styles['Normal']
-        )
-    )
+    # Dynamic Header Info
+    elements.append(Paragraph(
+        f"<b>Worker Team:</b> {expenses.first().salary_to.name if expenses and worker_id else 'All'}",
+        styles['Normal']
+    ))
 
-    if hasattr(worker, 'role') and worker.role:
-        elements.append(
-            Paragraph(
-                f"<b>Role:</b> {worker.role}",
-                styles['Normal']
-            )
-        )
+    elements.append(Paragraph(
+        f"<b>Worker Name:</b> {expenses.first().worker_name.name if expenses and worker_name_id else 'All'}",
+        styles['Normal']
+    ))
 
-    # =========================
-    # 📅 PERIOD DISPLAY
-    # =========================
-    if start_date and end_date:
-        period_text = f"{start_date} to {end_date}"
-    elif start_date:
-        period_text = f"From {start_date}"
-    elif end_date:
-        period_text = f"Up to {end_date}"
-    else:
-        period_text = "All time"
+    elements.append(Paragraph(
+        f"<b>Period:</b> {start_date or '—'} to {end_date or '—'}",
+        styles['Normal']
+    ))
 
-    elements.append(
-        Paragraph(
-            f"<b>Period:</b> {period_text}",
-            styles['Normal']
-        )
-    )
-
-
-    elements.append(Spacer(1, 15))
+    elements.append(Spacer(1, 20))
 
     # =========================
-    # 📊 TABLE DATA
+    # 📊 TABLE HEADER
     # =========================
-    table_data = [
-        ['#', 'Date', 'Client', 'Mode', 'Description', 'Bank', 'Amount (Rs.)']
-    ]
+    table_data = [[
+        '#', 'Date', 'Client',
+        'Team', 'Worker',
+        'Mode', 'Description',
+        'Bank', 'Amount (Rs)'
+    ]]
 
+    # =========================
+    # 📄 TABLE ROWS
+    # =========================
     for idx, e in enumerate(expenses, start=1):
+
         table_data.append([
             idx,
             e.expense_date.strftime('%d-%m-%Y'),
             e.client.name if e.client else '—',
+            e.salary_to.name if e.salary_to else '—',
+            e.worker_name.name if e.worker_name else '—',
             e.spend_mode.capitalize(),
             e.description,
             e.bank.name if e.bank else 'Cash',
-            f"{e.amount:.2f}"
+            f"{e.amount:,.2f}"
         ])
 
     table = Table(
         table_data,
-        colWidths=[30, 70, 90, 60, 100, 70, 80],
-        repeatRows=1
+        repeatRows=1,
+        colWidths=[35, 70, 120, 100, 100, 70, 160, 90, 90]
     )
 
     table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#E9EFF5')),
+        ('GRID', (0, 0), (-1, -1), 0.4, colors.grey),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
 
         ('ALIGN', (0, 0), (0, -1), 'CENTER'),
         ('ALIGN', (-1, 1), (-1, -1), 'RIGHT'),
 
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
 
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
-        ('TOPPADDING', (0, 0), (-1, 0), 8),
+        ('LEFTPADDING', (0, 0), (-1, -1), 5),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 5),
+        ('TOPPADDING', (0, 0), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
     ]))
 
     elements.append(table)
-    elements.append(Spacer(1, 20))
+    elements.append(Spacer(1, 25))
 
     # =========================
     # 💰 TOTAL BOX
     # =========================
     total_table = Table(
-        [['Total Salary Paid', f"Rs. {total_salary:.2f}"]],
-        colWidths=[300, 120]
+        [['Total Salary Paid', f"Rs. {total_salary:,.2f}"]],
+        colWidths=[500, 150]
     )
 
     total_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F5F7FA')),
         ('GRID', (0, 0), (-1, -1), 0.8, colors.black),
-        ('BACKGROUND', (0, 0), (-1, -1), colors.whitesmoke),
         ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
         ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
-        ('PADDING', (0, 0), (-1, -1), 10),
+        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+        ('TOPPADDING', (0, 0), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
     ]))
 
     elements.append(total_table)
 
     doc.build(elements)
     return response
+
+
 
 
 

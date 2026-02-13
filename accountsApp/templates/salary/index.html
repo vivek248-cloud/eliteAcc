@@ -17,42 +17,98 @@
         {% endif %}
     </div>
 
-    <div class="card border-0 shadow-sm rounded-4 mb-4" style="background: #ffffff; border: 1px solid #eee !important;">
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
         <div class="card-body p-4">
-            <form method="get" class="row g-3 align-items-end">
-                <div class="col-md-3">
-                    <label class="form-label small fw-bold text-uppercase text-muted" style="font-size: 0.65rem;">Worker</label>
-                    <select name="worker" class="form-select border-light-subtle shadow-none bg-light bg-opacity-50">
-                        <option value="">All Workers</option>
+
+            <form method="get" class="row g-4 align-items-end">
+
+                <!-- Worker Team -->
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label fw-semibold text-muted small text-uppercase">
+                        Worker Team
+                    </label>
+                    <select name="worker"
+                            id="workerTeamSelect"
+                            class="form-select shadow-none rounded-3">
+                        <option value="">All Teams</option>
                         {% for w in workers %}
-                            <option value="{{ w.id }}" {% if selected_worker == w.id|stringformat:"s" %}selected{% endif %}>{{ w.name }}</option>
+                            <option value="{{ w.id }}"
+                                {% if selected_worker == w.id|stringformat:"s" %}selected{% endif %}>
+                                {{ w.name }}
+                            </option>
                         {% endfor %}
                     </select>
                 </div>
 
-                <div class="col-md-3">
-                    <label class="form-label small fw-bold text-uppercase text-muted" style="font-size: 0.65rem;">Client</label>
-                    <select name="client" class="form-select border-light-subtle shadow-none bg-light bg-opacity-50">
+                <!-- Worker Name -->
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label fw-semibold text-muted small text-uppercase">
+                        Worker Name
+                    </label>
+                    <select name="worker_name"
+                            id="workerNameSelect"
+                            class="form-select shadow-none rounded-3">
+                        <option value="">All Names</option>
+                        {% for wn in worker_names %}
+                            <option value="{{ wn.id }}"
+                                    data-worker="{{ wn.worker.id }}"
+                                    {% if selected_worker_name == wn.id|stringformat:"s" %}selected{% endif %}>
+                                {{ wn.name }} ({{ wn.worker.name }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Client -->
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label fw-semibold text-muted small text-uppercase">
+                        Client
+                    </label>
+                    <select name="client"
+                            class="form-select shadow-none rounded-3">
                         <option value="">All Clients</option>
                         {% for c in clients %}
-                            <option value="{{ c.id }}" {% if selected_client == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+                            <option value="{{ c.id }}"
+                                {% if selected_client == c.id|stringformat:"s" %}selected{% endif %}>
+                                {{ c.name }}
+                            </option>
                         {% endfor %}
                     </select>
                 </div>
 
-                <div class="col-md-4">
-                    <label class="form-label small fw-bold text-uppercase text-muted" style="font-size: 0.65rem;">Date Range</label>
+                <!-- Date Range -->
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label fw-semibold text-muted small text-uppercase">
+                        Date Range
+                    </label>
                     <div class="input-group">
-                        <input type="date" name="start_date" value="{{ start_date }}" class="form-control border-light-subtle bg-light bg-opacity-50 shadow-none">
-                        <span class="input-group-text bg-white border-light-subtle text-muted small">to</span>
-                        <input type="date" name="end_date" value="{{ end_date }}" class="form-control border-light-subtle bg-light bg-opacity-50 shadow-none">
+                        <input type="date"
+                            name="start_date"
+                            value="{{ start_date }}"
+                            class="form-control shadow-none rounded-start-3">
+                        <span class="input-group-text bg-light border-0 text-muted small">
+                            to
+                        </span>
+                        <input type="date"
+                            name="end_date"
+                            value="{{ end_date }}"
+                            class="form-control shadow-none rounded-end-3">
                     </div>
                 </div>
 
-                <div class="col-md-2 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary px-4 rounded-3 flex-grow-1 fw-bold">Apply</button>
-                    <a href="{% url 'salary_index' %}" class="btn btn-light border px-3 rounded-3"><i class="bi bi-arrow-counterclockwise"></i></a>
+                <!-- Buttons -->
+                <div class="col-12 d-flex justify-content-end gap-3 mt-2">
+                    <button type="submit"
+                            class="btn btn-primary px-4 rounded-3 fw-semibold shadow-sm">
+                        Apply Filters
+                    </button>
+
+                    <a href="{% url 'salary_index' %}"
+                    class="btn btn-outline-secondary px-4 rounded-3 fw-semibold">
+                        Reset
+                    </a>
                 </div>
+
             </form>
         </div>
     </div>
@@ -129,6 +185,49 @@
     </div>
 </div>
 
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const teamSelect = document.getElementById('workerTeamSelect');
+    const nameSelect = document.getElementById('workerNameSelect');
+
+    function filterWorkerNames() {
+
+        const selectedTeam = teamSelect.value;
+
+        Array.from(nameSelect.options).forEach(option => {
+
+            if (!option.dataset.worker) return; // skip "All Names"
+
+            const match = option.dataset.worker === selectedTeam;
+
+            if (!selectedTeam) {
+                // If no team selected → show all
+                option.hidden = false;
+                option.disabled = false;
+            } else {
+                option.hidden = !match;
+                option.disabled = !match;
+            }
+        });
+
+        // Reset worker name if mismatch
+        if (selectedTeam && nameSelect.selectedOptions[0]?.dataset.worker !== selectedTeam) {
+            nameSelect.value = '';
+        }
+    }
+
+    teamSelect.addEventListener('change', filterWorkerNames);
+
+    // Run on page load
+    filterWorkerNames();
+
+});
+</script>
+
+
+
 <style>
     body { background-color: #fbfbfb; }
     .fw-black { font-weight: 900; }
@@ -136,6 +235,12 @@
     .table thead th { border-top: none; }
     .avatar-xs { font-size: 0.85rem; }
     .form-select, .form-control { border-radius: 8px; font-size: 0.9rem; }
+    .form-select:focus,
+.form-control:focus {
+    box-shadow: 0 0 0 2px rgba(13,110,253,0.15);
+    border-color: #0d6efd;
+}
+
 </style>
 
 {% endblock %}

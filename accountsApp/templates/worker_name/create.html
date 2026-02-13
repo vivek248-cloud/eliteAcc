@@ -1,0 +1,116 @@
+{% extends "layout/base.html" %}
+{% block title %}Add Worker Name{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+
+            <!-- HEADER -->
+            <div class="text-center mb-4">
+                <div class="avatar-md bg-primary bg-opacity-10 text-primary rounded-circle
+                            d-inline-flex align-items-center justify-content-center mb-3"
+                     style="width:64px;height:64px;">
+                    <i class="bi bi-person-plus-fill fs-3"></i>
+                </div>
+                <h3 class="fw-black text-dark mb-1">Add Worker Name</h3>
+                <p class="text-muted small">
+                    Assign a name under a worker team
+                </p>
+            </div>
+
+            <!-- CARD -->
+            <div class="card border-0 shadow-sm rounded-4"
+                 style="background:#ffffff;border:1px solid #eee !important;">
+                <div class="card-body p-4 p-lg-5">
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <!-- WORKER SELECT -->
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-uppercase text-muted"
+                                   style="font-size:0.7rem;letter-spacing:0.5px;">
+                                Worker Team
+                            </label>
+                            <select name="worker"
+                                    class="form-select py-2"
+                                    required>
+                                <option value="" class="text-muted bg-light" disabled required>Select Worker Team</option>
+                                {% for w in workers %}
+                                    <option value="{{ w.id }}">
+                                        {{ w.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text mt-2" style="font-size:0.75rem;">
+                                Choose the worker team this name belongs to.
+                            </div>
+                        </div>
+
+                        <!-- NAME -->
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-uppercase text-muted"
+                                   style="font-size:0.7rem;letter-spacing:0.5px;">
+                                Worker Name
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-light-subtle text-muted">
+                                    <i class="bi bi-person"></i>
+                                </span>
+                                <input type="text"
+                                       name="name"
+                                       class="form-control border-light-subtle shadow-none
+                                              bg-light bg-opacity-50 py-2"
+                                       placeholder="e.g. Ramesh Kumar"
+                                       required>
+                            </div>
+                            <div class="form-text mt-2" style="font-size:0.75rem;">
+                                This name will appear in salary and expense records.
+                            </div>
+                        </div>
+
+                        <!-- ACTIONS -->
+                        <div class="d-grid gap-2">
+                            <button type="submit"
+                                    class="btn btn-primary fw-bold py-2 rounded-3 shadow-sm">
+                                <i class="bi bi-check-lg me-1"></i> Save Worker Name
+                            </button>
+                            <a href="{% url 'worker_name_index' %}"
+                               class="btn btn-light border py-2 rounded-3 fw-semibold text-muted">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- FOOTER LINK -->
+            <div class="text-center mt-4">
+                <a href="{% url 'worker_name_index' %}"
+                   class="text-decoration-none small text-white bg-primary px-3 py-2 rounded-3 d-inline-block">
+                    <i class="bi bi-arrow-left me-1"></i> View Worker Names
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    body { background-color:#fbfbfb; }
+    .fw-black { font-weight:900; }
+    .form-control:focus,
+    .form-select:focus {
+        background-color:#fff !important;
+        border-color:#4361ee !important;
+        box-shadow:0 0 0 0.25rem rgba(67,97,238,.05) !important;
+    }
+    .input-group-text {
+        border-radius:8px 0 0 8px !important;
+    }
+    .form-control {
+        border-radius:0 8px 8px 0 !important;
+    }
+</style>
+{% endblock %}

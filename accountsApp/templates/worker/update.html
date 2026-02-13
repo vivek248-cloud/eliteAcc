@@ -10,8 +10,8 @@
                 <div class="avatar-md bg-warning bg-opacity-10 text-warning rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
                     <i class="bi bi-person-gear fs-3"></i>
                 </div>
-                <h3 class="fw-black text-dark mb-1">Edit Worker Details</h3>
-                <p class="text-muted small">Update the identification or profile name for this staff member</p>
+                <h3 class="fw-black text-dark mb-1">Edit Worker Team</h3>
+                <p class="text-muted small">Update the Team</p>
             </div>
 
             <div class="card border-0 shadow-sm rounded-4" style="background: #ffffff; border: 1px solid #eee !important;">
@@ -20,27 +20,47 @@
                         {% csrf_token %}
 
                         <div class="mb-4">
-                            <label class="form-label small fw-bold text-uppercase text-muted" style="font-size: 0.7rem; letter-spacing: 0.5px;">
-                                Full Name
+
+                            <!-- LABEL -->
+                            <label class="form-label small fw-bold text-uppercase text-muted"
+                                style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                                Team Name
                             </label>
+
+                            <!-- COMPANY (READ ONLY) -->
+                            <div class="input-group mb-3">
+                                <span class="input-group-text bg-light border-light-subtle text-muted">
+                                    <i class="bi bi-building"></i>
+                                </span>
+                                <input type="text"
+                                    class="form-control border-light-subtle bg-light bg-opacity-50 shadow-none"
+                                    value="{{ worker.company.name }}"
+                                    readonly>
+                            </div>
+
+                            <!-- ✅ HIDDEN COMPANY ID -->
+                            <input type="hidden" name="company" value="{{ worker.company.id }}">
+
+                            <!-- TEAM NAME (EDITABLE) -->
                             <div class="input-group">
                                 <span class="input-group-text bg-light border-light-subtle text-muted">
                                     <i class="bi bi-person-badge"></i>
                                 </span>
-                                <input type="text" 
-                                       name="name" 
-                                       value="{{ worker.name }}" 
-                                       class="form-control border-light-subtle shadow-none bg-light bg-opacity-50 py-2" 
-                                       required>
+                                <input type="text"
+                                    name="name"
+                                    value="{{ worker.name }}"
+                                    class="form-control border-light-subtle shadow-none bg-light bg-opacity-50"
+                                    placeholder="Enter team name"
+                                    required>
                             </div>
+
                             <div class="form-text mt-2" style="font-size: 0.75rem;">
                                 Note: Changing this name will update it across all linked salary logs.
                             </div>
                         </div>
-
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary fw-bold py-2 rounded-3 shadow-sm">
-                                <i class="bi bi-arrow-repeat me-1"></i> Update Profile
+                                <i class="bi bi-arrow-repeat me-1"></i> Update Team
                             </button>
                             <a href="{% url 'worker_index' %}" class="btn btn-light border py-2 rounded-3 fw-semibold text-muted">
                                 Cancel
@@ -52,7 +72,7 @@
 
             <div class="text-center mt-4">
                 <a href="{% url 'worker_index' %}" class="text-decoration-none small text-white bg-primary  px-3 py-2 rounded-3 d-inline-block">
-                    <i class="bi bi-chevron-left me-1"></i> Back to Workers List
+                    <i class="bi bi-chevron-left me-1"></i> Back to Teams List
                 </a>
             </div>
             

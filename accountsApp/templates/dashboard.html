@@ -10,14 +10,7 @@
         </div>
         <div class="col-lg-6">
             <form method="get" class="d-flex gap-2 justify-content-lg-end">
-                <select name="company" class="form-select form-select-sm shadow-sm" style="max-width: 200px;" onchange="this.form.submit()">
-                    <option value="">All Companies</option>
-                    {% for company in companies %}
-                        <option value="{{ company.id }}" {% if company.id|stringformat:"s" == selected_company_id %}selected{% endif %}>
-                            {{ company.name }}
-                        </option>
-                    {% endfor %}
-                </select>
+
                 <input type="date" name="start_date" value="{{ start_date }}" class="form-control form-control-sm shadow-sm" style="width: 140px;">
                 <input type="date" name="end_date" value="{{ end_date }}" class="form-control form-control-sm shadow-sm" style="width: 140px;">
                 <button class="btn btn-sm btn-primary">Apply</button>
@@ -37,7 +30,7 @@
                         <span class="text-muted small fw-bold text-uppercase">Revenue</span>
                     </div>
                     <h3 class="fw-bold mb-1" style="color: #2d3436;">₹ {{ total_payments|floatformat:0 }}</h3>
-                    <p class="text-muted small mb-0">Total Collections</p>
+                    <p class="text-muted small mb-0">Total Recived</p>
                 </div>
             </div>
         </div>
@@ -91,49 +84,103 @@
     </div>
 {% if selected_company_id %}
 <div class="row g-4 mb-4" >
-    <div class="col-md-6" style="border-radius: 20px;">
-        <div class="card border-0 shadow-sm " >
-            <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
-                <h6 class="fw-bold mb-0"><i class="bi bi-arrow-down-left-circle text-success me-2"></i>Recent Received</h6>
-                <a href="{% url 'payment_index' %}" class="btn btn-sm btn-link text-decoration-none p-0">View All</a>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden h-100" style="background: #ffffff;">
+            <div class="card-header bg-white py-4 px-4 border-0 d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="fw-black text-dark mb-0 text-uppercase tracking-wider" style="font-size: 0.85rem;">
+                        <i class="bi bi-arrow-down-left-circle text-success me-2"></i> Recent Received
+                    </h6>
+                </div>
+                <a href="{% url 'payment_index' %}" class="btn btn-dark text-white btn-sm rounded-3 fw-bold px-3 border-0">
+                    View All
+                </a>
             </div>
+
             <div class="card-body p-0">
                 <div class="list-group list-group-flush">
                     {% for p in recent_payments %}
-                    <div class="list-group-item d-flex justify-content-between align-items-center py-3 border-light">
-                        <div>
-                            <p class="mb-0 fw-medium text-dark">{{ p.client.name }}</p>
-                            <small class="text-muted">{{ p.payment_date|date:"d M, Y" }} • {{ p.bank.name }}</small>
+                    <div class="list-group-item border-0 px-4 py-3 d-flex justify-content-between align-items-center hover-bg-light-success transition-all">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-success bg-opacity-10 p-2 rounded-3 me-3 text-success shadow-sm">
+                                <i class="bi bi-cash-stack fs-5"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0 fw-bold text-dark">{{ p.client.name }}</p>
+                                <small class="text-muted fw-semibold" style="font-size: 0.75rem;">
+                                    {{ p.payment_date|date:"d M" }} • 
+                                    <span class="text-primary text-uppercase">{{ p.bank.name }}</span>
+                                </small>
+                            </div>
                         </div>
-                        <span class="fw-bold text-success">+ ₹{{ p.amount|floatformat:0 }}</span>
+                        <div class="text-end">
+                            <span class="d-block fw-black text-success fs-5">+ ₹{{ p.amount|floatformat:0 }}</span>
+                        </div>
                     </div>
                     {% empty %}
-                    <div class="p-4 text-center text-muted small">No recent payments</div>
+                    <div class="py-5 text-center">
+                        <i class="bi bi-cloud-slash text-light display-4"></i>
+                        <p class="text-muted small mt-2">No incoming payments recorded yet.</p>
+                    </div>
                     {% endfor %}
+                </div>
+            </div>
+
+            <div class="card-footer bg-light  border-0 py-3 px-4">
+                <div class="d-flex justify-content-between align-items-center small">
+                    <span class="text-muted fw-bold">Current Month  &ensp;<b>{{ current_date|date:"M Y" }}</b></span>
+                    <span class="text-success fw-black">Received: ₹{{ monthly_received_total|default:"0" }}</span>
                 </div>
             </div>
         </div>
     </div>
 
     <div class="col-md-6">
-        <div class="card border-0 shadow-sm rounded-3" >
-            <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
-                <h6 class="fw-bold mb-0"><i class="bi bi-arrow-up-right-circle text-danger me-2"></i>Recent Spendings</h6>
-                <a href="{% url 'expense_index' %}" class="btn btn-sm btn-link text-decoration-none p-0">View All</a>
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden h-100" style="background: #ffffff;">
+            <div class="card-header bg-white py-4 px-4 border-0 d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="fw-black text-dark mb-0 text-uppercase tracking-wider" style="font-size: 0.85rem;">
+                        <i class="bi bi-arrow-up-right-circle text-danger me-2"></i> Recent Spendings
+                    </h6>
+                </div>
+                <a href="{% url 'expense_index' %}" class="btn btn-dark text-white btn-sm rounded-3 fw-bold px-3 border-0">
+                    View All
+                </a>
             </div>
+
             <div class="card-body p-0">
                 <div class="list-group list-group-flush">
                     {% for e in recent_expenses %}
-                    <div class="list-group-item d-flex justify-content-between align-items-center py-3 border-light ">
-                        <div>
-                            <p class="mb-0 fw-medium text-dark">{{ e.category.name|default:"General Expense" }}</p>
-                            <small class="text-muted">{{ e.expense_date|date:"d M, Y" }} • {{ e.client.name }}</small>
+                    <div class="list-group-item border-0 px-4 py-3 d-flex justify-content-between align-items-center hover-bg-light transition-all">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-danger bg-opacity-10 p-2 rounded-3 me-3 text-danger shadow-sm">
+                                <i class="bi bi-receipt fs-5"></i>
+                            </div>
+                            <div>
+                                <p class="mb-0 fw-bold text-dark">{{ e.category.name|default:"General Expense" }}</p>
+                                <small class="text-muted fw-semibold" style="font-size: 0.75rem;">
+                                    {{ e.expense_date|date:"d M" }} • 
+                                    <span class="text-primary">{{ e.client.name }}</span>
+                                </small>
+                            </div>
                         </div>
-                        <span class="fw-bold text-danger">- ₹{{ e.amount|floatformat:0 }}</span>
+                        <div class="text-end">
+                            <span class="d-block fw-black text-danger fs-5">- ₹{{ e.amount|floatformat:0 }}</span>
+                        </div>
                     </div>
                     {% empty %}
-                    <div class="p-4 text-center text-muted small">No recent spendings</div>
+                    <div class="py-5 text-center">
+                        <i class="bi bi-shield-check text-light display-4"></i>
+                        <p class="text-muted small mt-2">All settled. No recent spendings found.</p>
+                    </div>
                     {% endfor %}
+                </div>
+            </div>
+
+            <div class="card-footer bg-light  border-0 py-3 px-4">
+                <div class="d-flex justify-content-between align-items-center small">
+                    <span class="text-muted fw-bold">Recent Cycle</span>
+                    <span class="text-danger fw-black">Total: ₹{{ recent_total|default:"0" }}</span>
                 </div>
             </div>
         </div>
@@ -153,20 +200,37 @@
             </div>
         </div>
         <div class="col-lg-4">
-            <div class="card border-0 shadow-sm rounded-3 h-100">
-                <div class="card-header bg-white py-3 border-0"><h6 class="fw-bold mb-0">Bank Balances</h6></div>
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden h-100" style="background: #ffffff;">
+                <div class="card-header bg-dark py-3 px-4 border-0 d-flex justify-content-between align-items-center">
+                    <h6 class="text-white fw-black mb-0 text-uppercase tracking-wider" style="font-size: 0.85rem;">
+                        <i class="bi bi-wallet2 me-2 text-white"></i> Bank Balances
+                    </h6>
+                    <span class="badge bg-light text-dark rounded-pill small">Real-time</span>
+                </div>
                 <div class="card-body p-0">
-                    <ul class="list-group list-group-flush">
+                    <div class="list-group list-group-flush">
                         {% for bank in banks %}
-                        <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                        <div class="list-group-item border-0 px-4 py-3 d-flex justify-content-between align-items-center hover-bg-light transition-all">
                             <div class="d-flex align-items-center">
-                                <i class="bi bi-bank2 me-3 text-primary"></i>
-                                <span class="fw-medium">{{ bank.name }}</span>
+                                <div class="bg-light p-2 rounded-3 me-3 text-primary shadow-sm">
+                                    <i class="bi bi-bank2 fs-5"></i>
+                                </div>
+                                <div>
+                                    <span class="d-block fw-bold text-dark mb-0">{{ bank.name }}</span>
+                                    <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.65rem;">Active Account</small>
+                                </div>
                             </div>
-                            <span class="fw-bold">₹ {{ bank.available_balance|floatformat:0 }}</span>
-                        </li>
+                            <div class="text-end">
+                                <span class="d-block fw-black text-dark fs-5">₹ {{ bank.available_balance|floatformat:0 }}</span>
+                            </div>
+                        </div>
                         {% endfor %}
-                    </ul>
+                    </div>
+                </div>
+                <div class="card-footer bg-light  border-0 py-3 text-center">
+                    <a href="{% url 'bank_index' %}" class="text-decoration-none small fw-bold text-dark">
+                        View Full Treasury <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
                 </div>
             </div>
         </div>
@@ -233,4 +297,26 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
+
+
+<style>
+    .fw-black { font-weight: 800; }
+    .transition-all { transition: all 0.2s ease; }
+    .hover-bg-light:hover { 
+        background-color: #0303031f !important; /* Extremely light red on hover */
+        cursor: default; 
+    }
+
+    /* Ensure these are in your main CSS if not already added */
+    .fw-black { font-weight: 800; }
+    .transition-all { transition: all 0.2s ease; }
+    
+    /* Subtle green glow on hover for payments */
+    .hover-bg-light-success:hover { 
+        background-color: #0303031f !important; /* Extremely light red on hover */
+        cursor: default; 
+    }
+
+</style>
+
 {% endblock %}

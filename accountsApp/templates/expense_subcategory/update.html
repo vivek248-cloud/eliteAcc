@@ -1,0 +1,130 @@
+{% extends "layout/base.html" %}
+{% block title %}Update Sub-Category{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+
+            <!-- HEADER -->
+            <div class="text-center mb-4">
+                <div class="avatar-md bg-warning bg-opacity-10 text-warning rounded-circle
+                            d-inline-flex align-items-center justify-content-center mb-3"
+                     style="width:64px;height:64px;">
+                    <i class="bi bi-pencil-square fs-3"></i>
+                </div>
+                <h3 class="fw-black text-dark mb-1">Update Expense Sub-Category</h3>
+                <p class="text-muted small">
+                    Modify the details of an existing expense sub-category
+                </p>
+            </div>
+
+            <!-- CARD -->
+            <div class="card border-0 shadow-sm rounded-4"
+                 style="background:#ffffff;border:1px solid #eee !important;">
+                <div class="card-body p-4 p-lg-5">
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <!-- CATEGORY -->
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-uppercase text-muted"
+                                   style="font-size:0.7rem;letter-spacing:0.5px;">
+                                Parent Category
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-light-subtle text-muted">
+                                    <i class="bi bi-folder2-open"></i>
+                                </span>
+                                <select name="category"
+                                        class="form-select border-light-subtle shadow-none bg-light bg-opacity-50 py-2"
+                                        required>
+                                    {% for c in categories %}
+                                        <option value="{{ c.id }}"
+                                            {% if subcategory.category.id == c.id %}selected{% endif %}>
+                                            {{ c.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- SUB CATEGORY NAME -->
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-uppercase text-muted"
+                                   style="font-size:0.7rem;letter-spacing:0.5px;">
+                                Sub-Category Name
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-light-subtle text-muted">
+                                    <i class="bi bi-tag-fill"></i>
+                                </span>
+                                <input type="text"
+                                       name="name"
+                                       value="{{ subcategory.name }}"
+                                       class="form-control border-light-subtle shadow-none bg-light bg-opacity-50 py-2"
+                                       required>
+                            </div>
+                        </div>
+
+                        <!-- INFO -->
+                        <div class="p-3 rounded-3 mb-4"
+                             style="background-color:#f8f9fa;border:1px dashed #dee2e6;">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-info-circle text-warning me-2"></i>
+                                <small class="text-muted" style="font-size:0.8rem;">
+                                    Updating this sub-category will reflect across all linked expense records.
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- ACTIONS -->
+                        <div class="d-grid gap-2">
+                            <button type="submit"
+                                    class="btn btn-warning fw-bold py-2 rounded-3 shadow-sm text-white">
+                                <i class="bi bi-check-lg me-1"></i> Update Sub-Category
+                            </button>
+
+                            <a href="{% url 'expense_subcategory_index' %}"
+                               class="btn btn-light border py-2 rounded-3 fw-semibold text-muted">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- BACK LINK -->
+            <div class="text-center mt-4">
+                <a href="{% url 'expense_subcategory_index' %}"
+                   class="text-decoration-none small text-white bg-primary px-3 py-2 rounded-3 d-inline-block">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Sub-Category List
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    body { background-color:#fbfbfb; }
+    .fw-black { font-weight:900; }
+
+    .form-control:focus,
+    .form-select:focus {
+        background-color:#fff !important;
+        border-color:#f0ad4e !important;
+        box-shadow:0 0 0 0.25rem rgba(240,173,78,.15) !important;
+    }
+
+    .input-group-text {
+        border-radius:8px 0 0 8px !important;
+    }
+
+    .form-control,
+    .form-select {
+        border-radius:0 8px 8px 0 !important;
+    }
+</style>
+{% endblock %}

@@ -23,13 +23,13 @@
                             <label class="form-label small fw-bold text-uppercase text-muted" style="font-size: 0.7rem; letter-spacing: 0.5px;">
                                 Company Association
                             </label>
-                            <select name="company" class="form-select border-light-subtle shadow-none bg-light bg-opacity-50 py-2" required>
-                                {% for company in companies %}
-                                    <option value="{{ company.id }}" {% if company.id == client.company.id %}selected{% endif %}>
-                                        {{ company.name }}
-                                    </option>
-                                {% endfor %}
-                            </select>
+                            <div class="mb-3">
+                                <label class="form-label">Company</label>
+                                <input type="text"
+                                    class="form-control"
+                                    value="{{ company.name }}"
+                                    readonly>
+                            </div>
                         </div>
 
                         <hr class="opacity-50 my-4">

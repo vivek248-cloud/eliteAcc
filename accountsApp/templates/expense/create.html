@@ -20,9 +20,8 @@
                 <div class="card-body p-4 p-lg-5">
                     <form method="POST" id="expenseForm">
                         {% csrf_token %}
-
                         <div class="row g-3 mb-4">
-                            <div class="col-md-6">
+                            <div class="col-md">
                                 <label class="form-label small fw-bold text-uppercase text-muted">Client / Project</label>
                                 <select name="client" class="form-select bg-light bg-opacity-50 border-light-subtle shadow-none" required>
                                     <option value="">All Clients</option>
@@ -33,31 +32,94 @@
                                     {% endfor %}
                                 </select>
                             </div>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+
                             <div class="col-md-6">
-                                <label class="form-label small fw-bold text-uppercase text-muted">Expense Category</label>
-                                <select name="category" id="category_select" class="form-select bg-light bg-opacity-50 border-light-subtle shadow-none" required>
+                                <label class="form-label small fw-bold text-uppercase text-muted">
+                                    Expense Category
+                                </label>
+                                <select name="category" id="category_select"
+                                        class="form-select bg-light bg-opacity-50 border-light-subtle shadow-none"
+                                        required>
                                     <option value="">Select Category</option>
                                     {% for category in categories %}
-                                        <option value="{{ category.id }}" data-name="{{ category.name|lower }}">
+                                        <option value="{{ category.id }}"
+                                                data-name="{{ category.name|lower }}">
                                             {{ category.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-uppercase text-muted">
+                                    Sub Category
+                                </label>
+                                <select name="subcategory"
+                                        class="form-select bg-light bg-opacity-50 border-light-subtle shadow-none">
+                                    <option value="">Select Sub Category</option>
+                                    {% for sub in subcategories %}
+                                        <option value="{{ sub.id }}"
+                                                data-category="{{ sub.category.id }}">
+                                            {{ sub.name }}
                                         </option>
                                     {% endfor %}
                                 </select>
                             </div>
                         </div>
 
-                        <div class="mb-4 d-none animate__animated animate__fadeIn" id="workerBox">
-                            <div class="p-3 rounded-3 border-start border-4 border-primary bg-primary bg-opacity-10">
-                                <label class="form-label small fw-bold text-primary text-uppercase">Salary To (Worker)</label>
-                                <select name="salary_to" class="form-select border-0 shadow-none">
-                                    <option value="">Select Worker</option>
-                                    {% for w in workers %}
-                                        <option value="{{ w.id }}">{{ w.name }}</option>
-                                    {% endfor %}
-                                </select>
+                        <!-- ================= WORKER SECTION ================= -->
+                        <div id="workerBox"
+                            class="mb-4 d-none animate__animated animate__fadeIn">
+
+                            <div class="p-4 rounded-4"
+                                style="background: #e9f1ff; border-left: 5px solid #3b82f6;">
+
+                                <div class="row g-4">
+
+                                    <!-- Worker Team -->
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold text-uppercase small text-dark">
+                                            Worker Team
+                                        </label>
+
+                                        <select name="salary_to"
+                                                id="worker_team_select"
+                                                class="form-select bg-white border-0 shadow-sm rounded-3 py-2">
+                                            <option value="">Select Worker Team</option>
+                                            {% for w in workers %}
+                                                <option value="{{ w.id }}">
+                                                    {{ w.name }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <!-- Worker Name -->
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold text-uppercase small text-dark">
+                                            Worker Name
+                                        </label>
+
+                                        <select name="worker_name"
+                                                id="worker_name_select"
+                                                class="form-select bg-white border-0 shadow-sm rounded-3 py-2">
+                                            <option value="">Select Worker Name</option>
+                                            {% for wn in worker_names %}
+                                                <option value="{{ wn.id }}"
+                                                        data-worker="{{ wn.worker.id }}">
+                                                    {{ wn.name }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                </div>
+
                             </div>
                         </div>
-
                         <hr class="opacity-50 my-4">
 
                         <div class="row g-3 mb-4">
@@ -185,22 +247,78 @@ document.addEventListener('DOMContentLoaded', function () {
     updateBankOptions();
 });
 
-document.addEventListener('DOMContentLoaded', function () {
-    const categorySelect = document.getElementById('category_select');
-    const workerBox = document.getElementById('workerBox');
 
-    function toggleWorkerField() {
-        const selectedOption = categorySelect.options[categorySelect.selectedIndex];
-        const categoryName = selectedOption.dataset.name || '';
-        if (categoryName.includes('salary')) {
-            workerBox.classList.remove('d-none');
-        } else {
-            workerBox.classList.add('d-none');
-            const ws = workerBox.querySelector('select');
-            if(ws) ws.value = '';
-        }
-    }
-    categorySelect.addEventListener('change', toggleWorkerField);
-});
 </script>
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function() {
+
+    const categorySelect = document.getElementById("category_select");
+    const workerBox = document.getElementById("workerBox");
+    const workerTeamSelect = document.getElementById("worker_team_select");
+    const workerNameSelect = document.getElementById("worker_name_select");
+
+    const subcategorySelect = document.querySelector("select[name='subcategory']");
+
+    // =========================
+    // SHOW WORKER BOX IF SALARY
+    // =========================
+    categorySelect.addEventListener("change", function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const categoryName = selectedOption.dataset.name;
+
+        if (categoryName === "salary") {
+            workerBox.classList.remove("d-none");
+        } else {
+            workerBox.classList.add("d-none");
+        }
+
+        // Subcategory filter
+        filterSubcategories(this.value);
+    });
+
+    // =========================
+    // FILTER SUBCATEGORIES
+    // =========================
+    function filterSubcategories(categoryId) {
+
+        Array.from(subcategorySelect.options).forEach(option => {
+            if (!option.dataset.category) return;
+
+            if (option.dataset.category === categoryId) {
+                option.style.display = "block";
+            } else {
+                option.style.display = "none";
+            }
+        });
+
+        subcategorySelect.value = "";
+    }
+
+    // =========================
+    // FILTER WORKER NAMES
+    // =========================
+    workerTeamSelect.addEventListener("change", function() {
+
+        const selectedWorker = this.value;
+
+        Array.from(workerNameSelect.options).forEach(option => {
+            if (!option.dataset.worker) return;
+
+            if (option.dataset.worker === selectedWorker) {
+                option.style.display = "block";
+            } else {
+                option.style.display = "none";
+            }
+        });
+
+        workerNameSelect.value = "";
+    });
+
+});
+
+</script>
+
+
 {% endblock %}

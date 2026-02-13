@@ -13,6 +13,7 @@
         All Clients Statement
 </a>
 
+
 <div class="card border-0 shadow-sm rounded-3 mb-4">
     <div class="card-body p-3">
         <form method="get">
@@ -74,6 +75,8 @@
 </div>
 
 
+
+
 <div class="toast-container position-fixed top-0 end-0 p-3 mt-5">
     <div id="filterToast" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true">
         <div class="d-flex">
@@ -82,6 +85,51 @@
             <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
     </div>
+</div>
+
+<div class="row g-3 mb-4 align-items-stretch justify-content-center">
+
+    <!-- Total Project Budget -->
+    <div class="col-md-2">
+        <div class="card shadow-sm border-0 bg-primary text-white text-center p-3">
+            <div class="fw-bold small">Total Project</div>
+            <div class="fs-5">₹ {{ total_project_budget|floatformat:2 }}</div>
+        </div>
+    </div>
+
+    <!-- Total Paid -->
+    <div class="col-md-2">
+        <div class="card shadow-sm border-0 bg-success text-white text-center p-3">
+            <div class="fw-bold small">Total Paid</div>
+            <div class="fs-5">₹ {{ total_paid|floatformat:2 }}</div>
+        </div>
+    </div>
+
+    <!-- Total Spend -->
+    <div class="col-md-2">
+        <div class="card shadow-sm border-0 bg-warning text-dark text-center p-3">
+            <div class="fw-bold small">Total Spend</div>
+            <div class="fs-5">₹ {{ total_spend|floatformat:2 }}</div>
+        </div>
+    </div>
+
+    <!-- Total Balance -->
+    <div class="col-md-2">
+        <div class="card shadow-sm border-0 text-center p-3
+            {% if total_balance < 0 %}bg-danger text-white{% else %}bg-info text-white{% endif %}">
+            <div class="fw-bold small">Total Balance</div>
+            <div class="fs-5">₹ {{ total_balance|floatformat:2 }}</div>
+        </div>
+    </div>
+
+    <!-- Total Yet To Receive -->
+    <div class="col-md-2">
+        <div class="card shadow-sm border-0 bg-danger text-white text-center p-3">
+            <div class="fw-bold small">Yet To Receive</div>
+            <div class="fs-5">₹ {{ total_yet_to_receive|floatformat:2 }}</div>
+        </div>
+    </div>
+
 </div>
 
 

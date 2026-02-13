@@ -63,7 +63,13 @@ class Client(models.Model):
 
 
 class Bank(models.Model):
-    name = models.CharField(max_length=255, unique=True)
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.CASCADE,
+        related_name='banks'
+    )
+        
+    name = models.CharField(max_length=255)
 
     opening_balance = models.DecimalField(
         max_digits=12,
@@ -164,7 +170,27 @@ class Payment(models.Model):
 
 
 # worker Model
+
+
 class Worker(models.Model):
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.CASCADE,
+        related_name='workers'
+    )
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"{self.name} ({self.company.name})"
+
+
+
+class WorkerName(models.Model):
+    worker = models.ForeignKey(
+        Worker,
+        on_delete=models.CASCADE,
+        related_name='names'
+    )
     name = models.CharField(max_length=100)
 
     def __str__(self):
@@ -174,17 +200,33 @@ class Worker(models.Model):
 # expense category Model
 
 class ExpenseCategory(models.Model):
-    name = models.CharField(max_length=100, unique=True)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100)
 
     def __str__(self):
         return self.name
     
 
+class ExpenseSubCategory(models.Model):
+    company = models.ForeignKey(Company, on_delete=models.CASCADE)
+    category = models.ForeignKey(
+        ExpenseCategory,
+        on_delete=models.CASCADE,
+        related_name='subcategories'
+    )
+    name = models.CharField(max_length=100)
+
+    class Meta:
+        unique_together = ('category', 'name')
+
+    def __str__(self):
+        return f"{self.category.name} → {self.name}"
 
 
 # expense Model
 
 class Expense(models.Model):
+
     CASH = 'cash'
     CHEQUE = 'cheque'
 
@@ -212,13 +254,28 @@ class Expense(models.Model):
         blank=True
     )
 
-    # 🆕 SALARY TO (WORKER)
+    # 🆕 SUB CATEGORY
+    subcategory = models.ForeignKey(
+        ExpenseSubCategory,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+
     salary_to = models.ForeignKey(
         Worker,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name='salary_expenses'
+    )
+
+    worker_name = models.ForeignKey(
+        WorkerName,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='expenses'
     )
     
     description = models.TextField()
@@ -227,7 +284,8 @@ class Expense(models.Model):
     expense_date = models.DateField()
 
     def __str__(self):
-        return f"{self.client.name} - ₹{self.amount}"
+        return f"{self.client.name} - Rs. {self.amount}"
+
 
 
 

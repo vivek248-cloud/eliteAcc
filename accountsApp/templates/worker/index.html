@@ -1,16 +1,16 @@
 {% extends "layout/base.html" %}
-{% block title %}Workers{% endblock %}
+{% block title %}Workers Team{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
     
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h3 class="fw-black text-dark mb-0" style="letter-spacing: -1px;">Worker Directory</h3>
-            <p class="text-muted small mb-0">Manage and oversee your registered workforce</p>
+            <h3 class="fw-black text-dark mb-0" style="letter-spacing: -1px;">Worker Team Directory</h3>
+            <p class="text-muted small mb-0">Manage and oversee your registered workforce Team</p>
         </div>
         <a href="{% url 'worker_create' %}" class="btn btn-primary shadow-sm px-4 rounded-pill fw-bold">
-            <i class="bi bi-plus-lg me-2"></i>Add New Worker
+            <i class="bi bi-plus-lg me-2"></i>Add New Workers Team
         </a>
     </div>
 
@@ -20,7 +20,7 @@
                 <thead class="table-primary" style=" border-bottom: 1px solid #e4e3e3;" >
                     <tr>
                         <th class="ps-4 py-3 text-muted small fw-bold text-uppercase" style="width: 80px; font-size: 0.85rem;">Ref #</th>
-                        <th class="py-3 text-muted small fw-bold text-uppercase" style="font-size: 0.85rem;">Worker Identity</th>
+                        <th class="py-3 text-muted small fw-bold text-uppercase" style="font-size: 0.85rem;">Team Name</th>
                         <th class="py-3 text-muted small fw-bold text-uppercase" style="font-size: 0.85rem;">Status</th>
                         <th class="pe-4 py-3 text-end text-muted small fw-bold text-uppercase" style="font-size: 0.85rem;">Actions</th>
                     </tr>
@@ -40,7 +40,7 @@
                                 </div>
                                 <div>
                                     <h6 class="fw-bold text-dark mb-0" style="font-size: 0.95rem;">{{ w.name }}</h6>
-                                    <small class="text-muted" style="font-size: 0.75rem;">Staff Member</small>
+                                    <small class="text-muted" style="font-size: 0.75rem;">Team</small>
                                 </div>
                             </div>
                         </td>

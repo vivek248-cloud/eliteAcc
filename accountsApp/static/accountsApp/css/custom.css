@@ -597,3 +597,327 @@ aside .text-muted {
     -webkit-user-select: none;
     -ms-user-select: none;
 }
+
+
+.locked {
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+
+.fw-black { font-weight: 800; }
+    .transition-all { transition: all 0.2s ease; }
+    .hover-bg-light:hover { background-color: #f8fafc; cursor: default; }
+
+
+
+/* --- 1. Variables --- */
+:root {
+    --progress-height: 10px;
+    --transition-timing: cubic-bezier(0.23, 1, 0.32, 1); /* Apple-style ease-out */
+    --primary-grad: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+    --danger-grad: linear-gradient(90deg, #ff416c 0%, #ff4b2b 100%);
+}
+
+/* --- 2. Entrance & Loading Animations --- */
+@keyframes slideInRight {
+    from { width: 0%; opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* --- 3. Progress Fill Enhancements --- */
+.elite-fill {
+    height: 100%;
+    border-radius: 100px;
+    position: relative;
+    overflow: hidden; /* Clips the shimmer effect */
+    
+    /* Smooth width expansion on page load */
+    animation: slideInRight 1.5s var(--transition-timing) forwards;
+    transition: width 1s var(--transition-timing), filter 0.3s ease;
+}
+
+/* The Shimmer Effect (A subtle light streak moving across the bar) */
+.elite-fill::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.2),
+        transparent
+    );
+    animation: shimmer 3s infinite linear;
+}
+
+/* --- 4. Hover State Micro-interactions --- */
+.budget-progress-wrapper:hover .elite-fill {
+    filter: brightness(1.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.budget-progress-wrapper:hover .elite-progress {
+    transform: scaleY(1.2);
+    transition: transform 0.3s var(--transition-timing);
+}
+
+.elite-progress {
+    transition: transform 0.3s var(--transition-timing);
+}
+
+/* --- 5. Improved Pulse for Danger State --- */
+.bar-pulse-active {
+    animation: bar-glow-pulse 2s infinite ease-in-out;
+    /* Increase saturation to make danger pop */
+    filter: saturate(1.2);
+}
+
+@keyframes bar-glow-pulse {
+    0%, 100% { 
+        transform: scale(1);
+        filter: brightness(1) drop-shadow(0 0 2px rgba(255, 65, 108, 0.2)); 
+    }
+    50% { 
+        transform: scale(1.01); 
+        filter: brightness(1.2) drop-shadow(0 0 12px rgba(255, 65, 108, 0.5)); 
+    }
+}
+
+/* --- 6. Tooltip Transition --- */
+.tooltip.fade {
+    transition: opacity 0.2s linear, transform 2s var(--transition-timing) !important;
+}
+
+.tooltip.show {
+  transition: all 0.4s var(--transition-timing) !important;
+    
+}
+
+.tooltip
+{
+  transition: opacity 0.4s linear, transform 0.2s var(--transition-timing) !important;
+}
+
+/* --- 7. Progress Bar Head Animation --- */
+.elite-fill {
+    /* Ensure child absolute elements stay contained */
+    position: relative; 
+}
+
+/* The Glowing Head / Lead Indicator */
+.elite-fill::before {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 100%;
+    background: #fff;
+    filter: blur(2px);
+    border-radius: 100px;
+    opacity: 0.8;
+    z-index: 2;
+    /* This creates the leading edge "spark" */
+    animation: head-glow 1.5s ease-in-out infinite;
+}
+
+/* Optional: Particle Trail or Sparkle at the head */
+@keyframes head-glow {
+    0%, 100% { 
+        box-shadow: 0 0 5px #fff, -2px 0 10px rgba(255, 255, 255, 0.5);
+        opacity: 0.6;
+    }
+    50% { 
+        box-shadow: 0 0 15px #fff, -5px 0 20px rgba(255, 255, 255, 0.8);
+        opacity: 1;
+        width: 8px; /* Slightly widens at the peak of the glow */
+    }
+}
+
+/* Adjust the Shimmer to work with the Head */
+.elite-fill::after {
+    z-index: 1; /* Keep shimmer behind the head glow */
+}
+
+/* Special Head color for Danger State */
+.bar-pulse-active::before {
+    background: #ffecf0;
+    animation: head-glow-danger 1.5s ease-in-out infinite;
+}
+
+@keyframes head-glow-danger {
+    0%, 100% { box-shadow: 0 0 8px #ff416c; }
+    50% { box-shadow: 0 0 20px #ff416c, 0 0 30px rgba(255, 65, 108, 0.4); }
+}
+
+/* --- 8. Liquid Wave & Flow Effect (Fixing Overflow) --- */
+.elite-fill {
+    background-size: 200% 100%;
+    /* Added will-change for performance optimization */
+    will-change: width, background-position;
+    animation: slideInRight 1.5s var(--transition-timing) forwards, 
+               liquid-flow 4s linear infinite;
+}
+
+/* Subtle Flowing Particles - Fixed opacity and z-index */
+.elite-fill::after {
+    content: "";
+    position: absolute;
+    inset: 0; /* Modern shortcut for top/left/right/bottom: 0 */
+    background-image: radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.548) 0%, transparent 20%),
+                      radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.432) 0%, transparent 10%);
+    background-size: 50% 100%;
+    animation: flow-particles 3s linear infinite;
+    z-index: 1;
+}
+
+/* --- 10. The Floating Glow (Overflow Fix) --- */
+.elite-progress {
+    position: relative;
+    /* This is the most important line to prevent the glow from leaking */
+    overflow: hidden; 
+    isolation: isolate; /* Ensures z-index behaves within this container */
+}
+
+/* We use a more subtle inner glow to avoid triggering page scroll */
+.elite-progress::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent);
+    pointer-events: none;
+    z-index: 3;
+}
+
+/* --- 9. Keyframes for Elegance --- */
+
+/* Moves the gradient background subtly for a "liquid" feel */
+@keyframes liquid-flow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Moves the particle pattern from left to right */
+@keyframes flow-particles {
+    from { background-position: 0 0; }
+    to { background-position: 100% 0; }
+}
+
+/* Enhanced Entrance (Adding a slight bounce) */
+@keyframes slideInRight {
+    0% { width: 0%; opacity: 0; transform: scaleX(0.9); }
+    100% { opacity: 1; transform: scaleX(1); }
+}
+
+/* --- 10. The Floating Glow (Refined Overlay) --- */
+.elite-progress::after {
+    content: "";
+    position: absolute;
+    top: -100%;
+    left: -100%;
+    right: -100%;
+    bottom: -100%;
+    background: radial-gradient(circle at center, rgba(255, 255, 255, 0.986) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: -1;
+}
+
+
+.company-switch-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px); /* Glassmorphism */
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 99999;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.company-switch-overlay.active {
+    display: flex;
+    opacity: 1;
+}
+
+.overlay-content {
+    text-align: center;
+    transform: translateY(20px);
+    transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.company-switch-overlay.active .overlay-content {
+    transform: translateY(0);
+}
+
+/* Iconic Loader */
+.loader-wrapper {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    margin: 0 auto;
+}
+
+.loader-circle {
+    position: absolute;
+    inset: 0;
+    border: 3px solid #eef2f7;
+    border-top-color: #4facfe;
+    border-radius: 50%;
+    animation: spinner-spin 1s linear infinite;
+}
+
+.loader-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.8rem;
+    animation: icon-pulse 2s infinite ease-in-out;
+}
+
+/* Subtle Progress Bar */
+.loader-progress {
+    width: 160px;
+    height: 4px;
+    background: #000000;
+    border-radius: 10px;
+    margin: 0 auto;
+    overflow: hidden;
+}
+
+.loader-progress-fill {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #4facfe, #00f2fe);
+    animation: loader-fill 0.8s ease-out forwards;
+}
+
+/* Animations */
+@keyframes spinner-spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes icon-pulse {
+    0%, 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    50% { opacity: 0.5; transform: translate(-50%, -50%) scale(0.9); }
+}
+
+@keyframes loader-fill {
+    to { width: 100%; }
+}
+
+.tracking-tight { letter-spacing: -0.5px; }

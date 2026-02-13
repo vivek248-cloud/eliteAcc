@@ -1,0 +1,126 @@
+{% extends "layout/base.html" %}
+{% block title %}Expense Sub-Categories{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <h2 class="fw-black text-dark mb-1">Expense Granularity</h2>
+            <p class="text-muted small mb-0">Define specific sub-items under your primary spend categories.</p>
+        </div>
+        <a href="{% url 'expense_subcategory_create' %}" class="btn btn-primary shadow-sm px-4 py-2 rounded-3 fw-bold">
+            <i class="bi bi-plus-lg me-2"></i> Add Sub-Category
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-3">
+            <form method="get" class="row g-2 align-items-center">
+                <div class="col-auto">
+                    <label class="small fw-bold text-muted ms-1">Filter by Parent:</label>
+                </div>
+                <div class="col-md-3">
+                    <select name="category" class="form-select form-select-sm border-light-subtle rounded-3 shadow-xs">
+                        <option value="">All Categories</option>
+                        {% for c in categories %}
+                            <option value="{{ c.id }}"
+                                {% if selected_category|stringformat:"s" == c.id|stringformat:"s" %}selected{% endif %}>
+                                {{ c.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-sm btn-dark px-3 rounded-3">
+                        <i class="bi bi-funnel me-1"></i> Apply Filter
+                    </button>
+                    {% if request.GET.category %}
+                        <a href="{% url 'expense_subcategory_index' %}" class="btn btn-sm btn-light border px-3 rounded-3 ms-1">
+                            Clear
+                        </a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-primary text-muted small" style="background-color: rgba(67, 97, 238, 0.05) !important;">
+                    <tr>
+                        <th class="ps-4 py-3 border-0 fw-bold" style="width: 80px;">REF</th>
+                        <th class="py-3 border-0 fw-bold">PARENT CATEGORY</th>
+                        <th class="py-3 border-0 fw-bold">SUB-CATEGORY NAME</th>
+                        <th class="pe-4 py-3 border-0 fw-bold text-end">MANAGEMENT</th>
+                    </tr>
+                </thead>
+                <tbody class="border-top-0">
+                    {% for s in subcategories %}
+                    <tr class="subcategory-row">
+                        <td class="ps-4">
+                            <span class="text-muted font-monospace small">#{{ forloop.counter|stringformat:"02d" }}</span>
+                        </td>
+                        <td>
+                            <span class="badge bg-primary bg-opacity-10 text-primary border-0 fw-bold px-3 py-2 rounded-pill">
+                                {{ s.category.name }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-arrow-return-right text-muted me-2 small"></i>
+                                <span class="fw-bold text-dark">{{ s.name }}</span>
+                            </div>
+                        </td>
+                        <td class="pe-4 text-end">
+                            <div class="btn-group shadow-sm rounded-3 overflow-hidden">
+                                <a href="{% url 'expense_subcategory_update' s.id %}" class="btn btn-white btn-sm border-end px-3" title="Edit">
+                                    <i class="bi bi-pencil-square text-warning"></i>
+                                </a>
+                                <a href="{% url 'expense_subcategory_delete' s.id %}" class="btn btn-white btn-sm px-3" title="Delete">
+                                    <i class="bi bi-trash3 text-danger"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5">
+                            <div class="py-4">
+                                <i class="bi bi-diagram-2 text-muted display-4 opacity-25"></i>
+                                <p class="text-muted mt-3">No sub-categories found for this selection.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .fw-black { font-weight: 900; }
+    .shadow-xs { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    
+    .subcategory-row:hover {
+        background-color: rgba(67, 97, 238, 0.02) !important;
+    }
+
+    .btn-white {
+        background-color: #fff;
+        border: 1px solid #f0f0f0;
+    }
+
+    .btn-white:hover {
+        background-color: #f8f9fa;
+    }
+
+    /* Custom pill styling for category column */
+    .badge {
+        font-size: 0.75rem;
+        letter-spacing: 0.02rem;
+    }
+</style>
+{% endblock %}

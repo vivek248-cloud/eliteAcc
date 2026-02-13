@@ -10,7 +10,7 @@
                 <div class="avatar-md bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
                     <i class="bi bi-person-plus-fill fs-3"></i>
                 </div>
-                <h3 class="fw-black text-dark mb-1">Onboard Worker</h3>
+                <h3 class="fw-black text-dark mb-1">Onboard Worker Team</h3>
                 <p class="text-muted small">Add a new member to your workforce directory</p>
             </div>
 
@@ -19,28 +19,44 @@
                     <form method="post">
                         {% csrf_token %}
 
+                        <!-- COMPANY (READ-ONLY DISPLAY) -->
                         <div class="mb-4">
-                            <label class="form-label small fw-bold text-uppercase text-muted" style="font-size: 0.7rem; letter-spacing: 0.5px;">
-                                Full Name
+                            <label class="form-label small fw-bold text-uppercase text-muted">
+                                Company
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-light-subtle text-muted">
+                                    <i class="bi bi-building"></i>
+                                </span>
+                                <input type="text"
+                                    class="form-control border-light-subtle bg-light bg-opacity-50 shadow-none"
+                                    value="{{ company.name }}"
+                                    readonly>
+                            </div>
+
+                            <!-- ✅ Hidden company ID -->
+                            <input type="hidden" name="company" value="{{ company.id }}">
+                        </div>
+
+                        <!-- WORKER NAME -->
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-uppercase text-muted">
+                                Worker Name
                             </label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light border-light-subtle text-muted">
                                     <i class="bi bi-person"></i>
                                 </span>
-                                <input type="text" 
-                                       name="name" 
-                                       class="form-control border-light-subtle shadow-none bg-light bg-opacity-50 py-2" 
-                                       placeholder="e.g. Rajesh Kumar"
-                                       required>
-                            </div>
-                            <div class="form-text mt-2" style="font-size: 0.75rem;">
-                                This name will appear on salary statements and payment records.
+                                <input type="text"
+                                    name="name"
+                                    class="form-control border-light-subtle shadow-none bg-light bg-opacity-50"
+                                    placeholder="e.g. Carpenter Team"
+                                    required>
                             </div>
                         </div>
-
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary fw-bold py-2 rounded-3 shadow-sm">
-                                <i class="bi bi-check-lg me-1"></i> Save Worker
+                                <i class="bi bi-check-lg me-1"></i> Save Team
                             </button>
                             <a href="{% url 'worker_index' %}" class="btn btn-light border py-2 rounded-3 fw-semibold text-muted">
                                 Cancel
@@ -52,7 +68,7 @@
 
             <div class="text-center mt-4">
                 <a href="{% url 'worker_index' %}" class="text-decoration-none small text-white bg-primary  px-3 py-2 rounded-3 d-inline-block">
-                    <i class="bi bi-arrow-left me-1"></i> View All Workers
+                    <i class="bi bi-arrow-left me-1"></i> View All Teams
                 </a>
             </div>
             
