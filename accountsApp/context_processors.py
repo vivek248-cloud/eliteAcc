@@ -168,12 +168,19 @@ def global_alerts(request):
             negative_bank_count += 1
 
     # ---------------------------------
+    # 🗄 BACKUP ALERT (Session Based)
+    # ---------------------------------
+    backup_alert = request.session.pop('backup_created', False)
+    backup_count = 1 if backup_alert else 0
+
+    # ---------------------------------
     # 🚨 Final Alert Count
     # ---------------------------------
     alert_count = (
         large_payment_count +
         high_expense_count +
-        negative_bank_count
+        negative_bank_count +
+        backup_count
     )
 
     alerts_seen = request.session.get('alerts_seen', False)
@@ -183,6 +190,7 @@ def global_alerts(request):
         'large_payment_count': large_payment_count,
         'high_expense_count': high_expense_count,
         'negative_bank_count': negative_bank_count,
+        'backup_alert': backup_alert,
         'avg_payment': avg_payment_30,
         'avg_expense': avg_expense_30,
     }
