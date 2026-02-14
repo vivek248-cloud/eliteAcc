@@ -13,7 +13,7 @@ SECRET_KEY = 'django-insecure-ie926!pa)-1=%6zn*c#wz$=4y#wtv536a(^dxp58x5uj!vurcc
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*','eliteaccounts.in']
 
 
 # Application definition
