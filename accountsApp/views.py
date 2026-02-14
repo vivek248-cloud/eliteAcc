@@ -118,6 +118,8 @@ def switch_company(request, pk):
 
 from django.utils.timezone import now
 from django.db.models.functions import TruncMonth
+from django.db.models import Avg
+
 
 @login_required(login_url='login')
 def home(request):
@@ -193,6 +195,30 @@ def home(request):
         total_balance += (c.budget - paid)
 
     # =========================
+    # EXTRA DATA FOR HEALTH SYSTEM
+    # =========================
+    total_project_value = Decimal('0.00')
+    overrun_clients = 0
+    high_budget_clients = 0
+
+    for c in clients:
+        paid = c.paid_total or Decimal('0.00')
+        spent = c.expenses.aggregate(
+            total=Sum('amount')
+        )['total'] or Decimal('0.00')
+
+        total_project_value += c.budget
+
+        if spent > c.budget:
+            overrun_clients += 1
+
+        if spent > (c.budget * Decimal('0.8')):
+            high_budget_clients += 1
+
+    total_clients = clients.count()
+
+
+    # =========================
     # BANKS (COMPANY SAFE)
     # =========================
     banks = Bank.objects.filter(
@@ -215,6 +241,11 @@ def home(request):
 
     total_bank = sum((b.available_balance for b in banks), Decimal('0.00'))
 
+    negative_bank_count = sum(
+    1 for b in banks if b.available_balance < 0
+)
+
+
     # Selected bank
     selected_bank = None
     if selected_bank_id:
@@ -225,6 +256,8 @@ def home(request):
     else:
         display_bank_balance = total_bank
 
+
+
     # =========================
     # PROFIT
     # =========================
@@ -233,6 +266,198 @@ def home(request):
         (total_profit / total_payments) * 100
         if total_payments > 0 else 0
     )
+
+
+
+
+    # ====================================
+    # 💎 FINANCIAL HEALTH SCORE (0-100)
+    # ====================================
+
+    # 1️⃣ Profit Score (25 max)
+    if profit_percentage > 30:
+        profit_score = 25
+    elif profit_percentage > 15:
+        profit_score = 18
+    elif profit_percentage > 5:
+        profit_score = 10
+    elif profit_percentage > 0:
+        profit_score = 5
+    else:
+        profit_score = 0
+
+    # 2️⃣ Cash Ratio Score
+    cash_ratio = (
+        total_bank / total_expenses
+        if total_expenses > 0 else Decimal('0')
+    )
+
+    if cash_ratio > 2:
+        cash_score = 25
+    elif cash_ratio > 1:
+        cash_score = 18
+    elif cash_ratio > 0.5:
+        cash_score = 10
+    else:
+        cash_score = 5
+
+    # 3️⃣ Receivable Ratio Score
+    receivable_ratio = (
+        total_balance / total_project_value
+        if total_project_value > 0 else Decimal('0')
+    )
+
+    if receivable_ratio < Decimal('0.2'):
+        receivable_score = 25
+    elif receivable_ratio < Decimal('0.4'):
+        receivable_score = 18
+    elif receivable_ratio < Decimal('0.6'):
+        receivable_score = 10
+    else:
+        receivable_score = 5
+
+    # 4️⃣ Budget Discipline Score
+    discipline_ratio = (
+        Decimal(overrun_clients) / Decimal(total_clients)
+        if total_clients > 0 else Decimal('0')
+    )
+
+    if discipline_ratio == 0:
+        discipline_score = 25
+    elif discipline_ratio < Decimal('0.1'):
+        discipline_score = 18
+    elif discipline_ratio < Decimal('0.3'):
+        discipline_score = 10
+    else:
+        discipline_score = 5
+
+    health_score = (
+        profit_score +
+        cash_score +
+        receivable_score +
+        discipline_score
+    )
+
+    if health_score >= 75:
+        health_status = "Stable"
+    elif health_score >= 50:
+        health_status = "Moderate Risk"
+    else:
+        health_status = "High Risk"
+
+
+
+
+
+
+
+    # ====================================
+    # 📊 TOP 5 EXPENSE CATEGORIES
+    # ====================================
+    top_categories = (
+        expense_qs
+        .values('category__name')
+        .annotate(total=Sum('amount'))
+        .order_by('-total')[:5]
+    )
+
+    top_category_labels = [
+        c['category__name'] or "Uncategorized"
+        for c in top_categories
+    ]
+
+    top_category_values = [
+        float(c['total']) for c in top_categories
+    ]
+
+
+
+    # ====================================
+    # 👷 SALARY DISTRIBUTION BY TEAM
+    # ====================================
+    salary_qs = expense_qs.filter(category__name__iexact='salary')
+
+    salary_by_team = (
+        salary_qs
+        .values('salary_to__name')
+        .annotate(total=Sum('amount'))
+        .order_by('-total')
+    )
+
+    salary_team_labels = [
+        s['salary_to__name'] or "Unknown"
+        for s in salary_by_team
+    ]
+
+    salary_team_values = [
+        float(s['total']) for s in salary_by_team
+    ]
+
+
+
+    # ====================================
+    # 📉 MONTHLY EXPENSE TREND
+    # ====================================
+    monthly_expenses = (
+        expense_qs
+        .annotate(month=TruncMonth('expense_date'))
+        .values('month')
+        .annotate(total=Sum('amount'))
+        .order_by('month')
+    )
+
+    monthly_expense_labels = [
+        m['month'].strftime("%b %Y")
+        for m in monthly_expenses
+    ]
+
+    monthly_expense_values = [
+        float(m['total']) for m in monthly_expenses
+    ]
+
+
+
+    # ====================================
+    # 🚨 SMART ALERTS (INTELLIGENT VERSION)
+    # ====================================
+
+    today = now().date()
+
+    # ---- Average Payment
+    avg_payment = payment_qs.aggregate(
+        avg=Avg('amount')
+    )['avg'] or Decimal('0.00')
+
+    large_payments_today = payment_qs.filter(
+        payment_date=today,
+        amount__gt=avg_payment
+    )
+
+    large_payment_count = large_payments_today.count()
+
+    # ---- Average Expense
+    avg_expense = expense_qs.aggregate(
+        avg=Avg('amount')
+    )['avg'] or Decimal('0.00')
+
+    high_expense_today = expense_qs.filter(
+        expense_date=today,
+        amount__gt=avg_expense
+    )
+
+    high_expense_count = high_expense_today.count()
+
+    # ---- Negative Bank Alert (already calculated earlier)
+    # negative_bank_count
+
+    # ---- Final Alert Count
+    alert_count = (
+        large_payment_count +
+        high_expense_count +
+        negative_bank_count
+    )
+
+
 
     # =========================
     # RECENT DATA
@@ -328,6 +553,29 @@ def home(request):
         'current_date': current_date,
 
 
+
+
+        'health_score': health_score,
+        'health_status': health_status,
+        'expense_category_labels': json.dumps(top_category_labels),
+        'expense_category_values': json.dumps(top_category_values),
+
+        'salary_team_labels': json.dumps(salary_team_labels),
+        'salary_team_values': json.dumps(salary_team_values),
+
+        'monthly_expense_labels': json.dumps(monthly_expense_labels),
+        'monthly_expense_values': json.dumps(monthly_expense_values),
+        'alert_count': alert_count,
+
+        'large_payment_count': large_payment_count,
+        'high_expense_count': high_expense_count,
+        'avg_payment': avg_payment,
+        'avg_expense': avg_expense,
+        'negative_bank_count': negative_bank_count,
+
+
+
+
         'profit_trend_labels': json.dumps(all_dates),
         'profit_trend_values': json.dumps(profit_trend_data),
 
@@ -338,9 +586,14 @@ def home(request):
     })
 
 
+#clear alert when user visited
 
+from django.http import JsonResponse
 
-
+@login_required
+def clear_alerts(request):
+    request.session['alerts_seen'] = True
+    return JsonResponse({"status": "ok"})
 
 
 
@@ -383,8 +636,19 @@ def fill_date_gaps(qs):
 
 #index view for Company
 
+
+from django.db.models import Count
+
+
+
 def company_index(request):
-    companies = Company.objects.all().order_by('-id')
+    companies = Company.objects.annotate(
+        total_clients=Count('clients', distinct=True),
+        total_banks=Count('banks', distinct=True),
+        total_worker_teams=Count('workers', distinct=True),
+        total_workers=Count('workers__names', distinct=True),  # ✅ FIXED
+    ).order_by('-id')
+
     return render(request, 'company/index.html', {
         'companies': companies
     })
@@ -395,12 +659,19 @@ def company_index(request):
 def company_create(request):
     if request.method == 'POST':
         name = request.POST.get('name')
+        logo = request.FILES.get('logo')
+
         if name:
-            Company.objects.create(name=name)
+            Company.objects.create(
+                name=name,
+                logo=logo
+            )
+            messages.success(request, "Company created successfully")
             return redirect('company_index')
 
-    return render(request, 'company/create.html')
+        messages.error(request, "Company name is required")
 
+    return render(request, 'company/create.html')
 
 def company_delete(request, pk):
     company = get_object_or_404(Company, pk=pk)
@@ -421,14 +692,25 @@ def company_update(request, pk):
 
     if request.method == 'POST':
         name = request.POST.get('name')
+        logo = request.FILES.get('logo')
+
         if name:
             company.name = name
+
+            # Only update logo if new file uploaded
+            if logo:
+                company.logo = logo
+
             company.save()
+            messages.success(request, "Company updated successfully")
             return redirect('company_index')
+
+        messages.error(request, "Company name is required")
 
     return render(request, 'company/update.html', {
         'company': company
     })
+
 
 
 #client views will be added here

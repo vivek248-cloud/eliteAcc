@@ -61,6 +61,8 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
 
                 'accountsApp.context_processors.selected_company',  # 👈 ADD HERE custom context processor for selected company
+                # 'accountsApp.context_processors.smart_alerts',
+                'accountsApp.context_processors.global_alerts',
             ],
         },
     },

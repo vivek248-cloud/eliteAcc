@@ -16,34 +16,48 @@
 
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="background: #ffffff; border: 1px solid #eee !important;">
                 <div class="card-body p-4 p-lg-5">
-                    <form method="POST">
-                        {% csrf_token %}
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
 
-                        <div class="mb-4">
-                            <label class="form-label small fw-bold text-uppercase text-muted" style="font-size: 0.7rem; letter-spacing: 0.5px;">
-                                Legal Entity Name
-                            </label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light border-light-subtle text-muted">
-                                    <i class="bi bi-building-gear"></i>
-                                </span>
-                                <input type="text" 
-                                       name="name" 
-                                       class="form-control border-light-subtle shadow-none bg-light bg-opacity-50 py-2" 
-                                       placeholder="e.g. Elite Industries Ltd."
-                                       required>
-                            </div>
-                        </div>
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-uppercase text-muted">
+                            Legal Entity Name
+                        </label>
 
-                        <div class="d-grid gap-2 mt-5">
-                            <button type="submit" class="btn btn-primary fw-bold py-3 rounded-3 shadow-sm text-uppercase tracking-wider">
-                                <i class="bi bi-check-circle me-2"></i> Create Company
-                            </button>
-                            <a href="{% url 'company_index' %}" class="btn btn-light border py-2 rounded-3 fw-semibold text-muted">
-                                Cancel
-                            </a>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-light-subtle text-muted">
+                                <i class="bi bi-building-gear"></i>
+                            </span>
+
+                            <input type="text"
+                                name="name"
+                                class="form-control border-light-subtle shadow-none bg-light bg-opacity-50 py-2"
+                                placeholder="e.g. Elite Industries Ltd."
+                                required>
                         </div>
-                    </form>
+                    </div>
+
+                    <!-- NEW LOGO FIELD -->
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-uppercase text-muted">
+                            Company Logo
+                        </label>
+
+                        <input type="file"
+                            name="logo"
+                            class="form-control border-light-subtle shadow-none"
+                            accept="image/*">
+                    </div>
+
+                    <div class="d-grid gap-2 mt-5">
+                        <button type="submit" class="btn btn-primary fw-bold py-3 rounded-3 shadow-sm">
+                            <i class="bi bi-check-circle me-2"></i> Create Company
+                        </button>
+                        <a href="{% url 'company_index' %}" class="btn btn-light border py-2 rounded-3 fw-semibold text-muted">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
                 </div>
             </div>
 

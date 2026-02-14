@@ -235,6 +235,56 @@
             </div>
         </div>
     </div>
+
+
+
+
+
+    <div class="row g-4 mb-4">
+
+        <!-- 🥧 Top Categories -->
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 rounded-4 h-100">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold text-uppercase small text-dark mb-3">
+                        Top Expense Categories
+                    </h6>
+                    <canvas id="categoryChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 👷 Salary Distribution -->
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 rounded-4 h-100">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold text-uppercase small text-dark mb-3">
+                        Salary by Team
+                    </h6>
+                    <canvas id="salaryChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 📉 Monthly Trend -->
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 rounded-4 h-100">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold text-uppercase small text-dark mb-3">
+                        Monthly Expense Trend
+                    </h6>
+                    <canvas id="monthlyExpenseChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+
+</div>
+
+
     {% else %}
     <div class="text-center py-5">
         <img src="https://cdn-icons-png.flaticon.com/512/4076/4076549.png" width="120" class="opacity-25 mb-3">
@@ -292,6 +342,183 @@ document.addEventListener('DOMContentLoaded', function () {
                     ticks: { callback: v => '₹' + v.toLocaleString() }
                 },
                 x: { grid: { display: false } }
+            }
+        }
+    });
+});
+
+
+
+{% comment %} Top Expense Categories {% endcomment %}
+
+new Chart(document.getElementById('categoryChart'), {
+    type: 'pie',
+    data: {
+        labels: {{ expense_category_labels|safe }},
+        datasets: [{
+            data: {{ expense_category_values|safe }},
+        }]
+    },
+    options: {
+        plugins: {
+            legend: { position: 'bottom' }
+        }
+    }
+});
+
+
+
+
+{% comment %} Salary by Team {% endcomment %}
+
+
+new Chart(document.getElementById('salaryChart'), {
+    type: 'bar',
+    data: {
+        labels: {{ salary_team_labels|safe }},
+        datasets: [{
+            label: 'Salary',
+            data: {{ salary_team_values|safe }},
+        }]
+    },
+    options: {
+        plugins: { legend: { display: false } },
+        scales: {
+            y: {
+                ticks: {
+                    callback: value => '₹' + value
+                }
+            }
+        }
+    }
+});
+
+
+{% comment %} Monthly Expense Trend {% endcomment %}
+
+new Chart(document.getElementById('monthlyExpenseChart'), {
+    type: 'line',
+    data: {
+        labels: {{ monthly_expense_labels|safe }},
+        datasets: [{
+            label: 'Expenses',
+            data: {{ monthly_expense_values|safe }},
+            fill: true,
+            tension: 0.4
+        }]
+    },
+    options: {
+        plugins: { legend: { display: false } },
+        scales: {
+            y: {
+                ticks: {
+                    callback: value => '₹' + value
+                }
+            }
+        }
+    }
+});
+
+
+
+</script>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const canvas = document.getElementById('monthlyExpenseChart');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const values = {{ monthly_expense_values|safe }};
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ monthly_expense_labels|safe }},
+            datasets: [{
+                label: 'Monthly Expenses',
+                data: values,
+                borderColor: '#ef4444',
+                borderWidth: 3,
+                tension: 0.4,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                pointBackgroundColor: '#ffffff',
+                pointBorderColor: '#ef4444',
+                pointBorderWidth: 2,
+                fill: true,
+                backgroundColor: function(context) {
+                    const chart = context.chart;
+                    const { ctx, chartArea } = chart;
+                    if (!chartArea) return null;
+
+                    const gradient = ctx.createLinearGradient(
+                        0,
+                        chartArea.bottom,
+                        0,
+                        chartArea.top
+                    );
+
+                    gradient.addColorStop(0, 'rgba(239, 68, 68, 0)');
+                    gradient.addColorStop(1, 'rgba(239, 68, 68, 0.15)');
+
+                    return gradient;
+                }
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+
+            animation: {
+                duration: 1000,
+                easing: 'easeOutQuart'
+            },
+
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+
+            plugins: {
+                legend: { display: false },
+
+                tooltip: {
+                    backgroundColor: '#111827',
+                    padding: 14,
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) {
+                            return 'Expense: ₹ ' +
+                                Number(context.raw).toLocaleString('en-IN');
+                        }
+                    }
+                }
+            },
+
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        borderDash: [5, 5],
+                        color: '#e5e7eb'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return '₹ ' +
+                                Number(value).toLocaleString('en-IN');
+                        }
+                    }
+                },
+
+                x: {
+                    grid: { display: false },
+                    ticks: {
+                        color: '#6b7280'
+                    }
+                }
             }
         }
     });

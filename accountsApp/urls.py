@@ -8,6 +8,7 @@ urlpatterns = [
     path('', login_view, name='login'),
 
     path('switch-company/<int:pk>/', switch_company, name='switch_company'),
+    path('clear-alerts/', clear_alerts, name='clear_alerts'),#clear alert when user visited
 
     path('dashboard/', home, name='dashboard'),
     path('logout/', logout_view, name='logout'),
