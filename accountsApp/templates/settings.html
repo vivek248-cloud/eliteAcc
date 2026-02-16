@@ -59,6 +59,54 @@
                     </div>
                 </div>
 
+                <div class="restore-container mt-4 p-4 rounded-4 border shadow-sm bg-white">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="icon-box bg-warning bg-opacity-10 text-warning rounded-3 p-2 me-3">
+                            <i class="bi bi-cloud-arrow-up-fill fs-4"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0 fw-bold text-dark">Restore Database</h6>
+                            <small class="text-muted">Upload a .zip backup file to restore system data</small>
+                        </div>
+                    </div>
+
+                    <form method="POST"
+                        action="{% url 'restore_database' %}"
+                        enctype="multipart/form-data"
+                        id="restoreForm"
+                        class="needs-validation">
+
+                        {% csrf_token %}
+
+                        <div class="upload-zone mb-3" id="dropZone">
+                            <input type="file"
+                                name="backup_file"
+                                id="backupFile"
+                                accept=".zip"
+                                required
+                                class="file-input">
+                            
+                            <div class="upload-content text-center py-4 border-dashed rounded-4">
+                                <i class="bi bi-file-earmark-zip text-primary fs-1 mb-2"></i>
+                                <p class="mb-1 fw-semibold text-dark" id="fileName">Click to upload or drag & drop</p>
+                                <p class="text-muted small mb-0">ZIP files only (Max 50MB)</p>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-warning border-0 rounded-3 d-flex align-items-center mb-4 py-2 px-3">
+                            <i class="bi bi-exclamation-triangle-fill me-2 small"></i>
+                            <span style="font-size: 0.75rem;" class="fw-medium">Restoring will permanently overwrite current data.</span>
+                        </div>
+
+                        <button type="submit"
+                                id="restoreBtn"
+                                class="btn btn-primary w-100 py-2 rounded-3 fw-bold shadow-sm transition-all d-flex align-items-center justify-content-center gap-2">
+                            <i class="bi bi-arrow-clockwise fs-5" id="btnIcon"></i>
+                            <span id="btnText">Initiate System Restore</span>
+                        </button>
+                    </form>
+                </div>
+
                 <div class="col-md-12">
                     <div class="card border-0 shadow-sm rounded-3">
                         <div class="card-header bg-white border-0 fw-bold pt-3">
@@ -102,4 +150,83 @@
         </div>
     </div>
 </div>
+
+<style>
+    /* 1. Upload Zone Styling */
+    .border-dashed {
+        border: 2px dashed #e2e8f0;
+        transition: all 0.3s ease;
+        background: #f8fafc;
+        cursor: pointer;
+    }
+
+    .upload-zone { position: relative; }
+    
+    .file-input {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+        z-index: 2;
+    }
+
+    .upload-zone:hover .border-dashed {
+        border-color: #4361ee;
+        background: #f0f4ff;
+    }
+
+    /* 2. Transition Effects */
+    .transition-all { transition: all 0.2s ease-in-out; }
+
+    /* 3. Animation for Loading */
+    .spin {
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    /* 4. Disable Click State */
+    .btn-loading {
+        opacity: 0.7;
+        pointer-events: none;
+    }
+</style>
+
+
+<script>
+    const fileInput = document.querySelector('#backupFile');
+    const fileNameDisplay = document.querySelector('#fileName');
+    const restoreForm = document.querySelector('#restoreForm');
+    const restoreBtn = document.querySelector('#restoreBtn');
+    const btnIcon = document.querySelector('#btnIcon');
+    const btnText = document.querySelector('#btnText');
+
+    // Update file name on selection
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            fileNameDisplay.textContent = e.target.files[0].name;
+            fileNameDisplay.classList.add('text-primary');
+        }
+    });
+
+    // Handle Form Submission
+    restoreForm.addEventListener('submit', function(e) {
+        const confirmed = confirm('⚠️ CRITICAL WARNING: This will overwrite your entire database with the backup file. This cannot be undone. \n\nAre you absolutely sure?');
+        
+        if (!confirmed) {
+            e.preventDefault();
+            return false;
+        }
+
+        // Show loading state
+        restoreBtn.classList.add('btn-loading');
+        btnIcon.classList.add('spin');
+        btnText.textContent = "Restoring Database... Please wait.";
+    });
+</script>
+
+
 {% endblock %}

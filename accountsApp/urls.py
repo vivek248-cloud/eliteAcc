@@ -86,6 +86,7 @@ urlpatterns = [
 
     path('settings/', settings_view, name='settings'),
     path('settings/backup/', database_backup, name='database_backup'),
+    path('settings/restore/', restore_database, name='restore_database'),
 
 
 

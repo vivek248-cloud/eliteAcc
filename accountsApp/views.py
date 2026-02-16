@@ -4491,6 +4491,55 @@ def database_backup(request):
 
 
 
+import tempfile
+from django.views.decorators.http import require_POST
+
+@login_required
+@require_POST
+def restore_database(request):
+    try:
+        uploaded_file = request.FILES.get('backup_file')
+
+        if not uploaded_file:
+            messages.error(request, "No file selected.")
+            return redirect('settings')
+
+        # Save temp zip file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as temp_zip:
+            for chunk in uploaded_file.chunks():
+                temp_zip.write(chunk)
+            temp_zip_path = temp_zip.name
+
+        # Extract zip
+        with zipfile.ZipFile(temp_zip_path, 'r') as zip_ref:
+            zip_ref.extractall("/tmp")
+
+        # Find SQL file
+        extracted_files = zip_ref.namelist()
+        sql_filename = extracted_files[0]
+        sql_path = os.path.join("/tmp", sql_filename)
+
+        db = settings.DATABASES['default']
+
+        restore_command = [
+            "mysql",
+            f"-u{db['USER']}",
+            f"-p{db['PASSWORD']}",
+            db['NAME']
+        ]
+
+        with open(sql_path, 'r') as f:
+            subprocess.run(restore_command, stdin=f, check=True)
+
+        messages.success(request, "Database restored successfully!")
+
+        return redirect('settings')
+
+    except Exception as e:
+        messages.error(request, f"Restore failed: {str(e)}")
+        return redirect('settings')
+
+
 
 
 from .models import AppSettings
