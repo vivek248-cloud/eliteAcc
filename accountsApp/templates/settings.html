@@ -46,18 +46,33 @@
                 <div class="col-md-6">
                     <div class="card border-0 shadow-sm rounded-3 h-100">
                         <div class="card-header bg-white border-0 fw-bold pt-3">
-                            <i class="bi bi-database-down text-danger me-2"></i>Database Backup
+                            <i class="bi bi-database-down text-danger me-2"></i>
+                            Database Backup
                         </div>
+
                         <div class="card-body">
-                            <p class="text-muted small">Export a full snapshot of your financial records to a local file.</p>
+                            <p class="text-muted small">
+                                Export a full snapshot of your financial records to a local file.
+                            </p>
+
+                            <!-- Download Backup -->
                             <a href="{% url 'database_backup' %}"
-                            class="btn btn-danger btn-sm w-100 rounded-3"
+                            class="btn btn-danger btn-sm w-100 rounded-3 mb-2"
                             onclick="return confirm('Create and download database backup?')">
-                                <i class="bi bi-download me-1"></i> Download Backup
+                                <i class="bi bi-download me-1"></i>
+                                Download Backup
+                            </a>
+
+                            <!-- View History -->
+                            <a href="{% url 'backup_history' %}"
+                            class="btn btn-dark btn-sm w-100 rounded-3">
+                                <i class="bi bi-clock-history me-1"></i>
+                                View Backup History
                             </a>
                         </div>
                     </div>
                 </div>
+
 
                 <div class="restore-container mt-4 p-4 rounded-4 border shadow-sm bg-white">
                     <div class="d-flex align-items-center mb-3">
