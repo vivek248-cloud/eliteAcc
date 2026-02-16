@@ -89,6 +89,7 @@ urlpatterns = [
     path('settings/restore/', restore_database, name='restore_database'),
 
 
+    path('backups/history/', backup_history_view, name='backup_history'),
 
 
     path('password-change/',

@@ -4704,6 +4704,14 @@ def settings_view(request):
 
 
 
+@login_required
+def backup_history_view(request):
+    backups = BackupHistory.objects.order_by('-created_at')
+
+    return render(request, 'backup_history.html', {
+        'backups': backups
+    })
+
 
 
 def help(request):
