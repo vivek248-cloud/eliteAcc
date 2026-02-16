@@ -4480,37 +4480,34 @@ def database_backup(request):
         os.remove(sql_file)
 
         # 🔔 Send Email Notification
-        settings_obj = AppSettings.objects.first()
 
-        if settings_obj and settings_obj.notification_email:
 
-            subject = "Elite Accounts - Database Backup Completed"
+    settings_obj, created = AppSettings.objects.get_or_create(id=1)
 
-            message = f"""
-Hello Admin,
+    if settings_obj.notification_email:
 
-Your database backup was successfully created.
+        subject = "Elite Accounts - Database Backup Completed"
 
-📅 Date: {now_dt.strftime('%d-%m-%Y')}
-⏰ Time: {now_dt.strftime('%H:%M')}
-📂 Location: {zip_file}
+        message = f"""
+    Hello Admin,
 
-This is an automated system notification.
+    Your database backup was successfully created.
 
-Elite Accounts System
-"""
+    Date: {now_dt.strftime('%d-%m-%Y')}
+    Time: {now_dt.strftime('%H:%M')}
+    Location: {zip_file}
 
-            try:
-                send_mail(
-                    subject,
-                    message,
-                    settings.DEFAULT_FROM_EMAIL,
-                    [settings_obj.notification_email],
-                    fail_silently=False,
-                )
-            except Exception:
-                # Do not break backup if email fails
-                pass
+    Elite Accounts System
+    """
+
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [settings_obj.notification_email],
+            fail_silently=False
+        )
+
 
         # Download file
         with open(zip_file, 'rb') as f:
