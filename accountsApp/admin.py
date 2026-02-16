@@ -14,3 +14,4 @@ admin.site.register(Worker)
 admin.site.register(ExpenseCategory)
 
 admin.site.register(AppSettings)
+admin.site.register(BackupHistory)
