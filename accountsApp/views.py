@@ -4439,7 +4439,7 @@ def database_backup(request):
         month_folder = now.strftime('%Y-%m')
         timestamp = now.strftime('%Y-%m-%d_%H-%M')
 
-        backup_root = os.path.join(settings.BASE_DIR, 'backups', month_folder)
+        backup_root = os.path.join('/opt/backups/eliteAcc', month_folder)
         os.makedirs(backup_root, exist_ok=True)
 
         sql_file = os.path.join(
