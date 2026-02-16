@@ -4430,14 +4430,19 @@ from django.contrib.auth.decorators import login_required
 
 from django.contrib import messages
 from django.shortcuts import redirect
+from django.core.mail import send_mail
+from django.utils.timezone import now
+
+
+
 
 @login_required
 def database_backup(request):
 
     try:
-        now = datetime.now()
-        month_folder = now.strftime('%Y-%m')
-        timestamp = now.strftime('%Y-%m-%d_%H-%M')
+        now_dt = datetime.now()
+        month_folder = now_dt.strftime('%Y-%m')
+        timestamp = now_dt.strftime('%Y-%m-%d_%H-%M')
 
         backup_root = os.path.join('/opt/backups/eliteAcc', month_folder)
         os.makedirs(backup_root, exist_ok=True)
@@ -4474,10 +4479,40 @@ def database_backup(request):
 
         os.remove(sql_file)
 
-        # 🔔 Set session alert
-        request.session['backup_created'] = True
+        # 🔔 Send Email Notification
+        settings_obj = AppSettings.objects.first()
 
-        # 📥 Download file
+        if settings_obj and settings_obj.notification_email:
+
+            subject = "Elite Accounts - Database Backup Completed"
+
+            message = f"""
+Hello Admin,
+
+Your database backup was successfully created.
+
+📅 Date: {now_dt.strftime('%d-%m-%Y')}
+⏰ Time: {now_dt.strftime('%H:%M')}
+📂 Location: {zip_file}
+
+This is an automated system notification.
+
+Elite Accounts System
+"""
+
+            try:
+                send_mail(
+                    subject,
+                    message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [settings_obj.notification_email],
+                    fail_silently=False,
+                )
+            except Exception:
+                # Do not break backup if email fails
+                pass
+
+        # Download file
         with open(zip_file, 'rb') as f:
             response = HttpResponse(f.read(), content_type='application/zip')
             response['Content-Disposition'] = (
@@ -4488,6 +4523,67 @@ def database_backup(request):
     except Exception as e:
         messages.error(request, f"Backup failed: {str(e)}")
         return redirect('settings')
+
+
+
+
+# @login_required
+# def database_backup(request):
+
+#     try:
+#         now = datetime.now()
+#         month_folder = now.strftime('%Y-%m')
+#         timestamp = now.strftime('%Y-%m-%d_%H-%M')
+
+#         backup_root = os.path.join('/opt/backups/eliteAcc', month_folder)
+#         os.makedirs(backup_root, exist_ok=True)
+
+#         sql_file = os.path.join(
+#             backup_root,
+#             f'db_backup_{timestamp}.sql'
+#         )
+
+#         zip_file = os.path.join(
+#             backup_root,
+#             f'db_backup_{timestamp}.zip'
+#         )
+
+#         db = settings.DATABASES['default']
+
+#         dump_command = [
+#             "mysqldump",
+#             "--no-tablespaces",
+#             f"-u{db['USER']}",
+#             f"-p{db['PASSWORD']}",
+#             f"-h{db['HOST']}",
+#             f"-P{db['PORT']}",
+#             db['NAME']
+#         ]
+
+#         # Create SQL
+#         with open(sql_file, "w", encoding="utf-8") as f:
+#             subprocess.run(dump_command, stdout=f, check=True)
+
+#         # Zip it
+#         with zipfile.ZipFile(zip_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
+#             zipf.write(sql_file, arcname=os.path.basename(sql_file))
+
+#         os.remove(sql_file)
+
+#         # 🔔 Set session alert
+#         request.session['backup_created'] = True
+
+#         # 📥 Download file
+#         with open(zip_file, 'rb') as f:
+#             response = HttpResponse(f.read(), content_type='application/zip')
+#             response['Content-Disposition'] = (
+#                 f'attachment; filename="{os.path.basename(zip_file)}"'
+#             )
+#             return response
+
+#     except Exception as e:
+#         messages.error(request, f"Backup failed: {str(e)}")
+#         return redirect('settings')
 
 
 import tempfile
