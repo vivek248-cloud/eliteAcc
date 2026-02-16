@@ -142,85 +142,81 @@ setInterval(checkSession, 1000);
  {% comment %} navigation bar {% endcomment %}
 
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark position-sticky top-0 shadow-sm" style="z-index: 1050;">
-    <div class="container-fluid">
+<nav class="navbar navbar-dark bg-dark position-sticky top-0 shadow-sm custom-navbar" style="z-index:1999;">
+    <div class="container-fluid px-3">
 
-        <!-- LEFT SIDE -->
-        <div class="d-flex align-items-center">
-            <button class="btn btn-link text-white d-md-none me-3 p-0 border-0 shadow-none"
+        <!-- LEFT -->
+        <div class="d-flex align-items-center gap-2">
+
+            <!-- Mobile Menu -->
+            <button class="btn btn-link text-white d-md-none p-0 border-0"
                     type="button"
                     data-bs-toggle="offcanvas"
-                    data-bs-target="#mobileSidebar"
-                    aria-label="Toggle navigation">
-                <i class="bi bi-text-indent-left fs-2"></i>
+                    data-bs-target="#mobileSidebar">
+                <i class="bi bi-list fs-3"></i>
             </button>
 
-            <a class="navbar-brand d-flex align-items-center gap-3 transition-all brand-hover" href="/">
+            <!-- Brand -->
+            <a class="navbar-brand d-flex align-items-center gap-2 mb-0" href="/">
                 <div class="logo-container">
                     {% if selected_company.logo %}
                         <img src="{{ selected_company.logo.url }}" 
-                            alt="Logo"
-                            class="company-logo-img">
+                             class="company-logo-img">
                     {% else %}
                         <div class="default-logo-placeholder">
                             <i class="bi bi-building-fill"></i>
                         </div>
                     {% endif %}
-                    <div class="logo-ring"></div>
                 </div>
-                
-                <div class="d-flex flex-column">
-                    <span class="fw-black text-white tracking-tight lh-1" style="font-size: 1.25rem;">
-                        Elite <span class="text-primary-gradient">Accounts</span>
-                    </span>
-                    <small class="text-white-50 fw-bold text-uppercase tracking-widest" style="font-size: 0.55rem; margin-top: 2px;">
-                        Management Suite
-                    </small>
+
+                <div class="brand-text d-none d-md-flex flex-column">
+                    {% if selected_company %}
+                    <span class="fw-bold text-white lh-1"> {{ selected_company.name }}</span>
+                    {% else %}
+                        <span class="fw-bold text-white lh-1">Elite Accounts</span>
+                    {% endif %}
+                    <small class="text-white-50 text-uppercase " style="font-size:0.76rem;">Management Application</small>
                 </div>
             </a>
         </div>
 
-        <!-- RIGHT SIDE -->
-        <div class="ms-auto d-flex align-items-center gap-3">
+        <!-- RIGHT -->
+        <div class="d-flex align-items-center gap-2 ms-auto">
 
-                <!-- 🔔 ALERT BELL -->
+            <!-- Bell -->
+            <div class="position-relative">
+                <button type="button"
+                        class="btn btn-link text-white p-0 border-0 position-relative"
+                        data-bs-toggle="modal"
+                        data-bs-target="#alertModal">
 
-                <div class="position-relative">
-                    <button type="button"
-                            class="btn btn-link text-white p-0 border-0 position-relative"
-                            data-bs-toggle="modal"
-                            data-bs-target="#alertModal">
+                    <i class="bi bi-bell fs-5 {% if alert_count > 0 %}bell-alert{% endif %}"></i>
 
-                        <i class="bi bi-bell fs-5 {% if alert_count > 0 %}bell-alert{% endif %}"></i>
+                    {% if alert_count > 0 %}
+                    <span id="alertBadge"
+                          class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                        {{ alert_count }}
+                    </span>
+                    {% endif %}
+                </button>
+            </div>
 
-                        {% if alert_count > 0 %}
-                        <span id="alertBadge"
-                            class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger shadow-sm"
-                            style="font-size: 0.65rem;">
-                            {{ alert_count }}
-                        </span>
-                        {% endif %}
-                    </button>
-                </div>
-
-
-            <!-- COMPANY SWITCHER -->
-            <div class="dropdown">
-                <button class="btn btn-light btn-sm rounded-pill px-3 fw-semibold d-flex align-items-center gap-2"
+            <!-- Company Switcher -->
+            <div class="dropdown company-switcher">
+                <button class="btn btn-light btn-sm rounded-pill d-flex align-items-center gap-2 px-3"
                         data-bs-toggle="dropdown">
 
-                    <span>
+                    <span class="company-name text-truncate">
                         {{ selected_company.name|default:"Select Company" }}
                     </span>
 
                     <i class="bi bi-chevron-down small"></i>
                 </button>
 
-                <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
-
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 company-dropdown">
                     {% for c in companies %}
                         <li>
-                            <a class="dropdown-item d-flex align-items-center gap-2
+                            <a class="dropdown-item text-truncate
                                {% if selected_company and selected_company.id == c.id %}active fw-semibold{% endif %}"
                                href="javascript:void(0)"
                                onclick="animateCompanyChange('{% url 'switch_company' c.id %}')">
@@ -237,49 +233,37 @@ setInterval(checkSession, 1000);
                 </ul>
             </div>
 
-            <!-- USER DROPDOWN -->
+            <!-- Avatar -->
             <div class="dropdown">
                 <a href="#"
-                class="text-white text-decoration-none dropdown-toggle d-flex align-items-center gap-3"
-                data-bs-toggle="dropdown">
-                    
-                    <div class="avatar-container">
-                        <div class="avatar-circle">
-                            {{ request.user.username|slice:":1"|upper }}
-                        </div>
+                   class="d-flex align-items-center text-white text-decoration-none"
+                   data-bs-toggle="dropdown">
+
+                    <div class="avatar-circle">
+                        {{ request.user.username|slice:":1"|upper }}
                         <span class="status-indicator"></span>
                     </div>
-
-                    <div class="d-flex flex-column text-start d-none d-sm-flex">
-                        <span class="fw-bold lh-1" style="font-size: 0.85rem;">{{ request.user.username }}</span>
-                        <small class="text-white-50" style="font-size: 0.65rem;">Administrator</small>
-                    </div>
-                    
-                    <i class="bi bi-chevron-down text-white-50 ms-1" style="font-size: 0.7rem;"></i>
                 </a>
 
                 <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
-
                     <li>
                         <a class="dropdown-item" href="{% url 'settings' %}">
                             <i class="bi bi-gear me-2"></i> Settings
                         </a>
                     </li>
-
                     <li><hr class="dropdown-divider"></li>
-
                     <li>
                         <a class="dropdown-item text-danger" href="{% url 'logout' %}">
                             <i class="bi bi-box-arrow-left me-2"></i> Logout
                         </a>
                     </li>
-
                 </ul>
             </div>
 
         </div>
     </div>
 </nav>
+
 
 
 <!-- 🚨 Smart Alerts Modal -->
@@ -414,7 +398,7 @@ document.addEventListener('DOMContentLoaded', function () {
 <div class="container-fluid">
     <div class="row">
         
-        <aside class="col-md-2 d-none d-md-flex flex-column sticky-sidebar p-3 border-0">
+        <aside class="col-md-2 d-none d-md-flex flex-column sticky-sidebar p-3 border-0 ">
 
 
             <ul class="nav flex-column">
@@ -543,95 +527,100 @@ document.addEventListener('DOMContentLoaded', function () {
     </div>
 </div>
 
-<div class="offcanvas offcanvas-start border-0 shadow" tabindex="-1" id="mobileSidebar" aria-labelledby="mobileSidebarLabel" style="width: 280px; background: #ffffff;">
+
+
+<div class="offcanvas offcanvas-start border-0 shadow-lg  " 
+     tabindex="-1" 
+     id="mobileSidebar" 
+     aria-labelledby="mobileSidebarLabel" 
+     style="width: 300px; background: #ffffff;margin-top:1.8rem;">
     
-    <div class="offcanvas-header border-bottom py-3">
-        <h5 class="offcanvas-title fw-black text-primary" id="mobileSidebarLabel">
-            <i class="bi bi-shield-check me-2"></i>ELITE ACCOUNTS
-        </h5>
+    <div class="offcanvas-header border-bottom py-4 px-4 flex-shrink-0">
+        <div class="d-flex align-items-center">
+            <div class="brand-icon-small me-3">
+                <i class="bi bi-shield-lock-fill"></i>
+            </div>
+            <h5 class="offcanvas-title fw-bold mb-0"
+                id="mobileSidebarLabel"
+                style="font-size: 1.05rem; color: #1e293b;">
+
+                {% if selected_company %}
+                    {{ selected_company.name|slice:":15" }}
+                {% else %}
+                    Elite Accounts
+                {% endif %}
+
+            </h5>
+
+        </div>
         <button type="button" class="btn-close shadow-none" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
 
-    <div class="offcanvas-body p-0">
-        <div class="list-group list-group-flush">
+    <div class="offcanvas-body p-3 flex-grow-1" style="-webkit-overflow-scrolling: touch;">
+        <div class="list-group list-group-flush gap-1">
             
             <a href="{% url 'dashboard' %}" 
-               class="list-group-item list-group-item-action py-3 border-0 {% if request.resolver_match.url_name == 'dashboard' %}bg-primary bg-opacity-10 text-primary fw-bold{% endif %}">
-                <i class="bi bi-grid-1x2 me-3"></i> Dashboard
+               class="list-group-item list-group-item-action nav-pill {% if request.resolver_match.url_name == 'dashboard' %}active-pill{% endif %}">
+                <i class="bi bi-grid-1x2"></i> <span>Dashboard</span>
             </a>
 
-            <div class="px-4 pt-4 pb-2">
-                <h6 class="text-muted small text-uppercase fw-black tracking-wider mb-0">Entities</h6>
-            </div>
-            <a href="{% url 'company_index' %}" class="list-group-item list-group-item-action py-2 px-4 border-0 {% if 'company' in request.path %}text-primary fw-bold{% endif %}">
-                <i class="bi bi-building me-3"></i> Company
+            <div class="nav-section-title">Entities</div>
+            <a href="{% url 'company_index' %}" class="list-group-item list-group-item-action nav-pill {% if 'company' in request.path %}active-pill{% endif %}">
+                <i class="bi bi-building"></i> <span>Company</span>
             </a>
-            <a href="{% url 'client_index' %}" class="list-group-item list-group-item-action py-2 px-4 border-0 {% if request.resolver_match.url_name == 'client_index' %}text-primary fw-bold{% endif %}">
-                <i class="bi bi-people me-3"></i> Clients
+            <a href="{% url 'client_index' %}" class="list-group-item list-group-item-action nav-pill {% if request.resolver_match.url_name == 'client_index' %}active-pill{% endif %}">
+                <i class="bi bi-people"></i> <span>Clients</span>
             </a>
-            <a href="{% url 'all_clients_statement' %}" class="list-group-item list-group-item-action py-2 px-4 border-0 {% if request.resolver_match.url_name == 'all_clients_statement' %}text-primary fw-bold{% endif %}">
-                <i class="bi bi-file-earmark-bar-graph me-3"></i> All Clients Statement
+            <a href="{% url 'all_clients_statement' %}" class="list-group-item list-group-item-action nav-pill {% if request.resolver_match.url_name == 'all_clients_statement' %}active-pill{% endif %}">
+                <i class="bi bi-file-earmark-bar-graph"></i> <span>Client Statement</span>
             </a>
 
-            <div class="px-4 pt-4 pb-2">
-                <h6 class="text-muted small text-uppercase fw-black tracking-wider mb-0">Financials</h6>
-            </div>
-            <a href="{% url 'bank_index' %}" class="list-group-item list-group-item-action py-2 px-4 border-0 {% if 'bank' in request.path %}text-primary fw-bold{% endif %}">
-                <i class="bi bi-bank me-3"></i> Banks
+            <div class="nav-section-title">Financials</div>
+            <a href="{% url 'bank_index' %}" class="list-group-item list-group-item-action nav-pill {% if 'bank' in request.path %}active-pill{% endif %}">
+                <i class="bi bi-bank"></i> <span>Banks</span>
             </a>
-            <a href="{% url 'available_amount' %}" class="list-group-item list-group-item-action py-2 px-4 border-0 {% if 'available' in request.path %}text-primary fw-bold{% endif %}">
-                <i class="bi bi-wallet2 me-3"></i> Available Balance
+            <a href="{% url 'available_amount' %}" class="list-group-item list-group-item-action nav-pill {% if 'available' in request.path %}active-pill{% endif %}">
+                <i class="bi bi-wallet2"></i> <span>Available Balance</span>
             </a>
-            <a href="{% url 'payment_index' %}" class="list-group-item list-group-item-action py-2 px-4 border-0 {% if 'payment' in request.path %}text-primary fw-bold{% endif %}">
-                <i class="bi bi-cash-coin me-3"></i> Payments
+            <a href="{% url 'payment_index' %}" class="list-group-item list-group-item-action nav-pill {% if 'payment' in request.path %}active-pill{% endif %}">
+                <i class="bi bi-cash-coin"></i> <span>Payments</span>
             </a>
 
-            <div class="px-4 pt-4 pb-2">
-                <h6 class="text-muted small text-uppercase fw-black tracking-wider mb-0">Spending</h6>
-            </div>
-            <a href="{% url 'expense_category_index' %}" class="list-group-item list-group-item-action py-2 px-4 border-0 {% if request.resolver_match.url_name == 'expense_category_index' %}text-primary fw-bold{% endif %}">
-                <i class="bi bi-receipt me-3"></i> Categories
+            <div class="nav-section-title">Spending</div>
+            <a href="{% url 'expense_category_index' %}" class="list-group-item list-group-item-action nav-pill {% if request.resolver_match.url_name == 'expense_category_index' %}active-pill{% endif %}">
+                <i class="bi bi-receipt"></i> <span>Categories</span>
             </a>
-            <a href="{% url 'expense_index' %}" class="list-group-item list-group-item-action py-2 px-4 border-0 {% if request.resolver_match.url_name == 'expense_index' %}text-primary fw-bold{% endif %}">
-                <i class="bi bi-coin me-3"></i> Spendings
+            <a href="{% url 'expense_index' %}" class="list-group-item list-group-item-action nav-pill {% if request.resolver_match.url_name == 'expense_index' %}active-pill{% endif %}">
+                <i class="bi bi-coin"></i> <span>Spendings</span>
             </a>
 
-            <div class="px-4 pt-4 pb-2">
-                <h6 class="text-muted small text-uppercase fw-black tracking-wider mb-0">Team</h6>
-            </div>
-            <a href="{% url 'worker_index' %}" class="list-group-item list-group-item-action py-2 px-4 border-0 {% if 'worker' in request.path %}text-primary fw-bold{% endif %}">
-                <i class="bi bi-person-workspace me-3"></i> Workers
-            </a>
-            <a href="{% url 'salary_index' %}" class="list-group-item list-group-item-action py-2 px-4 border-0 {% if 'salary' in request.path %}text-primary fw-bold{% endif %}">
-                <i class="bi bi-currency-rupee me-3"></i> Salary Statement
+            <div class="nav-section-title">Team</div>
+            <a href="{% url 'worker_index' %}" class="list-group-item list-group-item-action nav-pill {% if request.resolver_match.url_name == 'worker_index' %}active-pill{% endif %}">
+                <i class="bi bi-person-workspace"></i> <span>Workers Team</span>
             </a>
 
+            <a href="{% url 'worker_name_index' %}" class="list-group-item list-group-item-action nav-pill {% if request.resolver_match.url_name|slice:":11" == 'worker_name' %}active-pill{% endif %}">
+                <i class="bi bi-person-workspace"></i> <span>Workers Name</span>
+            </a>
+
+            <a href="{% url 'salary_index' %}" class="list-group-item list-group-item-action nav-pill {% if 'salary' in request.path %}active-pill{% endif %}">
+                <i class="bi bi-currency-rupee"></i> <span>Salary Statement</span>
+            </a>
+
+
+            <a href="{% url 'help' %}" class="btn btn-primary w-100 py-3 rounded-4 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2 text-white">
+                <i class="bi bi-patch-question"></i> Help Center
+            </a>
         </div>
     </div>
 
-    <div class="offcanvas-footer p-3 border-top">
-        <a href="{% url 'help' %}" class="btn btn-info bg-opacity-10 text-info w-100 py-2 rounded-3 fw-bold">
-            <i class="bi bi-question-circle me-2"></i> Help Center
-        </a>
+    <div class="offcanvas-footer p-4 bg-white border-top flex-shrink-0">
+
+        <div class="text-center mt-3">
+            <small class="text-muted fw-semibold" style="font-size: 0.7rem;">v1.1 • Accounts Management</small>
+        </div>
     </div>
 </div>
-
-<style>
-    .fw-black { font-weight: 900; }
-    .tracking-wider { letter-spacing: 0.05rem; }
-    
-    #mobileSidebar .list-group-item-action:active {
-        background-color: rgba(67, 97, 238, 0.1);
-        color: #4361ee;
-    }
-    
-    #mobileSidebar .list-group-item i {
-        font-size: 1.1rem;
-        width: 20px;
-        display: inline-block;
-        text-align: center;
-    }
-</style>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 {% block extra_js %}{% endblock %}
