@@ -4584,6 +4584,9 @@ from django.contrib.auth import logout
 from django.contrib import messages
 from django.shortcuts import redirect
 from django.conf import settings
+from django.core.mail import send_mail
+from .models import AppSettings
+from django.utils.timezone import now
 
 
 @login_required
@@ -4596,10 +4599,12 @@ def restore_database(request):
             messages.error(request, "No file selected.")
             return redirect('settings')
 
-        # 🔒 Logout user BEFORE restore
+        # 🔒 Logout BEFORE restore
         logout(request)
 
-        # Save temp zip file
+        restore_time = now()
+
+        # Save temp zip
         with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as temp_zip:
             for chunk in uploaded_file.chunks():
                 temp_zip.write(chunk)
@@ -4625,13 +4630,34 @@ def restore_database(request):
         with open(sql_path, 'r') as f:
             subprocess.run(restore_command, stdin=f, check=True)
 
-        # Restart gunicorn (important in production)
-        subprocess.run(["sudo", "systemctl", "restart", "gunicorn-eliteacc"])
+        # 🔔 Send Restore Email
+        settings_obj, _ = AppSettings.objects.get_or_create(id=1)
+
+        if settings_obj.notification_email:
+            send_mail(
+                "Elite Accounts - Database Restored",
+                f"""
+Hello Admin,
+
+Database was successfully restored.
+
+Date: {restore_time.strftime('%d-%m-%Y')}
+Time: {restore_time.strftime('%H:%M')}
+
+Elite Accounts System
+                """,
+                settings.DEFAULT_FROM_EMAIL,
+                [settings_obj.notification_email],
+                fail_silently=True
+            )
+
+        subprocess.run(["systemctl", "restart", "gunicorn-eliteacc"])
 
         return redirect('/')
 
     except Exception as e:
         return redirect(f"/settings/?error={str(e)}")
+
 
 
 from .models import AppSettings
