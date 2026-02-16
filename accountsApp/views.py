@@ -4490,9 +4490,16 @@ def database_backup(request):
         return redirect('settings')
 
 
-
 import tempfile
+import zipfile
+import os
+import subprocess
 from django.views.decorators.http import require_POST
+from django.contrib.auth import logout
+from django.contrib import messages
+from django.shortcuts import redirect
+from django.conf import settings
+
 
 @login_required
 @require_POST
@@ -4504,6 +4511,9 @@ def restore_database(request):
             messages.error(request, "No file selected.")
             return redirect('settings')
 
+        # 🔒 Logout user BEFORE restore
+        logout(request)
+
         # Save temp zip file
         with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as temp_zip:
             for chunk in uploaded_file.chunks():
@@ -4513,9 +4523,8 @@ def restore_database(request):
         # Extract zip
         with zipfile.ZipFile(temp_zip_path, 'r') as zip_ref:
             zip_ref.extractall("/tmp")
+            extracted_files = zip_ref.namelist()
 
-        # Find SQL file
-        extracted_files = zip_ref.namelist()
         sql_filename = extracted_files[0]
         sql_path = os.path.join("/tmp", sql_filename)
 
@@ -4531,15 +4540,13 @@ def restore_database(request):
         with open(sql_path, 'r') as f:
             subprocess.run(restore_command, stdin=f, check=True)
 
-        messages.success(request, "Database restored successfully!")
+        # Restart gunicorn (important in production)
+        subprocess.run(["sudo", "systemctl", "restart", "gunicorn-eliteacc"])
 
-        return redirect('settings')
+        return redirect('/')
 
     except Exception as e:
-        messages.error(request, f"Restore failed: {str(e)}")
-        return redirect('settings')
-
-
+        return redirect(f"/settings/?error={str(e)}")
 
 
 from .models import AppSettings
