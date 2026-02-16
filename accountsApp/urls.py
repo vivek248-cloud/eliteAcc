@@ -90,6 +90,7 @@ urlpatterns = [
 
 
     path('backups/history/', backup_history_view, name='backup_history'),
+    path('download-backup/<int:backup_id>/', download_backup, name='download_backup'),
 
 
     path('password-change/',

@@ -4712,6 +4712,26 @@ def backup_history_view(request):
         'backups': backups
     })
 
+from django.http import FileResponse, Http404
+
+
+@login_required
+def download_backup(request, backup_id):
+    try:
+        backup = BackupHistory.objects.get(id=backup_id)
+
+        if not os.path.exists(backup.file_path):
+            raise Http404("File not found")
+
+        return FileResponse(
+            open(backup.file_path, 'rb'),
+            as_attachment=True,
+            filename=backup.file_name
+        )
+
+    except BackupHistory.DoesNotExist:
+        raise Http404("Backup not found")
+
 
 
 def help(request):
