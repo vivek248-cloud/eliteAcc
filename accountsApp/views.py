@@ -4418,7 +4418,9 @@ def salary_pdf(request):
 
 
 
-
+from .models import AppSettings
+from django.core.mail import send_mail
+from django.utils.timezone import now
 import os
 import zipfile
 import subprocess
@@ -4426,19 +4428,12 @@ from datetime import datetime
 from django.conf import settings
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
-
-
 from django.contrib import messages
 from django.shortcuts import redirect
-from django.core.mail import send_mail
-from django.utils.timezone import now
-
-
 
 
 @login_required
 def database_backup(request):
-
     try:
         now_dt = datetime.now()
         month_folder = now_dt.strftime('%Y-%m')
@@ -4480,38 +4475,37 @@ def database_backup(request):
         os.remove(sql_file)
 
         # 🔔 Send Email Notification
+        settings_obj, created = AppSettings.objects.get_or_create(id=1)
 
+        if settings_obj.notification_email:
+            subject = "Elite Accounts - Database Backup Completed"
 
-    settings_obj, created = AppSettings.objects.get_or_create(id=1)
+            message = f"""
+Hello Admin,
 
-    if settings_obj.notification_email:
+Your database backup was successfully created.
 
-        subject = "Elite Accounts - Database Backup Completed"
+Date: {now_dt.strftime('%d-%m-%Y')}
+Time: {now_dt.strftime('%H:%M')}
+Location: {zip_file}
 
-        message = f"""
-    Hello Admin,
+Elite Accounts System
+"""
 
-    Your database backup was successfully created.
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL,
+                [settings_obj.notification_email],
+                fail_silently=False
+            )
 
-    Date: {now_dt.strftime('%d-%m-%Y')}
-    Time: {now_dt.strftime('%H:%M')}
-    Location: {zip_file}
-
-    Elite Accounts System
-    """
-
-        send_mail(
-            subject,
-            message,
-            settings.DEFAULT_FROM_EMAIL,
-            [settings_obj.notification_email],
-            fail_silently=False
-        )
-
-
-        # Download file
+        # 📥 Download file
         with open(zip_file, 'rb') as f:
-            response = HttpResponse(f.read(), content_type='application/zip')
+            response = HttpResponse(
+                f.read(),
+                content_type='application/zip'
+            )
             response['Content-Disposition'] = (
                 f'attachment; filename="{os.path.basename(zip_file)}"'
             )
@@ -4520,8 +4514,6 @@ def database_backup(request):
     except Exception as e:
         messages.error(request, f"Backup failed: {str(e)}")
         return redirect('settings')
-
-
 
 
 # @login_required
