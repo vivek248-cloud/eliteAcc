@@ -4418,13 +4418,13 @@ def salary_pdf(request):
 
 
 
-from .models import AppSettings
+from .models import AppSettings, BackupHistory
 from django.core.mail import send_mail
 from django.utils.timezone import now
 import os
 import zipfile
 import subprocess
-from datetime import datetime
+from datetime import timedelta
 from django.conf import settings
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
@@ -4435,7 +4435,7 @@ from django.shortcuts import redirect
 @login_required
 def database_backup(request):
     try:
-        now_dt = datetime.now()
+        now_dt = now()
         month_folder = now_dt.strftime('%Y-%m')
         timestamp = now_dt.strftime('%Y-%m-%d_%H-%M')
 
@@ -4459,23 +4459,41 @@ def database_backup(request):
             "--no-tablespaces",
             f"-u{db['USER']}",
             f"-p{db['PASSWORD']}",
-            f"-h{db['HOST']}",
-            f"-P{db['PORT']}",
             db['NAME']
         ]
 
-        # Create SQL
-        with open(sql_file, "w", encoding="utf-8") as f:
+        # 🔹 Create SQL
+        with open(sql_file, "w") as f:
             subprocess.run(dump_command, stdout=f, check=True)
 
-        # Zip it
+        # 🔹 Zip file
         with zipfile.ZipFile(zip_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
             zipf.write(sql_file, arcname=os.path.basename(sql_file))
 
         os.remove(sql_file)
 
-        # 🔔 Send Email Notification
-        settings_obj, created = AppSettings.objects.get_or_create(id=1)
+        # 🔹 Calculate size in MB
+        file_size_mb = round(os.path.getsize(zip_file) / (1024 * 1024), 2)
+
+        # 🔹 Save Backup History
+        BackupHistory.objects.create(
+            file_name=os.path.basename(zip_file),
+            file_path=zip_file,
+            file_size_mb=file_size_mb,
+            created_by=request.user
+        )
+
+        # 🔹 Auto delete backups older than 30 days
+        cutoff = now() - timedelta(days=30)
+        old_backups = BackupHistory.objects.filter(created_at__lt=cutoff)
+
+        for backup in old_backups:
+            if os.path.exists(backup.file_path):
+                os.remove(backup.file_path)
+            backup.delete()
+
+        # 🔹 Send Email Notification
+        settings_obj, _ = AppSettings.objects.get_or_create(id=1)
 
         if settings_obj.notification_email:
             subject = "Elite Accounts - Database Backup Completed"
@@ -4485,9 +4503,13 @@ Hello Admin,
 
 Your database backup was successfully created.
 
+File: {os.path.basename(zip_file)}
+Size: {file_size_mb} MB
 Date: {now_dt.strftime('%d-%m-%Y')}
 Time: {now_dt.strftime('%H:%M')}
-Location: {zip_file}
+
+Location:
+{zip_file}
 
 Elite Accounts System
 """
@@ -4500,7 +4522,7 @@ Elite Accounts System
                 fail_silently=False
             )
 
-        # 📥 Download file
+        # 🔹 Download file
         with open(zip_file, 'rb') as f:
             response = HttpResponse(
                 f.read(),
@@ -4514,6 +4536,7 @@ Elite Accounts System
     except Exception as e:
         messages.error(request, f"Backup failed: {str(e)}")
         return redirect('settings')
+
 
 
 # @login_required
