@@ -13,5 +13,10 @@ admin.site.register(Worker)
 
 admin.site.register(ExpenseCategory)
 
-admin.site.register(AppSettings)
+
+
+@admin.register(AppSettings)
+class AppSettingsAdmin(admin.ModelAdmin):
+    list_display = ('notification_email', 'favicon')
+
 admin.site.register(BackupHistory)

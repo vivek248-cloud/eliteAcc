@@ -1,0 +1,175 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>System Error | Elite Accounts</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    {% if settings_obj and settings_obj.favicon %}
+        <link rel="icon" type="image/png" href="{{ settings_obj.favicon.url }}">
+    {% else %}
+        <link rel="icon" type="image/png" href="{% static 'favicon.ico' %}">
+    {% endif %}
+
+    <style>
+        :root {
+            --warning-orange: #f59e0b;
+            --dark-bg: #020617;
+            --glass-white: rgba(255, 255, 255, 0.03);
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--dark-bg);
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(245, 158, 11, 0.05) 0%, transparent 60%),
+                radial-gradient(circle at 100% 0%, rgba(67, 97, 238, 0.08) 0%, transparent 40%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            color: #ffffff;
+            overflow: hidden;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding: 20px;
+            width: 100%;
+        }
+
+        .error-card {
+            background: var(--glass-white);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 60px 30px;
+            border-radius: 40px;
+            max-width: 480px;
+            margin: 0 auto;
+            box-shadow: 0 40px 120px -20px rgba(0, 0, 0, 0.8);
+            animation: slideIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .status-orb {
+            width: 12px;
+            height: 12px;
+            background-color: var(--warning-orange);
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            box-shadow: 0 0 20px var(--warning-orange);
+            animation: blink 1.5s infinite;
+        }
+
+        .error-icon {
+            font-size: 3.5rem;
+            color: #94a3b8;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            font-size: 100px;
+            margin: 0;
+            font-weight: 900;
+            letter-spacing: -6px;
+            background: linear-gradient(180deg, #ffffff 40%, rgba(255,255,255,0.1) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 0.9;
+        }
+
+        h4 {
+            margin: 15px 0 10px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #f8fafc;
+        }
+
+        p {
+            color: #64748b;
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 40px;
+        }
+
+        .btn-refresh {
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 14px 30px;
+            border-radius: 16px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+        }
+
+        .btn-refresh:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .dashboard-link {
+            display: block;
+            color: #4361ee;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+
+        .dashboard-link:hover {
+            color: #4cc9f0;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.2); }
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="error-card">
+            <div class="status-orb"></div>
+            <i class="bi bi-hdd-stack error-icon"></i>
+            
+            <h1>500</h1>
+            <h4>System Interruption</h4>
+            
+            <p>
+                The server encountered an unexpected glitch. <br>
+                Our engineering team has been notified <br>
+                and is actively investigating the logs.
+            </p>
+
+            <a href="javascript:location.reload();" class="btn-refresh">
+                <i class="bi bi-arrow-clockwise"></i>
+                Try Refreshing
+            </a>
+            
+            <a href="/" class="dashboard-link">Return to Dashboard</a>
+        </div>
+        
+        <div style="margin-top: 40px; font-size: 0.7rem; color: #334155; text-transform: uppercase; letter-spacing: 2px;">
+            <i class="bi bi-cpu"></i> CORE_SERVER_EXCEPTION_500
+        </div>
+    </div>
+</body>
+</html>

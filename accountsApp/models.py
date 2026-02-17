@@ -300,7 +300,11 @@ class Expense(models.Model):
 
 class AppSettings(models.Model):
     notification_email = models.EmailField(blank=True, null=True)
-
+    favicon = models.ImageField(
+        upload_to='favicons/',
+        blank=True,
+        null=True
+    )
     def __str__(self):
         return self.notification_email or "No email set"
 

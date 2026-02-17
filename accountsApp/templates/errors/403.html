@@ -1,0 +1,176 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Access Forbidden | Elite Accounts</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    {% if settings_obj and settings_obj.favicon %}
+        <link rel="icon" type="image/png" href="{{ settings_obj.favicon.url }}">
+    {% else %}
+        <link rel="icon" type="image/png" href="{% static 'favicon.ico' %}">
+    {% endif %}
+
+    <style>
+        :root {
+            --danger: #ef4444;
+            --dark-bg: #020617;
+            --glass: rgba(255, 255, 255, 0.03);
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--dark-bg);
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(239, 68, 68, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 0% 0%, rgba(67, 97, 238, 0.05) 0%, transparent 30%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            color: #ffffff;
+            overflow: hidden;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding: 20px;
+            width: 100%;
+        }
+
+        .error-card {
+            background: var(--glass);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 50px 30px;
+            border-radius: 32px;
+            max-width: 480px;
+            margin: 0 auto;
+            box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.7);
+            animation: cardEntrance 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .lock-container {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 30px;
+        }
+
+        .lock-icon {
+            font-size: 3.5rem;
+            color: var(--danger);
+            filter: drop-shadow(0 0 15px rgba(239, 68, 68, 0.4));
+            animation: pulse 2s infinite;
+        }
+
+        h1 {
+            font-size: 90px;
+            margin: 0;
+            font-weight: 900;
+            letter-spacing: -4px;
+            background: linear-gradient(180deg, #ffffff 30%, rgba(255,255,255,0.2) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 0.9;
+        }
+
+        h4 {
+            margin: 15px 0 10px;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #f8fafc;
+        }
+
+        p {
+            color: #94a3b8;
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 35px;
+        }
+
+        .btn-home {
+            background: #ffffff;
+            color: var(--dark-bg);
+            padding: 14px 35px;
+            border-radius: 14px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-home:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(255, 255, 255, 0.1);
+            background: #f1f5f9;
+        }
+
+        .security-badge {
+            margin-top: 40px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 100px;
+            color: var(--danger);
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        @keyframes cardEntrance {
+            from { opacity: 0; transform: scale(0.9) translateY(30px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="error-card">
+            <div class="lock-container">
+                <i class="bi bi-shield-lock-fill lock-icon"></i>
+            </div>
+            
+            <h1>403</h1>
+            <h4>Access Forbidden</h4>
+            
+            <p>
+                This area is restricted. Your current credentials <br>
+                do not grant access to this resource. Please verify <br>
+                your permissions with the system administrator.
+            </p>
+
+            <a href="/" class="btn-home">
+                <i class="bi bi-arrow-left"></i>
+                Back to Dashboard
+            </a>
+        </div>
+        
+        <br>
+        <div class="security-badge">
+            <i class="bi bi-incognito"></i> Restricted Access Protocol Active
+        </div>
+    </div>
+</body>
+</html>

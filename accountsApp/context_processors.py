@@ -3,7 +3,7 @@ from decimal import Decimal
 from django.db.models import Sum
 from django.utils.timezone import now
 from datetime import timedelta
-
+from .models import *
 
 
 
@@ -193,4 +193,12 @@ def global_alerts(request):
         'backup_alert': backup_alert,
         'avg_payment': avg_payment_30,
         'avg_expense': avg_expense_30,
+    }
+
+
+
+def app_settings(request):
+    settings_obj = AppSettings.objects.first()
+    return {
+        'settings_obj': settings_obj
     }

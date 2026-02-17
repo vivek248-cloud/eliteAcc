@@ -4687,21 +4687,25 @@ from .models import AppSettings
 from django.contrib import messages
 
 def settings_view(request):
-
     settings_obj, created = AppSettings.objects.get_or_create(id=1)
 
     if request.method == 'POST':
-        email = request.POST.get('notification_email')
 
-        settings_obj.notification_email = email
+        # 🔹 Update email
+        settings_obj.notification_email = request.POST.get('notification_email')
+
+        # 🔹 Update favicon (if uploaded)
+        if request.FILES.get('favicon'):
+            settings_obj.favicon = request.FILES.get('favicon')
+
         settings_obj.save()
 
-        messages.success(request, "Notification email updated successfully!")
+        messages.success(request, "Settings updated successfully!")
+        return redirect('settings')
 
     return render(request, 'settings.html', {
         'settings_obj': settings_obj
     })
-
 
 
 @login_required
@@ -4736,3 +4740,25 @@ def download_backup(request, backup_id):
 
 def help(request):
     return render(request, 'help.html')
+
+
+
+
+
+#custom error pages
+
+
+from django.http import HttpResponseBadRequest
+
+def error_404(request, exception):
+    return render(request, 'errors/404.html', status=404)
+    
+
+def error_500(request):
+    return render(request, 'errors/500.html', status=500)
+
+def error_403(request, exception):
+    return render(request, 'errors/403.html', status=403)
+
+def error_400(request, exception):
+    return render(request, 'errors/400.html', status=400)
