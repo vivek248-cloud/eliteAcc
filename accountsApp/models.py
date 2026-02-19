@@ -35,6 +35,14 @@ class Client(models.Model):
         on_delete=models.CASCADE,
         related_name='clients'
     )
+
+    location = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Client location or address"
+    )
+    
     name = models.CharField(max_length=255)
     budget = models.DecimalField(max_digits=12, decimal_places=2)
 

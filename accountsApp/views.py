@@ -772,6 +772,7 @@ def client_index(request):
         client_data.append({
             'id': client.id,
             'name': client.name,
+            'location': client.location,
             'company': client.company,
             'budget': client.budget,
             'total_paid': payments_total,
@@ -807,9 +808,11 @@ def client_index(request):
 
 
 
+from decimal import Decimal, InvalidOperation
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.shortcuts import render, redirect
-from decimal import Decimal
+from .models import Client, Company
 
 
 @login_required(login_url='login')
@@ -819,26 +822,45 @@ def client_create(request):
     selected_company_id = request.session.get('selected_company_id')
 
     if not selected_company_id:
-        # No company selected → redirect safely
+        messages.error(request, "Please select a company first.")
         return redirect('dashboard')
 
     company = Company.objects.filter(id=selected_company_id).first()
 
+    if not company:
+        messages.error(request, "Company not found.")
+        return redirect('dashboard')
+
     if request.method == 'POST':
         name = request.POST.get('name')
+        location = request.POST.get('location')  # ✅ now used
         budget = request.POST.get('budget')
 
-        if name and budget:
-            Client.objects.create(
-                company=company,
-                name=name,
-                budget=Decimal(budget)
-            )
-            return redirect('client_index')
+        if not name or not budget:
+            messages.error(request, "Name and budget are required.")
+            return redirect('client_create')
+
+        try:
+            budget_decimal = Decimal(budget)
+        except InvalidOperation:
+            messages.error(request, "Invalid budget amount.")
+            return redirect('client_create')
+
+        # ✅ CREATE CLIENT
+        Client.objects.create(
+            company=company,
+            name=name,
+            location=location,  # ✅ IMPORTANT FIX
+            budget=budget_decimal
+        )
+
+        messages.success(request, "Client created successfully.")
+        return redirect('client_index')
 
     return render(request, 'client/create.html', {
-        'company': company,   # single company only
+        'company': company,
     })
+
 
 
 

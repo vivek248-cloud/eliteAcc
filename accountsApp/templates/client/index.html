@@ -159,6 +159,9 @@
                    class="fw-bold text-decoration-none">
                     {{ client.name }} 
                 </a>
+                <small class="text-muted">
+                    ({{ client.location|upper|default:"—" }})
+                </small>
             </td>
 
             <td>{{ client.company.name }}</td>
