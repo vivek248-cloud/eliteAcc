@@ -890,6 +890,7 @@ def client_update(request, pk):
     if request.method == 'POST':
         client.name = request.POST.get('name')
         client.budget = Decimal(request.POST.get('budget'))
+        client.location = request.POST.get('location')
         client.save()
 
         return redirect('client_index')
