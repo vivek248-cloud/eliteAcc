@@ -45,13 +45,13 @@ urlpatterns = [
 
     path('available-amount/', available_amount,name='available_amount'),
 
-
+    path('check-payment-duplicate/', check_payment_duplicate, name='check_payment_duplicate'),
     path('payments/', payment_index, name='payment_index'),
     path('payments/create/', payment_create, name='payment_create'),
     path('payments/update/<int:pk>/', payment_update, name='payment_update'),
     path('payments/delete/<int:pk>/', payment_delete, name='payment_delete'),
 
-
+    path('check-expense-duplicate/', check_expense_duplicate, name='check_expense_duplicate'),
     path('expenses/', expense_index, name='expense_index'),
     path('expenses/pdf/', expense_pdf_export, name='expense_pdf_export'),
     path('expenses/create/', expense_create, name='expense_create'),

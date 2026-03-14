@@ -96,3 +96,40 @@ Location:
         )
 
     return zip_file
+
+
+
+
+#prevent duplicate expense names for the same user
+
+from .models import Expense
+
+
+def expense_duplicate_exists(
+    client_id,
+    category_id,
+    subcategory_id,
+    expense_date,
+    amount,
+    company_id,
+    exclude_id=None
+):
+    """
+    Check if an expense already exists with same:
+    client + category + subcategory + date + amount
+    """
+
+    qs = Expense.objects.filter(
+        client_id=client_id,
+        client__company_id=company_id,
+        category_id=category_id,
+        subcategory_id=subcategory_id,
+        expense_date=expense_date,
+        amount=amount
+    )
+
+    # Used during update
+    if exclude_id:
+        qs = qs.exclude(pk=exclude_id)
+
+    return qs.exists()

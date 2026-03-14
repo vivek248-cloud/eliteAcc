@@ -2,6 +2,20 @@
 {% block title %}Create Expense{% endblock %}
 
 {% block content %}
+
+<div id="duplicateWarning"
+     class="alert alert-warning border-0 shadow-sm rounded-3 mb-4 d-none">
+
+    ⚠ <b>Possible Duplicate Expense</b>
+
+    <div class="small mt-1">
+        Client: <span id="dup_client"></span><br>
+        Amount: ₹<span id="dup_amount"></span><br>
+        Date: <span id="dup_date"></span>
+    </div>
+
+</div>
+
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-lg-8 col-xl-7">
@@ -27,7 +41,7 @@
                                     <option value="">All Clients</option>
                                     {% for c in clients %}
                                         <option value="{{ c.id }}" {% if selected_client == c.id|stringformat:"s" %}selected{% endif %}>
-                                            {{ c.name }}{% if c.company %} ({{ c.company.name }}){% endif %}
+                                            {{ c.name }}{% if c.company %} ({{ c.location }}){% endif %}
                                         </option>
                                     {% endfor %}
                                 </select>
@@ -169,12 +183,74 @@
                                 <i class="bi bi-cloud-check-fill me-2"></i> Save Expense Record
                             </button>
                         </div>
+
+                        <input type="hidden" name="confirm_duplicate" id="confirm_duplicate" value="">
                     </form>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
+<script>
+
+let duplicateShown = false;
+
+function checkDuplicate(){
+
+    const client = document.querySelector('[name="client"]').value
+    const category = document.querySelector('[name="category"]').value
+    const subcategory = document.querySelector('[name="subcategory"]').value
+    const date = document.querySelector('[name="expense_date"]').value
+    const amount = document.querySelector('[name="amount"]').value
+
+    if(!client || !category || !date || !amount){
+        return
+    }
+
+    fetch(`/check-expense-duplicate/?client=${client}&category=${category}&subcategory=${subcategory}&expense_date=${date}&amount=${amount}`)
+
+    .then(res => res.json())
+
+    .then(data => {
+
+        if(data.duplicate && !duplicateShown){
+
+            duplicateShown = true
+
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'warning',
+                title: `Possible duplicate expense`,
+                html: `
+                    Client: <b>${data.client}</b><br>
+                    Amount: ₹${data.amount}<br>
+                    Date: ${data.date}
+                `,
+                showConfirmButton: false,
+                timer: 5000,
+                timerProgressBar: true
+            })
+
+        }
+
+    })
+
+}
+
+document.querySelector('[name="amount"]').addEventListener("input", checkDuplicate)
+document.querySelector('[name="expense_date"]').addEventListener("change", checkDuplicate)
+document.querySelector('[name="category"]').addEventListener("change", checkDuplicate)
+document.querySelector('[name="subcategory"]').addEventListener("change", checkDuplicate)
+document.querySelector('[name="client"]').addEventListener("change", checkDuplicate)
+
+</script>
+
 
 <style>
     body { background-color: #fbfbfb; }
@@ -191,6 +267,8 @@
     /* Subtle Animation for Salary Box */
     .animate__fadeIn { animation: fadeIn 0.3s ease-in; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+
 </style>
 
 <script>

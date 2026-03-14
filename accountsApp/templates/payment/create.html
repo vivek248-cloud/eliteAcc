@@ -2,6 +2,21 @@
 {% block title %}Create Payment{% endblock %}
 
 {% block content %}
+
+<div id="paymentDuplicateWarning"
+     class="alert alert-warning border-0 shadow-sm rounded-3 mb-4 d-none">
+
+    ⚠ <b>Possible Duplicate Payment</b>
+
+    <div class="small mt-1">
+        Client: <span id="pay_dup_client"></span><br>
+        Amount: ₹<span id="pay_dup_amount"></span><br>
+        Date: <span id="pay_dup_date"></span><br>
+        Bank: <span id="pay_dup_bank"></span>
+    </div>
+
+</div>
+
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-lg-8 col-xl-7">
@@ -26,7 +41,7 @@
                             <select name="client" class="form-select bg-light bg-opacity-50 border-light-subtle shadow-none py-2" required>
                                 <option value="">Select Client</option>
                                 {% for client in clients %}
-                                    <option value="{{ client.id }}">{{ client.name }} ({{ client.company.name }})</option>
+                                    <option value="{{ client.id }}">{{ client.name }} ({{ client.location }})</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -84,6 +99,62 @@
         </div>
     </div>
 </div>
+
+
+<script>
+
+let paymentDuplicateShown = false;
+
+function checkPaymentDuplicate(){
+
+    const client = document.querySelector('[name="client"]').value
+    const bank = document.querySelector('[name="bank"]').value
+    const date = document.querySelector('[name="payment_date"]').value
+    const amount = document.querySelector('[name="amount"]').value
+
+    if(!client || !date || !amount){
+        return
+    }
+
+    fetch(`/check-payment-duplicate/?client=${client}&bank=${bank}&payment_date=${date}&amount=${amount}`)
+
+    .then(res => res.json())
+
+    .then(data => {
+
+        if(data.duplicate && !paymentDuplicateShown){
+
+            paymentDuplicateShown = true
+
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'warning',
+                title: 'Possible duplicate payment',
+                html: `
+                    Client: <b>${data.client}</b><br>
+                    Amount: ₹${data.amount}<br>
+                    Date: ${data.date}<br>
+                    Bank: ${data.bank}
+                `,
+                showConfirmButton: false,
+                timer: 5000,
+                timerProgressBar: true
+            })
+
+        }
+
+    })
+
+}
+
+document.querySelector('[name="amount"]').addEventListener("input", checkPaymentDuplicate)
+document.querySelector('[name="payment_date"]').addEventListener("change", checkPaymentDuplicate)
+document.querySelector('[name="client"]').addEventListener("change", checkPaymentDuplicate)
+document.querySelector('[name="bank"]').addEventListener("change", checkPaymentDuplicate)
+
+</script>
+
 
 <style>
     body { background-color: #fbfbfb; }

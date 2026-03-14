@@ -24,6 +24,11 @@
             top: 0;
             overflow-y: auto;
         }
+        /* Move SweetAlert toast higher */
+        .swal2-container.swal2-top-end {
+            top: 100px !important;
+            right: 10px !important;
+        }
     </style>
 </head>
 <body>
@@ -44,6 +49,25 @@
         </div>
     </div>
 </div>
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+{% if messages %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    {% for message in messages %}
+        Swal.fire({
+            icon: "{% if message.tags == 'error' %}error{% else %}success{% endif %}",
+            title: "{% if message.tags == 'error' %}Duplicate Client{% else %}Success{% endif %}",
+            text: "{{ message }}",
+            confirmButtonColor: "#0d6efd"
+        });
+    {% endfor %}
+});
+</script>
+{% endif %}
 
 <script>
 function animateCompanyChange(url) {

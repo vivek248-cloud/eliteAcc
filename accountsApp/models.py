@@ -25,9 +25,54 @@ class Company(models.Model):
 
 
 
+# from decimal import Decimal
+# from django.db import models
+# from django.db.models import Sum
+
+# class Client(models.Model):
+#     company = models.ForeignKey(
+#         Company,
+#         on_delete=models.CASCADE,
+#         related_name='clients'
+#     )
+
+#     location = models.CharField(
+#         max_length=255,
+#         blank=True,
+#         null=True,
+#         help_text="Client location or address"
+#     )
+    
+#     name = models.CharField(max_length=255)
+#     budget = models.DecimalField(max_digits=12, decimal_places=2)
+
+#     # 💳 TOTAL PAID (CASH + CHEQUE)
+#     def total_paid(self):
+#         return self.payments.aggregate(
+#             total=Sum('amount')
+#         )['total'] or Decimal('0.00')
+
+#     # 🔴 TOTAL SPENT
+#     def total_expenses(self):
+#         return self.expenses.aggregate(
+#             total=Sum('amount')
+#         )['total'] or Decimal('0.00')
+
+#     # 💰 BALANCE = PAID − SPENT
+#     def balance(self):
+#         return self.total_paid() - self.total_expenses()
+
+#     def yet_to_pay(self):
+#         return self.budget - self.total_paid()
+
+#     def __str__(self):
+#         return self.name
+
+
 from decimal import Decimal
 from django.db import models
 from django.db.models import Sum
+
 
 class Client(models.Model):
     company = models.ForeignKey(
@@ -42,9 +87,18 @@ class Client(models.Model):
         null=True,
         help_text="Client location or address"
     )
-    
+
     name = models.CharField(max_length=255)
+
     budget = models.DecimalField(max_digits=12, decimal_places=2)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['company', 'name', 'location'],
+                name='unique_client_name_location_per_company'
+            )
+        ]
 
     # 💳 TOTAL PAID (CASH + CHEQUE)
     def total_paid(self):
@@ -67,8 +121,6 @@ class Client(models.Model):
 
     def __str__(self):
         return self.name
-
-
 
 
 
@@ -195,9 +247,11 @@ class Worker(models.Model):
     )
     name = models.CharField(max_length=100)
 
+    class Meta:
+        unique_together = ('company', 'name')
+
     def __str__(self):
         return f"{self.name} ({self.company.name})"
-
 
 
 class WorkerName(models.Model):
@@ -207,6 +261,9 @@ class WorkerName(models.Model):
         related_name='names'
     )
     name = models.CharField(max_length=100)
+
+    class Meta:
+        unique_together = ('worker', 'name')
 
     def __str__(self):
         return self.name
@@ -218,21 +275,26 @@ class ExpenseCategory(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
 
+    class Meta:
+        unique_together = ('company', 'name')
+
     def __str__(self):
         return self.name
     
 
 class ExpenseSubCategory(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE)
+
     category = models.ForeignKey(
         ExpenseCategory,
         on_delete=models.CASCADE,
         related_name='subcategories'
     )
+
     name = models.CharField(max_length=100)
 
     class Meta:
-        unique_together = ('category', 'name')
+        unique_together = ('company', 'category', 'name')
 
     def __str__(self):
         return f"{self.category.name} → {self.name}"

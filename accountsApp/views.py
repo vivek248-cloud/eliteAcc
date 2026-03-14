@@ -116,6 +116,477 @@ def switch_company(request, pk):
 
 
 
+# from django.utils.timezone import now
+# from django.db.models.functions import TruncMonth
+# from django.db.models import Avg
+
+
+# @login_required(login_url='login')
+# def home(request):
+
+#     companies = Company.objects.all().order_by('name')
+
+
+
+#     selected_company_id = request.session.get('selected_company_id')
+#     selected_company = Company.objects.filter(
+#         id=selected_company_id
+#     ).first()
+
+#     selected_bank_id = request.GET.get('bank')
+
+#     start_date = request.GET.get('start_date')
+#     end_date = request.GET.get('end_date')
+
+#     sd = parse_date(start_date) if start_date else None
+#     ed = parse_date(end_date) if end_date else None
+
+#     if not selected_company_id:
+#         return render(request, 'dashboard.html', {
+#             'companies': companies,
+#             'selected_company_id': None,
+#         })
+
+#     # =========================
+#     # BASE QUERYSETS
+#     # =========================
+#     payment_qs = Payment.objects.filter(
+#         client__company_id=selected_company_id
+#     )
+
+#     expense_qs = Expense.objects.filter(
+#         client__company_id=selected_company_id
+#     )
+
+#     if sd:
+#         payment_qs = payment_qs.filter(payment_date__gte=sd)
+#         expense_qs = expense_qs.filter(expense_date__gte=sd)
+
+#     if ed:
+#         payment_qs = payment_qs.filter(payment_date__lte=ed)
+#         expense_qs = expense_qs.filter(expense_date__lte=ed)
+
+#     # =========================
+#     # TOTAL PAYMENTS & EXPENSES
+#     # =========================
+#     totals = payment_qs.aggregate(
+#         total_payments=Sum('amount')
+#     )
+
+#     total_payments = totals['total_payments'] or Decimal('0.00')
+
+#     total_expenses = expense_qs.aggregate(
+#         total=Sum('amount')
+#     )['total'] or Decimal('0.00')
+
+#     # =========================
+#     # RECEIVABLES (NO LOOP)
+#     # =========================
+#     clients = Client.objects.filter(
+#         company_id=selected_company_id
+#     ).annotate(
+#         paid_total=Sum('payments__amount')
+#     )
+
+#     total_balance = Decimal('0.00')
+
+#     for c in clients:
+#         paid = c.paid_total or Decimal('0.00')
+#         total_balance += (c.budget - paid)
+
+#     # =========================
+#     # EXTRA DATA FOR HEALTH SYSTEM
+#     # =========================
+#     total_project_value = Decimal('0.00')
+#     overrun_clients = 0
+#     high_budget_clients = 0
+
+#     for c in clients:
+#         paid = c.paid_total or Decimal('0.00')
+#         spent = c.expenses.aggregate(
+#             total=Sum('amount')
+#         )['total'] or Decimal('0.00')
+
+#         total_project_value += c.budget
+
+#         if spent > c.budget:
+#             overrun_clients += 1
+
+#         if spent > (c.budget * Decimal('0.8')):
+#             high_budget_clients += 1
+
+#     total_clients = clients.count()
+
+
+#     # =========================
+#     # BANKS (COMPANY SAFE)
+#     # =========================
+#     banks = Bank.objects.filter(
+#         company_id=selected_company_id
+#     )
+
+#     for bank in banks:
+
+#         payment_total = bank.payments.filter(
+#             client__company_id=selected_company_id
+#         ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+
+#         expense_total = bank.expenses.filter(
+#             client__company_id=selected_company_id
+#         ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+
+#         bank.available_balance = (
+#             bank.opening_balance + payment_total - expense_total
+#         )
+
+#     total_bank = sum((b.available_balance for b in banks), Decimal('0.00'))
+
+#     negative_bank_count = sum(
+#     1 for b in banks if b.available_balance < 0
+# )
+
+
+#     # Selected bank
+#     selected_bank = None
+#     if selected_bank_id:
+#         selected_bank = banks.filter(id=selected_bank_id).first()
+#         display_bank_balance = (
+#             selected_bank.available_balance if selected_bank else Decimal('0.00')
+#         )
+#     else:
+#         display_bank_balance = total_bank
+
+
+
+#     # =========================
+#     # PROFIT
+#     # =========================
+#     total_profit = total_payments - total_expenses
+#     profit_percentage = (
+#         (total_profit / total_payments) * 100
+#         if total_payments > 0 else 0
+#     )
+
+
+
+
+#     # ====================================
+#     # 💎 FINANCIAL HEALTH SCORE (0-100)
+#     # ====================================
+
+#     # 1️⃣ Profit Score (25 max)
+#     if profit_percentage > 30:
+#         profit_score = 25
+#     elif profit_percentage > 15:
+#         profit_score = 18
+#     elif profit_percentage > 5:
+#         profit_score = 10
+#     elif profit_percentage > 0:
+#         profit_score = 5
+#     else:
+#         profit_score = 0
+
+#     # 2️⃣ Cash Ratio Score
+#     cash_ratio = (
+#         total_bank / total_expenses
+#         if total_expenses > 0 else Decimal('0')
+#     )
+
+#     if cash_ratio > 2:
+#         cash_score = 25
+#     elif cash_ratio > 1:
+#         cash_score = 18
+#     elif cash_ratio > 0.5:
+#         cash_score = 10
+#     else:
+#         cash_score = 5
+
+#     # 3️⃣ Receivable Ratio Score
+#     receivable_ratio = (
+#         total_balance / total_project_value
+#         if total_project_value > 0 else Decimal('0')
+#     )
+
+#     if receivable_ratio < Decimal('0.2'):
+#         receivable_score = 25
+#     elif receivable_ratio < Decimal('0.4'):
+#         receivable_score = 18
+#     elif receivable_ratio < Decimal('0.6'):
+#         receivable_score = 10
+#     else:
+#         receivable_score = 5
+
+#     # 4️⃣ Budget Discipline Score
+#     discipline_ratio = (
+#         Decimal(overrun_clients) / Decimal(total_clients)
+#         if total_clients > 0 else Decimal('0')
+#     )
+
+#     if discipline_ratio == 0:
+#         discipline_score = 25
+#     elif discipline_ratio < Decimal('0.1'):
+#         discipline_score = 18
+#     elif discipline_ratio < Decimal('0.3'):
+#         discipline_score = 10
+#     else:
+#         discipline_score = 5
+
+#     health_score = (
+#         profit_score +
+#         cash_score +
+#         receivable_score +
+#         discipline_score
+#     )
+
+#     if health_score >= 75:
+#         health_status = "Stable"
+#     elif health_score >= 50:
+#         health_status = "Moderate Risk"
+#     else:
+#         health_status = "High Risk"
+
+
+
+
+
+
+
+#     # ====================================
+#     # 📊 TOP 5 EXPENSE CATEGORIES
+#     # ====================================
+#     top_categories = (
+#         expense_qs
+#         .values('category__name')
+#         .annotate(total=Sum('amount'))
+#         .order_by('-total')[:5]
+#     )
+
+#     top_category_labels = [
+#         c['category__name'] or "Uncategorized"
+#         for c in top_categories
+#     ]
+
+#     top_category_values = [
+#         float(c['total']) for c in top_categories
+#     ]
+
+
+
+#     # ====================================
+#     # 👷 SALARY DISTRIBUTION BY TEAM
+#     # ====================================
+#     salary_qs = expense_qs.filter(category__name__iexact='salary')
+
+#     salary_by_team = (
+#         salary_qs
+#         .values('salary_to__name')
+#         .annotate(total=Sum('amount'))
+#         .order_by('-total')
+#     )
+
+#     salary_team_labels = [
+#         s['salary_to__name'] or "Unknown"
+#         for s in salary_by_team
+#     ]
+
+#     salary_team_values = [
+#         float(s['total']) for s in salary_by_team
+#     ]
+
+
+
+#     # ====================================
+#     # 📉 MONTHLY EXPENSE TREND
+#     # ====================================
+#     monthly_expenses = (
+#         expense_qs
+#         .annotate(month=TruncMonth('expense_date'))
+#         .values('month')
+#         .annotate(total=Sum('amount'))
+#         .order_by('month')
+#     )
+
+#     monthly_expense_labels = [
+#         m['month'].strftime("%b %Y")
+#         for m in monthly_expenses
+#     ]
+
+#     monthly_expense_values = [
+#         float(m['total']) for m in monthly_expenses
+#     ]
+
+
+
+#     # ====================================
+#     # 🚨 SMART ALERTS (INTELLIGENT VERSION)
+#     # ====================================
+
+#     today = now().date()
+
+#     # ---- Average Payment
+#     avg_payment = payment_qs.aggregate(
+#         avg=Avg('amount')
+#     )['avg'] or Decimal('0.00')
+
+#     large_payments_today = payment_qs.filter(
+#         payment_date=today,
+#         amount__gt=avg_payment
+#     )
+
+#     large_payment_count = large_payments_today.count()
+
+#     # ---- Average Expense
+#     avg_expense = expense_qs.aggregate(
+#         avg=Avg('amount')
+#     )['avg'] or Decimal('0.00')
+
+#     high_expense_today = expense_qs.filter(
+#         expense_date=today,
+#         amount__gt=avg_expense
+#     )
+
+#     high_expense_count = high_expense_today.count()
+
+#     # ---- Negative Bank Alert (already calculated earlier)
+#     # negative_bank_count
+
+#     # ---- Final Alert Count
+#     alert_count = (
+#         large_payment_count +
+#         high_expense_count +
+#         negative_bank_count
+#     )
+
+
+
+#     # =========================
+#     # RECENT DATA
+#     # =========================
+#     recent_payments = payment_qs.select_related(
+#         'client', 'bank'
+#     ).order_by('-payment_date')[:5]
+
+#     recent_expenses = expense_qs.select_related(
+#         'client', 'category'
+#     ).order_by('-expense_date')[:5]
+
+#     # =========================
+#     # RECENT CYCLE TOTAL
+#     # =========================
+#     recent_total = recent_payments.aggregate(
+#         total=Sum('amount')
+#     )['total'] or Decimal('0.00')
+
+#     # =========================
+#     # CURRENT MONTH RECEIVED
+#     # =========================
+#     today = now()
+
+#     monthly_received_total = payment_qs.filter(
+#         payment_date__year=today.year,
+#         payment_date__month=today.month
+#     ).aggregate(
+#         total=Sum('amount')
+#     )['total'] or Decimal('0.00')
+
+#     # =========================
+#     # GRAPH DATA
+#     # =========================
+#     payment_chart = (
+#         payment_qs
+#         .annotate(day=TruncDate('payment_date'))
+#         .values('day')
+#         .annotate(total=Sum('amount'))
+#         .order_by('day')
+#     )
+
+#     expense_chart = (
+#         expense_qs
+#         .annotate(day=TruncDate('expense_date'))
+#         .values('day')
+#         .annotate(total=Sum('amount'))
+#         .order_by('day')
+#     )
+
+#     payment_labels = [str(p['day']) for p in payment_chart]
+#     payment_values = [float(p['total']) for p in payment_chart]
+
+#     expense_labels = [str(e['day']) for e in expense_chart]
+#     expense_values = [float(e['total']) for e in expense_chart]
+
+#     all_dates = sorted(set(payment_labels + expense_labels))
+#     profit_trend_data = []
+
+#     for d in all_dates:
+#         p = payment_values[payment_labels.index(d)] if d in payment_labels else 0
+#         e = expense_values[expense_labels.index(d)] if d in expense_labels else 0
+#         profit_trend_data.append(p - e)
+#     current_date = now()
+
+
+#     return render(request, 'dashboard.html', {
+#         'companies': companies,
+#         'selected_company_id': selected_company_id,
+
+#         'clients': clients,
+#         'banks': banks,
+
+#         'total_bank': total_bank,
+#         'display_bank_balance': display_bank_balance,
+#         'selected_bank': selected_bank,
+#         'selected_bank_id': selected_bank_id,
+
+#         'total_balance': total_balance,
+#         'total_payments': total_payments,
+#         'total_expenses': total_expenses,
+
+#         'recent_payments': recent_payments,
+#         'recent_expenses': recent_expenses,
+
+#         'start_date': start_date,
+#         'end_date': end_date,
+
+#         'total_profit': total_profit,
+#         'profit_percentage': profit_percentage,
+#         'recent_total': recent_total,
+#         'monthly_received_total': monthly_received_total,
+#         'current_date': current_date,
+
+
+
+
+#         'health_score': health_score,
+#         'health_status': health_status,
+#         'expense_category_labels': json.dumps(top_category_labels),
+#         'expense_category_values': json.dumps(top_category_values),
+
+#         'salary_team_labels': json.dumps(salary_team_labels),
+#         'salary_team_values': json.dumps(salary_team_values),
+
+#         'monthly_expense_labels': json.dumps(monthly_expense_labels),
+#         'monthly_expense_values': json.dumps(monthly_expense_values),
+#         'alert_count': alert_count,
+
+#         'large_payment_count': large_payment_count,
+#         'high_expense_count': high_expense_count,
+#         'avg_payment': avg_payment,
+#         'avg_expense': avg_expense,
+#         'negative_bank_count': negative_bank_count,
+
+
+
+
+#         'profit_trend_labels': json.dumps(all_dates),
+#         'profit_trend_values': json.dumps(profit_trend_data),
+
+#         'payment_labels': json.dumps(payment_labels),
+#         'payment_values': json.dumps(payment_values),
+#         'expense_labels': json.dumps(expense_labels),
+#         'expense_values': json.dumps(expense_values),
+#     })
+
+
+
 from django.utils.timezone import now
 from django.db.models.functions import TruncMonth
 from django.db.models import Avg
@@ -126,13 +597,7 @@ def home(request):
 
     companies = Company.objects.all().order_by('name')
 
-
-
     selected_company_id = request.session.get('selected_company_id')
-    selected_company = Company.objects.filter(
-        id=selected_company_id
-    ).first()
-
     selected_bank_id = request.GET.get('bank')
 
     start_date = request.GET.get('start_date')
@@ -167,114 +632,94 @@ def home(request):
         expense_qs = expense_qs.filter(expense_date__lte=ed)
 
     # =========================
-    # TOTAL PAYMENTS & EXPENSES
+    # TOTAL PAYMENTS / EXPENSES
     # =========================
-    totals = payment_qs.aggregate(
-        total_payments=Sum('amount')
-    )
-
-    total_payments = totals['total_payments'] or Decimal('0.00')
+    total_payments = payment_qs.aggregate(
+        total=Sum('amount')
+    )['total'] or Decimal('0')
 
     total_expenses = expense_qs.aggregate(
         total=Sum('amount')
-    )['total'] or Decimal('0.00')
+    )['total'] or Decimal('0')
 
     # =========================
-    # RECEIVABLES (NO LOOP)
+    # CLIENT ANNOTATIONS
     # =========================
     clients = Client.objects.filter(
         company_id=selected_company_id
     ).annotate(
-        paid_total=Sum('payments__amount')
+        paid_total=Sum('payments__amount'),
+        spent_total=Sum('expenses__amount')
     )
 
-    total_balance = Decimal('0.00')
+    total_balance = sum(
+        (c.budget - (c.paid_total or Decimal('0')))
+        for c in clients
+    )
 
-    for c in clients:
-        paid = c.paid_total or Decimal('0.00')
-        total_balance += (c.budget - paid)
+    total_project_value = sum(c.budget for c in clients)
 
-    # =========================
-    # EXTRA DATA FOR HEALTH SYSTEM
-    # =========================
-    total_project_value = Decimal('0.00')
-    overrun_clients = 0
-    high_budget_clients = 0
+    overrun_clients = sum(
+        1 for c in clients
+        if (c.spent_total or Decimal('0')) > c.budget
+    )
 
-    for c in clients:
-        paid = c.paid_total or Decimal('0.00')
-        spent = c.expenses.aggregate(
-            total=Sum('amount')
-        )['total'] or Decimal('0.00')
-
-        total_project_value += c.budget
-
-        if spent > c.budget:
-            overrun_clients += 1
-
-        if spent > (c.budget * Decimal('0.8')):
-            high_budget_clients += 1
+    high_budget_clients = sum(
+        1 for c in clients
+        if (c.spent_total or Decimal('0')) > (c.budget * Decimal('0.8'))
+    )
 
     total_clients = clients.count()
 
-
     # =========================
-    # BANKS (COMPANY SAFE)
+    # BANK BALANCES
     # =========================
     banks = Bank.objects.filter(
         company_id=selected_company_id
+    ).annotate(
+        payment_total=Sum('payments__amount'),
+        expense_total=Sum('expenses__amount')
     )
 
     for bank in banks:
-
-        payment_total = bank.payments.filter(
-            client__company_id=selected_company_id
-        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
-
-        expense_total = bank.expenses.filter(
-            client__company_id=selected_company_id
-        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        payment_total = bank.payment_total or Decimal('0')
+        expense_total = bank.expense_total or Decimal('0')
 
         bank.available_balance = (
             bank.opening_balance + payment_total - expense_total
         )
 
-    total_bank = sum((b.available_balance for b in banks), Decimal('0.00'))
+    total_bank = sum(
+        (b.available_balance for b in banks),
+        Decimal('0')
+    )
 
     negative_bank_count = sum(
-    1 for b in banks if b.available_balance < 0
-)
+        1 for b in banks if b.available_balance < 0
+    )
 
-
-    # Selected bank
     selected_bank = None
     if selected_bank_id:
         selected_bank = banks.filter(id=selected_bank_id).first()
         display_bank_balance = (
-            selected_bank.available_balance if selected_bank else Decimal('0.00')
+            selected_bank.available_balance if selected_bank else Decimal('0')
         )
     else:
         display_bank_balance = total_bank
-
-
 
     # =========================
     # PROFIT
     # =========================
     total_profit = total_payments - total_expenses
+
     profit_percentage = (
         (total_profit / total_payments) * 100
         if total_payments > 0 else 0
     )
 
-
-
-
-    # ====================================
-    # 💎 FINANCIAL HEALTH SCORE (0-100)
-    # ====================================
-
-    # 1️⃣ Profit Score (25 max)
+    # =========================
+    # HEALTH SCORE
+    # =========================
     if profit_percentage > 30:
         profit_score = 25
     elif profit_percentage > 15:
@@ -286,7 +731,6 @@ def home(request):
     else:
         profit_score = 0
 
-    # 2️⃣ Cash Ratio Score
     cash_ratio = (
         total_bank / total_expenses
         if total_expenses > 0 else Decimal('0')
@@ -301,7 +745,6 @@ def home(request):
     else:
         cash_score = 5
 
-    # 3️⃣ Receivable Ratio Score
     receivable_ratio = (
         total_balance / total_project_value
         if total_project_value > 0 else Decimal('0')
@@ -316,7 +759,6 @@ def home(request):
     else:
         receivable_score = 5
 
-    # 4️⃣ Budget Discipline Score
     discipline_ratio = (
         Decimal(overrun_clients) / Decimal(total_clients)
         if total_clients > 0 else Decimal('0')
@@ -345,15 +787,9 @@ def home(request):
     else:
         health_status = "High Risk"
 
-
-
-
-
-
-
-    # ====================================
-    # 📊 TOP 5 EXPENSE CATEGORIES
-    # ====================================
+    # =========================
+    # TOP EXPENSE CATEGORIES
+    # =========================
     top_categories = (
         expense_qs
         .values('category__name')
@@ -370,15 +806,12 @@ def home(request):
         float(c['total']) for c in top_categories
     ]
 
-
-
-    # ====================================
-    # 👷 SALARY DISTRIBUTION BY TEAM
-    # ====================================
-    salary_qs = expense_qs.filter(category__name__iexact='salary')
-
+    # =========================
+    # SALARY DISTRIBUTION
+    # =========================
     salary_by_team = (
-        salary_qs
+        expense_qs
+        .filter(category__name__iexact='salary')
         .values('salary_to__name')
         .annotate(total=Sum('amount'))
         .order_by('-total')
@@ -393,11 +826,9 @@ def home(request):
         float(s['total']) for s in salary_by_team
     ]
 
-
-
-    # ====================================
-    # 📉 MONTHLY EXPENSE TREND
-    # ====================================
+    # =========================
+    # MONTHLY EXPENSE TREND
+    # =========================
     monthly_expenses = (
         expense_qs
         .annotate(month=TruncMonth('expense_date'))
@@ -415,49 +846,34 @@ def home(request):
         float(m['total']) for m in monthly_expenses
     ]
 
-
-
-    # ====================================
-    # 🚨 SMART ALERTS (INTELLIGENT VERSION)
-    # ====================================
-
+    # =========================
+    # ALERTS
+    # =========================
     today = now().date()
 
-    # ---- Average Payment
     avg_payment = payment_qs.aggregate(
         avg=Avg('amount')
-    )['avg'] or Decimal('0.00')
+    )['avg'] or Decimal('0')
 
-    large_payments_today = payment_qs.filter(
-        payment_date=today,
-        amount__gt=avg_payment
-    )
-
-    large_payment_count = large_payments_today.count()
-
-    # ---- Average Expense
     avg_expense = expense_qs.aggregate(
         avg=Avg('amount')
-    )['avg'] or Decimal('0.00')
+    )['avg'] or Decimal('0')
 
-    high_expense_today = expense_qs.filter(
+    large_payment_count = payment_qs.filter(
+        payment_date=today,
+        amount__gt=avg_payment
+    ).count()
+
+    high_expense_count = expense_qs.filter(
         expense_date=today,
         amount__gt=avg_expense
-    )
+    ).count()
 
-    high_expense_count = high_expense_today.count()
-
-    # ---- Negative Bank Alert (already calculated earlier)
-    # negative_bank_count
-
-    # ---- Final Alert Count
     alert_count = (
         large_payment_count +
         high_expense_count +
         negative_bank_count
     )
-
-
 
     # =========================
     # RECENT DATA
@@ -470,24 +886,18 @@ def home(request):
         'client', 'category'
     ).order_by('-expense_date')[:5]
 
-    # =========================
-    # RECENT CYCLE TOTAL
-    # =========================
     recent_total = recent_payments.aggregate(
         total=Sum('amount')
-    )['total'] or Decimal('0.00')
+    )['total'] or Decimal('0')
 
-    # =========================
-    # CURRENT MONTH RECEIVED
-    # =========================
-    today = now()
+    today_dt = now()
 
     monthly_received_total = payment_qs.filter(
-        payment_date__year=today.year,
-        payment_date__month=today.month
+        payment_date__year=today_dt.year,
+        payment_date__month=today_dt.month
     ).aggregate(
         total=Sum('amount')
-    )['total'] or Decimal('0.00')
+    )['total'] or Decimal('0')
 
     # =========================
     # GRAPH DATA
@@ -515,14 +925,15 @@ def home(request):
     expense_values = [float(e['total']) for e in expense_chart]
 
     all_dates = sorted(set(payment_labels + expense_labels))
+
     profit_trend_data = []
 
     for d in all_dates:
         p = payment_values[payment_labels.index(d)] if d in payment_labels else 0
         e = expense_values[expense_labels.index(d)] if d in expense_labels else 0
         profit_trend_data.append(p - e)
-    current_date = now()
 
+    current_date = now()
 
     return render(request, 'dashboard.html', {
         'companies': companies,
@@ -552,11 +963,9 @@ def home(request):
         'monthly_received_total': monthly_received_total,
         'current_date': current_date,
 
-
-
-
         'health_score': health_score,
         'health_status': health_status,
+
         'expense_category_labels': json.dumps(top_category_labels),
         'expense_category_values': json.dumps(top_category_values),
 
@@ -565,25 +974,25 @@ def home(request):
 
         'monthly_expense_labels': json.dumps(monthly_expense_labels),
         'monthly_expense_values': json.dumps(monthly_expense_values),
-        'alert_count': alert_count,
 
+        'alert_count': alert_count,
         'large_payment_count': large_payment_count,
         'high_expense_count': high_expense_count,
         'avg_payment': avg_payment,
         'avg_expense': avg_expense,
         'negative_bank_count': negative_bank_count,
 
-
-
-
         'profit_trend_labels': json.dumps(all_dates),
         'profit_trend_values': json.dumps(profit_trend_data),
 
         'payment_labels': json.dumps(payment_labels),
         'payment_values': json.dumps(payment_values),
+
         'expense_labels': json.dumps(expense_labels),
         'expense_values': json.dumps(expense_values),
     })
+
+
 
 
 #clear alert when user visited
@@ -808,6 +1217,60 @@ def client_index(request):
 
 
 
+# from decimal import Decimal, InvalidOperation
+# from django.contrib.auth.decorators import login_required
+# from django.contrib import messages
+# from django.shortcuts import render, redirect
+# from .models import Client, Company
+
+
+# @login_required(login_url='login')
+# def client_create(request):
+
+#     # 🏢 COMPANY FROM SESSION
+#     selected_company_id = request.session.get('selected_company_id')
+
+#     if not selected_company_id:
+#         messages.error(request, "Please select a company first.")
+#         return redirect('dashboard')
+
+#     company = Company.objects.filter(id=selected_company_id).first()
+
+#     if not company:
+#         messages.error(request, "Company not found.")
+#         return redirect('dashboard')
+
+#     if request.method == 'POST':
+#         name = request.POST.get('name')
+#         location = request.POST.get('location')  # ✅ now used
+#         budget = request.POST.get('budget')
+
+#         if not name or not budget:
+#             messages.error(request, "Name and budget are required.")
+#             return redirect('client_create')
+
+#         try:
+#             budget_decimal = Decimal(budget)
+#         except InvalidOperation:
+#             messages.error(request, "Invalid budget amount.")
+#             return redirect('client_create')
+
+#         # ✅ CREATE CLIENT
+#         Client.objects.create(
+#             company=company,
+#             name=name,
+#             location=location,  # ✅ IMPORTANT FIX
+#             budget=budget_decimal
+#         )
+
+#         messages.success(request, "Client created successfully.")
+#         return redirect('client_index')
+
+#     return render(request, 'client/create.html', {
+#         'company': company,
+#     })
+
+
 from decimal import Decimal, InvalidOperation
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -833,12 +1296,16 @@ def client_create(request):
 
     if request.method == 'POST':
         name = request.POST.get('name')
-        location = request.POST.get('location')  # ✅ now used
+        location = request.POST.get('location')
         budget = request.POST.get('budget')
 
         if not name or not budget:
             messages.error(request, "Name and budget are required.")
             return redirect('client_create')
+
+        # Normalize data (optional but recommended)
+        name = name.strip()
+        location = location.strip() if location else None
 
         try:
             budget_decimal = Decimal(budget)
@@ -846,11 +1313,23 @@ def client_create(request):
             messages.error(request, "Invalid budget amount.")
             return redirect('client_create')
 
+        # 🚫 PREVENT DUPLICATE CLIENT
+        if Client.objects.filter(
+            company=company,
+            name__iexact=name,
+            location__iexact=location
+        ).exists():
+            messages.error(
+                request,
+                "Client with this name and location already exists."
+            )
+            return redirect('client_create')
+
         # ✅ CREATE CLIENT
         Client.objects.create(
             company=company,
             name=name,
-            location=location,  # ✅ IMPORTANT FIX
+            location=location,
             budget=budget_decimal
         )
 
@@ -866,7 +1345,43 @@ def client_create(request):
 
 
 
+# @login_required(login_url='login')
+# def client_update(request, pk):
 
+#     # 🏢 COMPANY FROM SESSION
+#     selected_company_id = request.session.get('selected_company_id')
+
+#     if not selected_company_id:
+#         return redirect('dashboard')
+
+#     company = get_object_or_404(Company, id=selected_company_id)
+
+#     # 🔒 Fetch client ONLY from selected company
+#     client = get_object_or_404(
+#         Client,
+#         pk=pk,
+#         company_id=selected_company_id
+#     )
+
+#     if request.method == 'POST':
+#         client.name = request.POST.get('name')
+#         client.budget = Decimal(request.POST.get('budget'))
+#         client.location = request.POST.get('location')
+#         client.save()
+
+#         return redirect('client_index')
+
+#     return render(request, 'client/update.html', {
+#         'client': client,
+#         'company': company,
+#     })
+
+
+from decimal import Decimal, InvalidOperation
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.shortcuts import get_object_or_404, render, redirect
+from .models import Client, Company
 
 
 @login_required(login_url='login')
@@ -876,6 +1391,7 @@ def client_update(request, pk):
     selected_company_id = request.session.get('selected_company_id')
 
     if not selected_company_id:
+        messages.error(request, "Please select a company first.")
         return redirect('dashboard')
 
     company = get_object_or_404(Company, id=selected_company_id)
@@ -888,19 +1404,50 @@ def client_update(request, pk):
     )
 
     if request.method == 'POST':
-        client.name = request.POST.get('name')
-        client.budget = Decimal(request.POST.get('budget'))
-        client.location = request.POST.get('location')
+        name = request.POST.get('name')
+        location = request.POST.get('location')
+        budget = request.POST.get('budget')
+
+        if not name or not budget:
+            messages.error(request, "Name and budget are required.")
+            return redirect('client_update', pk=client.id)
+
+        # Normalize values
+        name = name.strip()
+        location = location.strip() if location else None
+
+        try:
+            budget_decimal = Decimal(budget)
+        except InvalidOperation:
+            messages.error(request, "Invalid budget amount.")
+            return redirect('client_update', pk=client.id)
+
+        # 🚫 Prevent duplicate client (excluding current record)
+        if Client.objects.filter(
+            company=company,
+            name__iexact=name,
+            location__iexact=location
+        ).exclude(pk=client.pk).exists():
+
+            messages.error(
+                request,
+                "Another client with this name and location already exists."
+            )
+            return redirect('client_update', pk=client.id)
+
+        # ✅ Update client
+        client.name = name
+        client.location = location
+        client.budget = budget_decimal
         client.save()
 
+        messages.success(request, "Client updated successfully.")
         return redirect('client_index')
 
     return render(request, 'client/update.html', {
         'client': client,
         'company': company,
     })
-
-
 
 
 def client_delete(request, pk):
@@ -2612,12 +3159,17 @@ def available_amount(request):
     # =========================
     # 💵 CASH BANK (COMPANY BASED)
     # =========================
-    cash_bank = Bank.objects.filter(name__iexact='cash').first()
+
+    cash_bank = Bank.objects.filter(
+        company_id=selected_company_id,
+        name__iexact='cash'
+    ).first()
 
     total_cash = Decimal('0.00')
     last_cash_date = None
 
     if cash_bank:
+
         cash_payments = Payment.objects.filter(
             bank=cash_bank,
             client__company_id=selected_company_id
@@ -2630,8 +3182,8 @@ def available_amount(request):
 
         total_cash = (
             cash_bank.opening_balance
-            + (cash_payments.aggregate(t=Sum('amount'))['t'] or Decimal('0.00'))
-            - (cash_expenses.aggregate(t=Sum('amount'))['t'] or Decimal('0.00'))
+            + (cash_payments.aggregate(t=Sum('amount'))['t'] or Decimal('0'))
+            - (cash_expenses.aggregate(t=Sum('amount'))['t'] or Decimal('0'))
         )
 
         last_cash_date = max(
@@ -2706,6 +3258,52 @@ def available_amount(request):
 
 
 #payment 
+
+
+
+from django.http import JsonResponse
+from decimal import Decimal
+from .models import Payment
+
+
+def check_payment_duplicate(request):
+
+    selected_company_id = request.session.get('selected_company_id')
+
+    client_id = request.GET.get('client')
+    bank_id = request.GET.get('bank')
+    payment_date = request.GET.get('payment_date')
+    amount = request.GET.get('amount')
+
+    # Required fields
+    if not (client_id and payment_date and amount):
+        return JsonResponse({"duplicate": False})
+
+    try:
+        amount = Decimal(str(amount).replace(',', '').strip())
+    except:
+        return JsonResponse({"duplicate": False})
+
+    duplicate = Payment.objects.filter(
+        client_id=client_id,
+        client__company_id=selected_company_id,
+        bank_id=bank_id,
+        payment_date=payment_date,
+        amount=amount
+    ).first()
+
+    if duplicate:
+        return JsonResponse({
+            "duplicate": True,
+            "client": duplicate.client.name,
+            "amount": str(duplicate.amount),
+            "date": str(duplicate.payment_date),
+            "bank": duplicate.bank.name
+        })
+
+    return JsonResponse({"duplicate": False})
+
+
 
 from django.shortcuts import render, redirect
 from django.utils.dateparse import parse_date
@@ -2978,13 +3576,19 @@ def payment_update(request, pk):
                 old_bank.recalculate_balance()
 
             # 💵 CASH MODE
-            if new_mode == 'cash':
-                cash_bank = Bank.objects.get(name__iexact='cash')
+            if new_mode == Payment.CASH:
+
+                cash_bank = Bank.objects.get(
+                    name__iexact='cash',
+                    company_id=selected_company_id
+                )
+
                 payment.bank = cash_bank
                 payment.payment_mode = Payment.CASH
 
-            # 🔵 CHEQUE MODE
-            else:
+            # 🏦 CHEQUE MODE
+            elif new_mode == Payment.CHEQUE:
+
                 if not bank_id:
                     messages.error(request, "Select bank for cheque payment")
                     return render(request, 'payment/update.html', {
@@ -2993,7 +3597,12 @@ def payment_update(request, pk):
                         'banks': banks
                     })
 
-                payment.bank = Bank.objects.get(id=bank_id)
+                bank = Bank.objects.get(
+                    id=bank_id,
+                    company_id=selected_company_id
+                )
+
+                payment.bank = bank
                 payment.payment_mode = Payment.CHEQUE
 
             payment.client = client
@@ -3059,45 +3668,91 @@ def worker_index(request):
 
 
 
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+
 def worker_create(request):
+
+    company_id = request.session.get('selected_company_id')
+
+    if not company_id:
+        return redirect('dashboard')
+
     if request.method == 'POST':
-        name = request.POST.get('name')
-        company = request.session.get('selected_company_id')  # 👈 COMPANY FROM SESSION
+        name = request.POST.get('name', '').strip()
 
         if not name:
             messages.error(request, "Worker name is required")
+
         else:
-            Worker.objects.create(name=name, company_id=company)  #👈 ASSOCIATE WITH COMPANY
+
+            # 🔎 Duplicate check (case insensitive)
+            if Worker.objects.filter(
+                company_id=company_id,
+                name__iexact=name
+            ).exists():
+
+                messages.warning(request, "This worker Team already exists for this company.")
+                return redirect('worker_create')
+
+            Worker.objects.create(
+                name=name,
+                company_id=company_id
+            )
+
             messages.success(request, "Worker added successfully")
             return redirect('worker_index')
 
     return render(request, 'worker/create.html', {
         'title': 'Add Worker',
-        'company': Company.objects.get(id=request.session.get('selected_company_id'))
+        'company': get_object_or_404(Company, id=company_id)
     })
 
 
 
 def worker_update(request, pk):
-    worker = get_object_or_404(Worker, pk=pk)
+
+    company_id = request.session.get('selected_company_id')
+
+    if not company_id:
+        return redirect('dashboard')
+
+    worker = get_object_or_404(
+        Worker,
+        pk=pk,
+        company_id=company_id
+    )
 
     if request.method == 'POST':
-        name = request.POST.get('name')
-        company = request.session.get('selected_company_id')
+
+        name = request.POST.get('name', '').strip()
 
         if not name:
             messages.error(request, "Worker name is required")
+
         else:
+
+            # 🔎 Duplicate check (excluding current worker)
+            duplicate = Worker.objects.filter(
+                company_id=company_id,
+                name__iexact=name
+            ).exclude(pk=worker.pk).exists()
+
+            if duplicate:
+                messages.warning(request, "Another worker Team with this name already exists.")
+                return redirect('worker_update', pk=pk)
+
             worker.name = name
-            worker.company_id = company  # Ensure worker remains associated with the company
+            worker.company_id = company_id
             worker.save()
+
             messages.success(request, "Worker updated successfully")
             return redirect('worker_index')
 
     return render(request, 'worker/update.html', {
         'title': 'Update Worker',
         'worker': worker,
-        'company': Company.objects.get(id=request.session.get('selected_company_id'))
+        'company': get_object_or_404(Company, id=company_id)
     })
 
 
@@ -3158,13 +3813,31 @@ def worker_name_create(request):
 
         if not worker_id or not name:
             messages.error(request, "Worker and name are required")
-        else:
-            WorkerName.objects.create(
-                worker_id=worker_id,
-                name=name
-            )
-            messages.success(request, "Worker name added")
-            return redirect('worker_name_index')
+            return redirect('worker_name_create')
+
+        # 🔐 Ensure worker belongs to selected company
+        worker = get_object_or_404(
+            Worker,
+            id=worker_id,
+            company_id=selected_company_id
+        )
+
+        # 🔎 Duplicate check
+        if WorkerName.objects.filter(
+            worker=worker,
+            name__iexact=name
+        ).exists():
+
+            messages.warning(request, "This worker name already exists for this worker Team.")
+            return redirect('worker_name_create')
+
+        WorkerName.objects.create(
+            worker=worker,
+            name=name
+        )
+
+        messages.success(request, "Worker name added successfully")
+        return redirect('worker_name_index')
 
     return render(request, 'worker_name/create.html', {
         'workers': workers
@@ -3177,39 +3850,45 @@ from django.contrib import messages
 
 def worker_name_update(request, pk):
 
-    # 👤 WorkerName object
-    worker_name = get_object_or_404(WorkerName, pk=pk)
-
-    # 🏢 COMPANY FROM SESSION
     selected_company_id = request.session.get('selected_company_id')
     if not selected_company_id:
         return redirect('dashboard')
 
-    # 👷 Workers under selected company
+    worker_name = get_object_or_404(WorkerName, pk=pk)
+
     workers = Worker.objects.filter(company_id=selected_company_id)
 
     if request.method == 'POST':
+
         worker_id = request.POST.get('worker')
         name = request.POST.get('name', '').strip()
 
-        # ❌ Validation
         if not worker_id or not name:
             messages.error(request, "Worker and name are required")
-        else:
-            # ✅ Ensure worker belongs to same company
-            worker = get_object_or_404(
-                Worker,
-                id=worker_id,
-                company_id=selected_company_id
-            )
+            return redirect('worker_name_update', pk=pk)
 
-            # ✅ Update
-            worker_name.worker = worker
-            worker_name.name = name
-            worker_name.save()
+        worker = get_object_or_404(
+            Worker,
+            id=worker_id,
+            company_id=selected_company_id
+        )
 
-            messages.success(request, "Worker name updated successfully")
-            return redirect('worker_name_index')
+        # 🔎 Duplicate check (exclude current record)
+        duplicate = WorkerName.objects.filter(
+            worker=worker,
+            name__iexact=name
+        ).exclude(pk=worker_name.pk).exists()
+
+        if duplicate:
+            messages.warning(request, "Another worker with this name already exists.")
+            return redirect('worker_name_update', pk=pk)
+
+        worker_name.worker = worker
+        worker_name.name = name
+        worker_name.save()
+
+        messages.success(request, "Worker name updated successfully")
+        return redirect('worker_name_index')
 
     return render(request, 'worker_name/update.html', {
         'worker_name': worker_name,
@@ -3257,9 +3936,16 @@ def expense_category_index(request):
 
 
 # ➕ CREATE
+from django.contrib import messages
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import ExpenseCategory
+
+
+# ➕ CREATE
 def expense_category_create(request):
 
     selected_company_id = request.session.get('selected_company_id')
+
     if not selected_company_id:
         return redirect('dashboard')
 
@@ -3268,6 +3954,14 @@ def expense_category_create(request):
 
         if not name:
             messages.error(request, "Category name is required")
+            return redirect('expense_category_create')
+
+        # 🚫 Prevent duplicate category
+        if ExpenseCategory.objects.filter(
+            company_id=selected_company_id,
+            name__iexact=name
+        ).exists():
+            messages.error(request, "Category already exists")
             return redirect('expense_category_create')
 
         ExpenseCategory.objects.create(
@@ -3283,9 +3977,11 @@ def expense_category_create(request):
 
 
 # ✏️ UPDATE
+
 def expense_category_update(request, pk):
 
     selected_company_id = request.session.get('selected_company_id')
+
     if not selected_company_id:
         return redirect('dashboard')
 
@@ -3300,6 +3996,15 @@ def expense_category_update(request, pk):
 
         if not name:
             messages.error(request, "Category name is required")
+            return redirect('expense_category_update', pk=pk)
+
+        # 🚫 Prevent duplicate (exclude current record)
+        if ExpenseCategory.objects.filter(
+            company_id=selected_company_id,
+            name__iexact=name
+        ).exclude(pk=category.pk).exists():
+
+            messages.error(request, "Another category with this name already exists")
             return redirect('expense_category_update', pk=pk)
 
         category.name = name
@@ -3359,9 +4064,15 @@ def expense_subcategory_index(request):
 
 
 # ➕ CREATE
+from django.contrib import messages
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import ExpenseCategory, ExpenseSubCategory
+
+
 def expense_subcategory_create(request):
 
     selected_company_id = request.session.get('selected_company_id')
+
     if not selected_company_id:
         return redirect('dashboard')
 
@@ -3375,14 +4086,26 @@ def expense_subcategory_create(request):
 
         if not category_id or not name:
             messages.error(request, "Category and Sub-category name are required")
-        else:
-            ExpenseSubCategory.objects.create(
-                company_id=selected_company_id,   # ✅ IMPORTANT
-                category_id=category_id,
-                name=name
-            )
-            messages.success(request, "Sub-category added successfully")
-            return redirect('expense_subcategory_index')
+            return redirect('expense_subcategory_create')
+
+        # 🚫 Prevent duplicate subcategory
+        if ExpenseSubCategory.objects.filter(
+            company_id=selected_company_id,
+            category_id=category_id,
+            name__iexact=name
+        ).exists():
+
+            messages.error(request, "Sub-category already exists for this category")
+            return redirect('expense_subcategory_create')
+
+        ExpenseSubCategory.objects.create(
+            company_id=selected_company_id,
+            category_id=category_id,
+            name=name
+        )
+
+        messages.success(request, "Sub-category added successfully")
+        return redirect('expense_subcategory_index')
 
     return render(request, 'expense_subcategory/create.html', {
         'categories': categories
@@ -3394,13 +4117,14 @@ def expense_subcategory_create(request):
 def expense_subcategory_update(request, pk):
 
     selected_company_id = request.session.get('selected_company_id')
+
     if not selected_company_id:
         return redirect('dashboard')
 
     subcategory = get_object_or_404(
         ExpenseSubCategory,
         pk=pk,
-        company_id=selected_company_id   # ✅ SECURITY
+        company_id=selected_company_id
     )
 
     categories = ExpenseCategory.objects.filter(
@@ -3411,15 +4135,26 @@ def expense_subcategory_update(request, pk):
         category_id = request.POST.get('category')
         name = request.POST.get('name', '').strip()
 
-        if not name or not category_id:
+        if not category_id or not name:
             messages.error(request, "All fields are required")
-        else:
-            subcategory.category_id = category_id
-            subcategory.name = name
-            subcategory.save()
+            return redirect('expense_subcategory_update', pk=pk)
 
-            
-            return redirect('expense_subcategory_index')
+        # 🚫 Prevent duplicate (exclude current record)
+        if ExpenseSubCategory.objects.filter(
+            company_id=selected_company_id,
+            category_id=category_id,
+            name__iexact=name
+        ).exclude(pk=subcategory.pk).exists():
+
+            messages.error(request, "Another sub-category with this name already exists")
+            return redirect('expense_subcategory_update', pk=pk)
+
+        subcategory.category_id = category_id
+        subcategory.name = name
+        subcategory.save()
+
+        messages.success(request, "Sub-category updated successfully")
+        return redirect('expense_subcategory_index')
 
     return render(request, 'expense_subcategory/update.html', {
         'subcategory': subcategory,
@@ -3768,7 +4503,45 @@ def expense_pdf_export(request):
 
 
 
+from django.http import JsonResponse
+from decimal import Decimal
 
+def check_expense_duplicate(request):
+
+    selected_company_id = request.session.get('selected_company_id')
+
+    client_id = request.GET.get('client')
+    category_id = request.GET.get('category')
+    subcategory_id = request.GET.get('subcategory')
+    expense_date = request.GET.get('expense_date')
+    amount = request.GET.get('amount')
+
+    if not (client_id and category_id and expense_date and amount):
+        return JsonResponse({"duplicate": False})
+
+    try:
+        amount = Decimal(str(amount).replace(',', '').strip())
+    except:
+        return JsonResponse({"duplicate": False})
+
+    duplicate = Expense.objects.filter(
+        client_id=client_id,
+        client__company_id=selected_company_id,
+        category_id=category_id,
+        subcategory_id=subcategory_id,
+        expense_date=expense_date,
+        amount=amount
+    ).first()
+
+    if duplicate:
+        return JsonResponse({
+            "duplicate": True,
+            "client": duplicate.client.name,
+            "amount": str(duplicate.amount),
+            "date": str(duplicate.expense_date)
+        })
+
+    return JsonResponse({"duplicate": False})
 
 
 
@@ -3779,6 +4552,12 @@ from django.contrib import messages
 from django.shortcuts import redirect
 from django.db.models import Q
 
+from decimal import Decimal
+from django.db import transaction
+from django.contrib import messages
+from django.shortcuts import redirect, render
+
+
 def expense_create(request):
 
     # 🏢 COMPANY FROM SESSION
@@ -3787,7 +4566,7 @@ def expense_create(request):
         return redirect('dashboard')
 
     # =========================
-    # 📋 DROPDOWNS (COMPANY AWARE)
+    # 📋 DROPDOWNS
     # =========================
     clients = Client.objects.filter(company_id=selected_company_id)
 
@@ -3805,14 +4584,15 @@ def expense_create(request):
         company_id=selected_company_id
     ).order_by('name')
 
-    cash_bank = Bank.objects.filter(name__iexact='cash').first()
-
-    workers = Worker.objects.filter(company_id=selected_company_id)
+    cash_bank = Bank.objects.filter(
+        company_id=selected_company_id,
+        name__iexact='cash'
+    ).first()
 
     worker_names = WorkerName.objects.filter(
-            worker__company_id=selected_company_id
-        ).select_related('worker')
-    
+        worker__company_id=selected_company_id
+    ).select_related('worker')
+
     # =========================
     # 📩 POST
     # =========================
@@ -3828,8 +4608,14 @@ def expense_create(request):
         spend_mode = request.POST.get('spend_mode')
         expense_date = request.POST.get('expense_date')
 
+        amount_raw = request.POST.get('amount')
+
+        if not amount_raw:
+            messages.error(request, "Amount is required")
+            return redirect('expense_create')
+
         try:
-            amount = Decimal(request.POST.get('amount'))
+            amount = Decimal(str(amount_raw).replace(',', '').strip())
         except:
             messages.error(request, "Invalid amount")
             return redirect('expense_create')
@@ -3857,14 +4643,32 @@ def expense_create(request):
 
         worker = workers.filter(id=salary_to_id).first() if salary_to_id else None
 
+        # =========================
+        # 🔎 DUPLICATE DETECTION
+        # =========================
 
+        duplicate_expense = Expense.objects.filter(
+            client_id=client_id,
+            client__company_id=selected_company_id,
+            category_id=category_id,
+            subcategory_id=subcategory_id,
+            expense_date=expense_date,
+            amount=amount
+        ).first()
+
+        duplicate_warning = False
+
+        if duplicate_expense:
+            duplicate_warning = True
+
+        # =========================
+        # 💾 SAVE EXPENSE
+        # =========================
         with transaction.atomic():
 
-            # 💵 CASH
             if spend_mode == Expense.CASH:
                 bank = cash_bank
 
-            # 🏦 CHEQUE
             else:
                 bank = banks.filter(id=bank_id).first()
                 if not bank:
@@ -3886,9 +4690,22 @@ def expense_create(request):
 
             bank.recalculate_balance()
 
+        # =========================
+        # 🔔 ALERT MESSAGE
+        # =========================
+        if duplicate_warning:
+            messages.warning(
+                request,
+                "⚠ A similar expense already existed. This entry was saved anyway."
+            )
+
         messages.success(request, "Expense added successfully")
+
         return redirect('expense_index')
 
+    # =========================
+    # GET PAGE
+    # =========================
     return render(request, 'expense/create.html', {
         'clients': clients,
         'banks': banks,
@@ -3896,7 +4713,7 @@ def expense_create(request):
         'categories': categories,
         'subcategories': subcategories,
         'workers': workers,
-        selected_company_id: selected_company_id,
+        'selected_company_id': selected_company_id,
         'worker_names': worker_names,
     })
 
@@ -3912,7 +4729,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.db import transaction
 from django.contrib import messages
 from decimal import Decimal
-from django.db.models import Q
+
 
 def expense_update(request, pk):
 
@@ -3921,7 +4738,6 @@ def expense_update(request, pk):
     if not selected_company_id:
         return redirect('dashboard')
 
-    # 🔐 Only allow editing company-related expense
     expense = get_object_or_404(
         Expense,
         pk=pk,
@@ -3929,7 +4745,7 @@ def expense_update(request, pk):
     )
 
     # =========================
-    # 📋 DROPDOWNS (COMPANY AWARE)
+    # 📋 DROPDOWNS
     # =========================
     clients = Client.objects.filter(company_id=selected_company_id)
 
@@ -3944,24 +4760,24 @@ def expense_update(request, pk):
     workers = Worker.objects.filter(company_id=selected_company_id)
 
     worker_names = WorkerName.objects.filter(
-            worker__company_id=selected_company_id
-        ).select_related('worker')
+        worker__company_id=selected_company_id
+    ).select_related('worker')
 
     banks = Bank.objects.filter(
         company_id=selected_company_id
     ).order_by('name')
 
-    cash_bank = Bank.objects.filter(name__iexact='cash').first()
+    cash_bank = Bank.objects.filter(
+        company_id=selected_company_id,
+        name__iexact='cash'
+    ).first()
 
     old_bank = expense.bank
 
     # =========================
-    # 📩 POST
+    # POST
     # =========================
-
-    print("POST:", request.POST)
-
-    if request.method == 'POST':
+    if request.method == "POST":
 
         client_id = request.POST.get('client')
         category_id = request.POST.get('category')
@@ -3979,45 +4795,31 @@ def expense_update(request, pk):
             messages.error(request, "Invalid amount")
             return redirect('expense_update', pk=pk)
 
-        # 🔐 VALIDATION
+        # =========================
+        # VALIDATIONS
+        # =========================
+
         client = clients.filter(id=client_id).first()
         if not client:
             messages.error(request, "Invalid client")
             return redirect('expense_update', pk=pk)
 
-        if category_id:
-            category = categories.filter(id=category_id).first()
-            if not category:
-                messages.error(request, "Invalid category selected")
-                return redirect('expense_update', pk=pk)
-        else:
-            category = expense.category  # KEEP OLD
+        category = categories.filter(id=category_id).first() if category_id else None
 
-
+        subcategory = None
         if subcategory_id:
             subcategory = subcategories.filter(
                 id=subcategory_id,
                 category_id=category_id
             ).first()
 
-            if not subcategory:
-                messages.error(request, "Invalid sub-category selection")
-                return redirect('expense_update', pk=pk)
-        else:
-            subcategory = expense.subcategory  # KEEP OLD
-
-
         worker = None
         worker_name = None
 
-        # Only allow worker fields if category is Salary
         if category and category.name.lower() == "salary":
 
             if salary_to_id:
                 worker = workers.filter(id=salary_to_id).first()
-                if not worker:
-                    messages.error(request, "Invalid worker team selected")
-                    return redirect('expense_update', pk=pk)
 
             if worker_name_id:
                 worker_name = worker_names.filter(
@@ -4025,36 +4827,41 @@ def expense_update(request, pk):
                     worker=worker
                 ).first()
 
-                if not worker_name:
-                    messages.error(request, "Invalid worker name selected")
-                    return redirect('expense_update', pk=pk)
+        # =========================
+        # DUPLICATE CHECK
+        # =========================
 
-        else:
-            # 🚀 Not salary → force remove worker info
-            worker = None
-            worker_name = None
+        duplicate_expense = Expense.objects.filter(
+            client_id=client_id,
+            client__company_id=selected_company_id,
+            category_id=category_id,
+            subcategory_id=subcategory_id,
+            expense_date=expense_date,
+            amount=new_amount
+        ).exclude(pk=expense.pk).first()
 
+        duplicate_warning = False
 
+        if duplicate_expense:
+            duplicate_warning = True
 
-
+        # =========================
+        # UPDATE EXPENSE
+        # =========================
         with transaction.atomic():
 
-            # 🔁 Reverse old bank effect
             if old_bank:
                 old_bank.recalculate_balance()
 
-            # 💵 CASH MODE
             if spend_mode == Expense.CASH:
                 bank = cash_bank
-
-            # 🏦 CHEQUE MODE
             else:
                 bank = banks.filter(id=bank_id).first()
+
                 if not bank:
                     messages.error(request, "Invalid bank")
                     return redirect('expense_update', pk=pk)
 
-            # 🧾 UPDATE EXPENSE
             expense.client = client
             expense.category = category
             expense.subcategory = subcategory
@@ -4065,29 +4872,39 @@ def expense_update(request, pk):
             expense.amount = new_amount
             expense.spend_mode = spend_mode
             expense.expense_date = expense_date
-            print("Worker:", worker)
-            print("Worker Name:", worker_name)
 
             expense.save()
 
-            # 🔁 Apply new bank balance
             bank.recalculate_balance()
 
+        # =========================
+        # ALERT
+        # =========================
+
+        if duplicate_warning:
+            messages.warning(
+                request,
+                "⚠ Similar expense already exists. Update saved anyway."
+            )
+
         messages.success(request, "Expense updated successfully")
+
         return redirect('expense_index')
 
-    return render(request, 'expense/update.html', {
-        'expense': expense,
-        'clients': clients,
-        'banks': banks,
-        'cash_bank': cash_bank,
-        'categories': categories,
-        'subcategories': subcategories,
-        'workers': workers,
-        'worker_names': worker_names,
-        'selected_company_id': selected_company_id,
+    # =========================
+    # GET PAGE
+    # =========================
+    return render(request, "expense/update.html", {
+        "expense": expense,
+        "clients": clients,
+        "banks": banks,
+        "cash_bank": cash_bank,
+        "categories": categories,
+        "subcategories": subcategories,
+        "workers": workers,
+        "worker_names": worker_names,
+        "selected_company_id": selected_company_id,
     })
-
 
 
 
