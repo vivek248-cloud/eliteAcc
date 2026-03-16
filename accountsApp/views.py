@@ -5548,6 +5548,69 @@ def settings_view(request):
     })
 
 
+from django.utils.timezone import now
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
+from django.db.models import Sum, Q
+from .models import Payment, Expense
+
+
+@login_required(login_url='login')
+def today_activity(request):
+
+    selected_company_id = request.session.get('selected_company_id')
+
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    today = now().date()
+    search_query = request.GET.get('q', '').strip()
+
+    # 💰 Payments Today
+    payments = Payment.objects.filter(
+        client__company_id=selected_company_id,
+        payment_date=today
+    ).select_related('client', 'bank')
+
+    # 💸 Expenses Today
+    expenses = Expense.objects.filter(
+        client__company_id=selected_company_id,
+        expense_date=today
+    ).select_related('client', 'category')
+
+    # 🔎 Apply Search
+    if search_query:
+
+        payments = payments.filter(
+            Q(client__name__icontains=search_query) |
+            Q(bank__name__icontains=search_query) |
+            Q(amount__icontains=search_query)
+        )
+
+        expenses = expenses.filter(
+            Q(client__name__icontains=search_query) |
+            Q(category__name__icontains=search_query) |
+            Q(description__icontains=search_query) |
+            Q(amount__icontains=search_query)
+        )
+
+    payments = payments.order_by('-id')
+    expenses = expenses.order_by('-id')
+
+    # 📊 Totals
+    total_income = payments.aggregate(Sum('amount'))['amount__sum'] or 0
+    total_expenses = expenses.aggregate(Sum('amount'))['amount__sum'] or 0
+
+    return render(request, 'activity/today.html', {
+        'payments': payments,
+        'expenses': expenses,
+        'total_income': total_income,
+        'total_expenses': total_expenses,
+        'today': today,
+        'search_query': search_query
+    })
+
+
 @login_required
 def backup_history_view(request):
     backups = BackupHistory.objects.order_by('-created_at')

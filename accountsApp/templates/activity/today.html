@@ -1,0 +1,243 @@
+{% extends "layout/base.html" %}
+{% block title %}Today's Activity{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-5 align-items-center">
+        <div class="col-md-8">
+            <h2 class="fw-bold text-dark h3 mb-0">My Activity</h2>
+            <p class="text-muted small">Comprehensive breakdown of your business movements for today.</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <div class="d-inline-flex align-items-center bg-white border rounded-pill px-3 py-2 shadow-sm">
+                <i class="bi bi-calendar-check text-primary me-2"></i>
+                <span class="small fw-bold text-dark">{{ today|date:"D, d M Y" }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card border-0 bg-white shadow-soft h-100 overflow-hidden">
+                <div class="card-body p-4 position-relative">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted small fw-bold text-uppercase mb-1 tracking-tight">Net Inflow</p>
+                            <h3 class="fw-black text-dark mb-0">₹{{ total_income|default:"0" }}</h3>
+                        </div>
+                        <div class="icon-shape bg-emerald-subtle text-emerald rounded-circle">
+                            <i class="bi bi-graph-up-arrow"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <span class="badge bg-emerald-subtle text-emerald border-0 rounded-pill px-2">
+                            <i class="bi bi-check-circle-fill me-1"></i>{{ payments.count }} Transactions
+                        </span>
+                    </div>
+                </div>
+                <div class="progress rounded-0" style="height: 4px;">
+                    <div class="progress-bar bg-emerald" style="width: 100%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 bg-white shadow-soft h-100 overflow-hidden">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted small fw-bold text-uppercase mb-1 tracking-tight">Net Outflow</p>
+                            <h3 class="fw-black text-danger mb-0">₹{{ total_expenses|default:"0" }}</h3>
+                        </div>
+                        <div class="icon-shape bg-rose-subtle text-rose rounded-circle">
+                            <i class="bi bi-graph-down-arrow"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <span class="badge bg-rose-subtle text-rose border-0 rounded-pill px-2">
+                            <i class="bi bi-arrow-right-circle-fill me-1"></i>{{ expenses.count }} Transactions
+                        </span>
+                    </div>
+                </div>
+                <div class="progress rounded-0" style="height: 4px;">
+                    <div class="progress-bar bg-rose" style="width: 100%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-soft rounded-4 overflow-hidden">
+        <div class="card-header bg-white border-bottom py-4 px-4">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h5 class="mb-0 fw-bold text-dark">Live Feed</h5>
+                </div>
+                <div class="col-auto">
+                <form method="GET">
+                <div class="input-group input-group-sm border rounded-pill px-2 bg-light">
+                    <span class="input-group-text bg-transparent border-0">
+                        <i class="bi bi-search text-muted"></i>
+                    </span>
+
+                    <input
+                        type="text"
+                        name="q"
+                        value="{{ search_query }}"
+                        class="form-control bg-transparent border-0"
+                        placeholder="Quick search...">
+
+                </div>
+                </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 px-4">
+                <thead class="bg-light-subtle border-bottom">
+                    <tr>
+                        <th class="ps-4 py-3 text-muted fw-bold small text-uppercase">Entity / Description</th>
+                        <th class="py-3 text-muted fw-bold small text-uppercase text-center">Category</th>
+                        <th class="py-3 text-muted fw-bold small text-uppercase text-center">Reference</th>
+                        <th class="pe-4 py-3 text-muted fw-bold small text-uppercase text-end">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in payments %}
+                    <tr class="transaction-row">
+                        <td class="ps-4 py-3">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm bg-emerald text-white me-3 rounded-circle d-flex align-items-center justify-content-center fw-bold">
+                                    {{ p.client.name|slice:":1" }}
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold text-dark">{{ p.client.name }}</h6>
+                                    <small class="text-muted d-block">{{ p.created_at|time:"h:i A" }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-light text-dark fw-medium border px-3">Inbound Payment</span>
+                        </td>
+                        <td class="text-center">
+                            <small class="text-muted font-monospace">{{ p.bank.name }}</small>
+                        </td>
+                        <td class="pe-4 text-end">
+                            <div class="d-flex justify-content-end align-items-center">
+                                <span class="fw-bold text-emerald fs-5">+₹{{ p.amount }}</span>
+                                <div class="dropdown ms-3">
+                                    <button class="btn btn-sm btn-icon border-0" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0">
+                                        <li><a class="dropdown-item py-2" href="{% url 'payment_update' p.id %}"><i class="bi bi-file-earmark-text me-2"></i>Invoice Details</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+
+                    {% for e in expenses %}
+                    <tr class="transaction-row">
+                        <td class="ps-4 py-3">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm bg-rose text-white me-3 rounded-circle d-flex align-items-center justify-content-center fw-bold">
+                                    {{ e.client.name|slice:":1" }}
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold text-dark">{{ e.client.name }}</h6>
+                                    <small class="text-muted d-block">{{ e.created_at|time:"h:i A" }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-rose-subtle text-rose fw-medium px-3 border-0">{{ e.category.name }}</span>
+                        </td>
+                        <td class="text-center">
+                            <small class="text-muted font-monospace">Transaction ID: #E{{ e.id }}</small>
+                        </td>
+                        <td class="pe-4 text-end">
+                            <div class="d-flex justify-content-end align-items-center">
+                                <span class="fw-bold text-rose fs-5">-₹{{ e.amount }}</span>
+                                <div class="dropdown ms-3">
+                                    <button class="btn btn-sm btn-icon border-0" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0">
+                                        <li><a class="dropdown-item py-2" href="{% url 'expense_update' e.id %}"><i class="bi bi-pencil-square me-2"></i>Edit Ledger</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    
+                    {% if not payments and not expenses %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5">
+                            <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" width="60" class="opacity-25 mb-3" alt="Empty">
+                            <p class="text-muted">No activity data found for this period.</p>
+                        </td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    :root {
+        --emerald: #10b981;
+        --emerald-subtle: #ecfdf5;
+        --rose: #f43f5e;
+        --rose-subtle: #fff1f2;
+    }
+
+    body { background-color: #fcfdfe; font-family: 'Inter', sans-serif; }
+
+    /* Typography */
+    .fw-black { font-weight: 800; }
+    .tracking-tight { letter-spacing: -0.02em; }
+    .tracking-wider { letter-spacing: 0.05em; }
+
+    /* Cards */
+    .shadow-soft { box-shadow: 0 0.75rem 1.5rem rgba(18, 38, 63, 0.03) !important; }
+    
+    .icon-shape {
+        width: 42px;
+        height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+
+    .bg-emerald { background-color: var(--emerald) !important; }
+    .bg-emerald-subtle { background-color: var(--emerald-subtle) !important; }
+    .text-emerald { color: var(--emerald) !important; }
+    
+    .bg-rose { background-color: var(--rose) !important; }
+    .bg-rose-subtle { background-color: var(--rose-subtle) !important; }
+    .text-rose { color: var(--rose) !important; }
+
+    /* Table Styles */
+    .table thead th { border-top: none; font-size: 0.75rem; letter-spacing: 0.5px; }
+    .transaction-row { cursor: pointer; transition: all 0.2s; }
+    .transaction-row:hover { background-color: #f8fafc !important; }
+    
+    .avatar-sm { width: 40px; height: 40px; font-size: 0.9rem; }
+    
+    .btn-icon {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        color: #94a3b8;
+    }
+    .btn-icon:hover { background-color: #f1f5f9; color: #475569; }
+
+    /* Remove focus outlines */
+    .form-control:focus { box-shadow: none; }
+</style>
+{% endblock %}

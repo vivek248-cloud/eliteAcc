@@ -301,6 +301,11 @@ setInterval(checkSession, 1000);
 
                 <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
                     <li>
+                        <a class="dropdown-item" href="{% url 'today_activity' %}">
+                            <i class="bi bi-activity"></i> My Activity
+                        </a>
+                    </li>
+                    <li>
                         <a class="dropdown-item" href="{% url 'settings' %}">
                             <i class="bi bi-gear me-2"></i> Settings
                         </a>

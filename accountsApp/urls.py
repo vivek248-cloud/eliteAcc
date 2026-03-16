@@ -83,7 +83,7 @@ urlpatterns = [
     path('salary/', salary_index, name='salary_index'),
     path('salary/pdf/', salary_pdf, name='salary_pdf'),
 
-
+    path('activity/today/', today_activity, name='today_activity'),
     path('settings/', settings_view, name='settings'),
     path('settings/backup/', database_backup, name='database_backup'),
     path('settings/restore/', restore_database, name='restore_database'),
