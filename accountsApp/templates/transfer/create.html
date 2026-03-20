@@ -1,0 +1,227 @@
+{% extends "layout/base.html" %}
+{% block title %}Internal Transfer | Elite Accounts{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center mb-4">
+        <div class="col-md-10 text-center">
+            <div class="icon-box bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex p-3 mb-3">
+                <i class="bi bi-arrow-left-right fs-3"></i>
+            </div>
+            <h3 class="fw-black text-dark">Internal Bank Transfer</h3>
+            <p class="text-muted">Move liquidity between your registered accounts with real-time balance validation.</p>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-10 col-lg-9">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-body p-4 p-md-5">
+                    <form method="POST" id="transferForm">
+                        {% csrf_token %}
+
+                        <div class="row align-items-center g-4 mb-5">
+                            <div class="col-md-5">
+                                <label class="form-label fw-bold text-muted small text-uppercase">Source Account</label>
+                                <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                                    <span class="input-group-text bg-danger border-0 text-white">
+                                        <i class="bi bi-box-arrow-up"></i>
+                                    </span>
+                                    <select name="from_bank" id="from_bank" class="form-select elite-select border-0 py-3 fw-semibold" required>
+                                        <option value="" selected disabled>Select Origin</option>
+                                        {% for b in banks %}
+                                        <option value="{{ b.id }}" data-balance="{{ b.available_balance }}">{{ b.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="mt-3 p-3 bg-light rounded-3 border-start border-danger border-4">
+                                    <div class="small text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">Current Available</div>
+                                    <div id="from_balance" class="fs-5 fw-bold text-dark">₹0.00</div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-2 text-center d-none d-md-block">
+                                <div class="transfer-icon-wrap mx-auto bg-danger text-white">
+                                    <i class="bi bi-chevron-right fs-4"></i>
+                                </div>
+                            </div>
+
+                            <div class="col-md-5">
+                                <label class="form-label fw-bold text-muted small text-uppercase">Destination Account</label>
+                                <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                                    <span class="input-group-text bg-success border-0 text-white">
+                                        <i class="bi bi-box-arrow-in-down"></i>
+                                    </span>
+                                    <select name="to_bank" id="to_bank" class="form-select elite-select border-0 py-3 fw-semibold" required>
+                                        <option value="" selected disabled>Select Destination</option>
+                                        {% for b in banks %}
+                                        <option value="{{ b.id }}" data-balance="{{ b.available_balance }}">{{ b.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="mt-3 p-3 bg-light rounded-3 border-start border-success border-4">
+                                    <div class="small text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">Receiving Account</div>
+                                    <div id="to_balance" class="fs-5 fw-bold text-dark">₹0.00</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-4 border-top pt-5">
+                            <div class="col-md-7">
+                                <label class="form-label fw-bold text-muted small text-uppercase">Transfer Amount</label>
+                                <div class="input-group">
+                                    <span class="input-group-text border-0 bg-transparent fs-2 fw-bold text-dark pe-1">₹</span>
+                                    <input type="number" step="0.01" name="amount" id="amount"
+                                           class="form-control elite-input border-0 border-bottom rounded-0 py-2 fs-1 fw-black" 
+                                           placeholder="0.00" required>
+                                </div>
+                                <div id="projection_area" class="mt-2 small text-muted d-none">
+                                    Remaining Balance after transfer: <span id="projected_balance" class="fw-bold">₹0.00</span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-5" style="margin-top: 3.3rem;">
+                                <label class="form-label fw-bold text-muted small text-uppercase">Effective Date</label>
+                                <input type="date" name="transfer_date" class="form-control elite-input border-0 border-bottom rounded-0 py-2 fs-5" value="{{ today_date }}" required>
+                            </div>
+                        </div>
+
+                        <div class="mt-5">
+                            <button type="submit" id="submitBtn" class="btn btn-primary w-100 py-3 rounded-4 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2">
+                                <i class="bi bi-shield-check"></i>
+                                Confirm & Finalize Transfer
+                            </button>
+                            <a href="{% url 'transfer_list' %}" class="btn btn-secondary w-100 mt-3 text-white text-decoration-none small">
+                                Cancel and return to list
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    body { background-color: #f8fafc; color: #1e293b; }
+    .fw-black { font-weight: 900; }
+    
+    /* Input Fixes for Dark Theme Inheritance */
+    .elite-select, .elite-input {
+        color: #1e293b !important;
+        -webkit-text-fill-color: #1e293b !important;
+        background-color: #f1f5f9 !important;
+        opacity: 1 !important;
+    }
+
+    .elite-input.border-bottom {
+        border-radius: 0 !important;
+        border-bottom: 3px solid #e2e8f0 !important;
+        background: transparent !important;
+        transition: border-color 0.3s ease;
+    }
+
+    .elite-input.border-bottom:focus {
+        border-color: #4361ee !important;
+        box-shadow: none !important;
+    }
+
+    /* Insufficient Balance State */
+    .is-invalid-elite {
+        border-bottom-color: #ef4444 !important;
+        color: #ef4444 !important;
+    }
+
+    /* Transfer Icon */
+    .transfer-icon-wrap {
+        width: 50px;
+        height: 50px;
+        background: #fff;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        color: #4361ee;
+    }
+
+    /* Card & Animation */
+    .card { border-radius: 20px !important; }
+    input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+</style>
+
+<script>
+const fromSelect = document.getElementById("from_bank");
+const toSelect = document.getElementById("to_bank");
+const amountInput = document.getElementById("amount");
+const submitBtn = document.getElementById("submitBtn");
+
+const fromBalanceText = document.getElementById("from_balance");
+const toBalanceText = document.getElementById("to_balance");
+const projectedBalanceText = document.getElementById("projected_balance");
+const projectionArea = document.getElementById("projection_area");
+
+function formatCurrency(val) {
+    return "₹" + parseFloat(val).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+}
+
+function updateUI() {
+    const fromOption = fromSelect.options[fromSelect.selectedIndex];
+    const toOption = toSelect.options[toSelect.selectedIndex];
+
+    const fromBalance = parseFloat(fromOption?.dataset.balance || 0);
+    const toBalance = parseFloat(toOption?.dataset.balance || 0);
+    const amount = parseFloat(amountInput.value || 0);
+
+    // Update current badges
+    fromBalanceText.innerText = formatCurrency(fromBalance);
+    toBalanceText.innerText = formatCurrency(toBalance);
+
+    // Update Projection
+    if (amount > 0 && fromBalance > 0) {
+        projectionArea.classList.remove('d-none');
+        const remaining = fromBalance - amount;
+        projectedBalanceText.innerText = formatCurrency(remaining);
+        
+        if (remaining < 0) {
+            projectedBalanceText.classList.add('text-danger');
+            amountInput.classList.add('is-invalid-elite');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Insufficient Funds';
+        } else {
+            projectedBalanceText.classList.remove('text-danger');
+            amountInput.classList.remove('is-invalid-elite');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="bi bi-shield-check"></i> Confirm & Finalize Transfer';
+        }
+    } else {
+        projectionArea.classList.add('d-none');
+    }
+}
+
+function preventSameBank() {
+    const fromVal = fromSelect.value;
+    const toVal = toSelect.value;
+
+    Array.from(fromSelect.options).forEach(opt => opt.disabled = false);
+    Array.from(toSelect.options).forEach(opt => opt.disabled = false);
+
+    if(fromVal) {
+        const opt = toSelect.querySelector(`option[value="${fromVal}"]`);
+        if(opt) opt.disabled = true;
+    }
+    if(toVal) {
+        const opt = fromSelect.querySelector(`option[value="${toVal}"]`);
+        if(opt) opt.disabled = true;
+    }
+}
+
+// Events
+fromSelect.addEventListener("change", () => { updateUI(); preventSameBank(); });
+toSelect.addEventListener("change", () => { updateUI(); preventSameBank(); });
+amountInput.addEventListener("input", updateUI);
+
+document.addEventListener("DOMContentLoaded", updateUI);
+</script>
+{% endblock %}

@@ -38,6 +38,11 @@ urlpatterns = [
     path('banks/<int:pk>/log/pdf/', bank_log_pdf, name='bank_log_pdf'),
 
 
+    path('transfers/', transfer_list, name='transfer_list'),
+    path('transfers/create/', transfer_create, name='transfer_create'),
+    path('transfers/delete/<int:pk>/', transfer_delete, name='transfer_delete'),
+
+
     path('cash/', cash_index, name='cash_index'),
     path('cash/create/', cash_create, name='cash_create'),
     path('cash/update/<int:pk>/', cash_update, name='cash_update'),
@@ -100,5 +105,9 @@ urlpatterns = [
         ),
         name='password_change'),
     path('help/', help, name='help'),
+
+
+
+
 
 ]

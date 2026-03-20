@@ -151,6 +151,7 @@ class Bank(models.Model):
     )
 
     def calculated_balance(self):
+
         payments = self.payments.aggregate(
             total=Sum('amount')
         )['total'] or 0
@@ -159,7 +160,23 @@ class Bank(models.Model):
             total=Sum('amount')
         )['total'] or 0
 
-        return self.opening_balance + payments - expenses
+        # 🆕 ADD THIS
+        incoming = self.transfers_in.aggregate(
+            total=Sum('amount')
+        )['total'] or 0
+
+        outgoing = self.transfers_out.aggregate(
+            total=Sum('amount')
+        )['total'] or 0
+
+        return (
+            self.opening_balance
+            + payments
+            - expenses
+            + incoming
+            - outgoing
+        )
+
 
     def recalculate_balance(self, save=True):
         self.available_balance = self.calculated_balance()
@@ -172,6 +189,29 @@ class Bank(models.Model):
 
 
 
+class BankTransfer(models.Model):
+
+    from_bank = models.ForeignKey(
+        Bank,
+        on_delete=models.CASCADE,
+        related_name='transfers_out'
+    )
+
+    to_bank = models.ForeignKey(
+        Bank,
+        on_delete=models.CASCADE,
+        related_name='transfers_in'
+    )
+
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+
+    transfer_date = models.DateField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.from_bank.name} → {self.to_bank.name} ₹{self.amount}"
+    
 
 #cash Model
 

@@ -457,108 +457,121 @@ document.addEventListener('DOMContentLoaded', function () {
 <div class="container-fluid">
     <div class="row">
         
-        <aside class="col-md-2 d-none d-md-flex flex-column sticky-sidebar p-3 border-0 ">
-
-
-            <ul class="nav flex-column">
-
-                <li class="nav-item">
-                    <a class="nav-link {% if 'company' in request.path %}active{% endif %}" href="{% url 'company_index' %}">
-                        <i class="bi bi-building"></i> Company
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
-                        <i class="bi bi-layout-wtf"></i> Dashboard
-                    </a>
-                </li>
-
-                <h6 class="text-muted small text-uppercase fw-bold mb-2 mt-3">Client Entities</h6>
-
-                <li class="nav-item">
-                    <a class="nav-link {% if request.resolver_match.url_name == 'client_index' %}active{% endif %}"
-                    href="{% url 'client_index' %}">
-                        <i class="bi bi-people"></i> Clients
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link {% if request.resolver_match.url_name == 'all_clients_statement' %}active{% endif %}"
-                    href="{% url 'all_clients_statement' %}">
-                        <i class="bi bi-folder"></i> All Clients Statement
-                    </a>
-                </li>
-
-
-                
-
-                <h6 class="text-muted small text-uppercase fw-bold mb-2 mt-3">Financials</h6>
-                <li class="nav-item">
-                    <a class="nav-link {% if 'bank' in request.path %}active{% endif %}" href="{% url 'bank_index' %}">
-                        <i class="bi bi-bank"></i> Banks
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if 'available' in request.path %}active{% endif %}" href="{% url 'available_amount' %}">
-                        <i class="bi bi-wallet2"></i> Available Balance
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if 'payment' in request.path %}active{% endif %}" href="{% url 'payment_index' %}">
-                        <i class="bi bi-cash-coin"></i> Payments
-                    </a>
-                </li>
-                <h6 class="text-muted small text-uppercase fw-bold mb-2 mt-3">Spending</h6>
-                <li class="nav-item">
-                    <a class="nav-link {% if request.resolver_match.url_name == 'expense_category_index' %}active{% endif %}"
-                    href="{% url 'expense_category_index' %}">
-                        <i class="bi bi-diagram-2"></i> Spendings Categories
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link {% if request.resolver_match.url_name == 'expense_subcategory_index' %}active{% endif %}"
-                    href="{% url 'expense_subcategory_index' %}">
-                        <i class="bi bi-diagram-3"></i> Sub-Categories
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link {% if request.resolver_match.url_name == 'expense_index' %}active{% endif %}"
-                    href="{% url 'expense_index' %}">
-                        <i class="bi bi-coin"></i> Spendings
-                    </a>
-                </li>
-
-                <h6 class="text-muted small text-uppercase fw-bold mb-2 mt-3">Workers Team</h6>
-                <li class="nav-item">
-                    <a class="nav-link {% if request.resolver_match.url_name == 'worker_index' %}active{% endif %}"
-                    href="{% url 'worker_index' %}">
-                        <i class="bi bi-person-workspace"></i> Workers Team
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link {% if request.resolver_match.url_name|slice:":11" == 'worker_name' %}active{% endif %}"
-                    href="{% url 'worker_name_index' %}">
-                        <i class="bi bi-people"></i> Worker Names
-                    </a>
-                </li>
-                
-                <h6 class="text-muted small text-uppercase fw-bold mb-3 mt-3">Salary</h6>
-                <li class="nav-item">
-                    <a class="nav-link {% if 'salary' in request.path %}active{% endif %}" href="{% url 'salary_index' %}">
-                        <i class="bi bi-currency-rupee"></i> Salary Statement
-                    </a>
-                </li>
-            </ul>
-
-            <div class="mt-auto">
-                <a class="nav-link text-info bg-info bg-opacity-10 border border-info border-opacity-25" href="{% url 'help' %}">
-                    <i class="bi bi-question-circle"></i> Help Center
+        <aside class="col-md-2 d-none d-md-flex flex-column sidebar-shell p-0">
+ 
+        <!-- Nav scroll area -->
+        <nav class="sidebar-nav flex-grow-1 px-3 pb-3 overflow-auto mt-3">
+        
+            <!-- Top-level links -->
+            <a class="slink {% if 'company' in request.path %}slink--active{% endif %}" href="{% url 'company_index' %}">
+            <span class="slink__icon"><i class="bi bi-building"></i></span>
+            <span>Company</span>
+            </a>
+        
+            <a class="slink {% if request.resolver_match.url_name == 'dashboard' %}slink--active{% endif %}" href="{% url 'dashboard' %}">
+            <span class="slink__icon"><i class="bi bi-layout-wtf"></i></span>
+            <span>Dashboard</span>
+            </a>
+        
+            <!-- Section: Client Entities -->
+            <p class="snav-section">Client Entities</p>
+        
+            <a class="slink {% if request.resolver_match.url_name == 'client_index' %}slink--active{% endif %}" href="{% url 'client_index' %}">
+            <span class="slink__icon"><i class="bi bi-people"></i></span>
+            <span>Clients</span>
+            </a>
+        
+            <a class="slink {% if request.resolver_match.url_name == 'all_clients_statement' %}slink--active{% endif %}" href="{% url 'all_clients_statement' %}">
+            <span class="slink__icon"><i class="bi bi-folder2-open"></i></span>
+            <span>All Clients Statement</span>
+            </a>
+        
+            <!-- Section: Financials -->
+            <p class="snav-section">Financials</p>
+        
+            <!-- Banks collapsible -->
+            <a class="slink slink--collapsible {% if 'bank' in request.path or 'transfer' in request.path or 'available' in request.path %}slink--active{% endif %}"
+            data-bs-toggle="collapse"
+            href="#bankSubmenu"
+            role="button"
+            aria-expanded="{% if 'bank' in request.path or 'transfer' in request.path or 'available' in request.path %}true{% else %}false{% endif %}"
+            aria-controls="bankSubmenu">
+            <span class="slink__icon"><i class="bi bi-bank"></i></span>
+            <span>Banks</span>
+            <i class="bi bi-chevron-down slink__chevron ms-auto"></i>
+            </a>
+        
+            <div class="collapse {% if 'bank' in request.path or 'transfer' in request.path or 'available' in request.path %}show{% endif %}" id="bankSubmenu">
+            <div class="submenu">
+                <a class="slink slink--sub {% if request.resolver_match.url_name == 'bank_index' %}slink--active2{% endif %}" href="{% url 'bank_index' %}">
+                <span class="slink__icon"><i class="bi bi-list-ul"></i></span>
+                <span>All Banks</span>
+                </a>
+                <a class="slink slink--sub {% if 'transfer' in request.path %}slink--active2{% endif %}" href="{% url 'transfer_list' %}">
+                <span class="slink__icon"><i class="bi bi-currency-exchange"></i></span>
+                <span>Self Transfer</span>
+                </a>
+                <a class="slink slink--sub {% if 'available' in request.path %}slink--active2{% endif %}" href="{% url 'available_amount' %}">
+                <span class="slink__icon"><i class="bi bi-wallet2"></i></span>
+                <span>Available Balance</span>
                 </a>
             </div>
+            </div>
+        
+            <a class="slink {% if 'payment' in request.path %}slink--active{% endif %}" href="{% url 'payment_index' %}">
+            <span class="slink__icon"><i class="bi bi-cash-coin"></i></span>
+            <span>Payments</span>
+            </a>
+        
+            <!-- Section: Spending -->
+            <p class="snav-section">Spending</p>
+        
+            <a class="slink {% if request.resolver_match.url_name == 'expense_category_index' %}slink--active{% endif %}" href="{% url 'expense_category_index' %}">
+            <span class="slink__icon"><i class="bi bi-diagram-2"></i></span>
+            <span>Spending Categories</span>
+            </a>
+        
+            <a class="slink {% if request.resolver_match.url_name == 'expense_subcategory_index' %}slink--active{% endif %}" href="{% url 'expense_subcategory_index' %}">
+            <span class="slink__icon"><i class="bi bi-diagram-3"></i></span>
+            <span>Sub-Categories</span>
+            </a>
+        
+            <a class="slink {% if request.resolver_match.url_name == 'expense_index' %}slink--active{% endif %}" href="{% url 'expense_index' %}">
+            <span class="slink__icon"><i class="bi bi-coin"></i></span>
+            <span>Spendings</span>
+            </a>
+        
+            <!-- Section: Workers Team -->
+            <p class="snav-section">Workers Team</p>
+        
+            <a class="slink {% if request.resolver_match.url_name == 'worker_index' %}slink--active{% endif %}" href="{% url 'worker_index' %}">
+            <span class="slink__icon"><i class="bi bi-person-workspace"></i></span>
+            <span>Workers Team</span>
+            </a>
+        
+            <a class="slink {% if request.resolver_match.url_name|slice:':11' == 'worker_name' %}slink--active{% endif %}" href="{% url 'worker_name_index' %}">
+            <span class="slink__icon"><i class="bi bi-people"></i></span>
+            <span>Worker Names</span>
+            </a>
+        
+            <!-- Section: Salary -->
+            <p class="snav-section">Salary</p>
+        
+            <a class="slink {% if 'salary' in request.path %}slink--active{% endif %}" href="{% url 'salary_index' %}">
+            <span class="slink__icon"><i class="bi bi-currency-rupee"></i></span>
+            <span>Salary Statement</span>
+            </a>
+        
+        </nav>
+        
+        <!-- Help footer -->
+        <div class="sidebar-footer px-3 py-3">
+            <a class="slink-help" href="{% url 'help' %}">
+            <i class="bi bi-question-circle-fill"></i>
+            <span>Help Center</span>
+            </a>
+        </div>
+        
         </aside>
 
         <main class="col-md-10 p-4">
@@ -638,6 +651,9 @@ document.addEventListener('DOMContentLoaded', function () {
             <a href="{% url 'bank_index' %}" class="list-group-item list-group-item-action nav-pill {% if 'bank' in request.path %}active-pill{% endif %}">
                 <i class="bi bi-bank"></i> <span>Banks</span>
             </a>
+            <a href="{% url 'transfer_list' %}" class="list-group-item list-group-item-action nav-pill {% if 'transfer' in request.path %}active-pill{% endif %}">
+                <i class="bi bi-currency-exchange"></i> <span>Self Transfer</span>
+            </a>
             <a href="{% url 'available_amount' %}" class="list-group-item list-group-item-action nav-pill {% if 'available' in request.path %}active-pill{% endif %}">
                 <i class="bi bi-wallet2"></i> <span>Available Balance</span>
             </a>
@@ -648,6 +664,9 @@ document.addEventListener('DOMContentLoaded', function () {
             <div class="nav-section-title">Spending</div>
             <a href="{% url 'expense_category_index' %}" class="list-group-item list-group-item-action nav-pill {% if request.resolver_match.url_name == 'expense_category_index' %}active-pill{% endif %}">
                 <i class="bi bi-receipt"></i> <span>Categories</span>
+            </a>
+            <a href="{% url 'expense_subcategory_index' %}" class="list-group-item list-group-item-action nav-pill {% if request.resolver_match.url_name == 'expense_subcategory_index' %}active-pill{% endif %}">
+                <i class="bi bi-receipt-cutoff"></i> <span>Sub-Categories</span>
             </a>
             <a href="{% url 'expense_index' %}" class="list-group-item list-group-item-action nav-pill {% if request.resolver_match.url_name == 'expense_index' %}active-pill{% endif %}">
                 <i class="bi bi-coin"></i> <span>Spendings</span>
@@ -680,6 +699,180 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
     </div>
 </div>
+
+
+<style>
+  /* ── Tokens — matched to Elite Dream Builders app ── */
+  :root {
+    --sb-bg:          #1e2130;   /* charcoal sidebar bg from screenshot  */
+    --sb-border:      rgba(255,255,255,.07);
+    --sb-accent:      #0d6efd;   /* Bootstrap primary blue — active pill  */
+    --sb-accent-text: #ffffff;   /* white text on active pill             */
+    --sb-text:        #b0b8cc;   /* inactive link text                    */
+    --sb-text-bright: #dde3f2;   /* hover text                            */
+    --sb-section:     #6c7a9c;   /* section label color                   */
+    --sb-radius:      8px;
+    --sb-font:        'DM Sans', 'Segoe UI', sans-serif;
+  }
+ 
+  /* ── Shell ───────────────────────────────────── */
+  .sidebar-shell {
+    background: var(--sb-bg);
+    border-right: 1px solid var(--sb-border);
+    min-height: 100vh;
+    position: sticky;
+    top: 0;
+    font-family: var(--sb-font);
+    font-size: 16px;
+  }
+ 
+  /* ── Brand ───────────────────────────────────── */
+  .sidebar-brand {
+    border-bottom: 1px solid var(--sb-border);
+  }
+ 
+  .brand-orb {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: #0d6efd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: #fff;
+    flex-shrink: 0;
+  }
+ 
+  .brand-name {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: .02em;
+    color: var(--sb-text-bright);
+  }
+ 
+  /* ── Section headers ─────────────────────────── */
+  .snav-section {
+    font-size: .8rem;
+    font-weight: 700;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--sb-section);
+    margin: 1.1rem 0 .3rem .5rem;
+    line-height: 1;
+  }
+ 
+  /* ── Links ───────────────────────────────────── */
+  .slink {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    padding: .5rem .75rem;
+    border-radius: var(--sb-radius);
+    color: var(--sb-text);
+    font-size: 1rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background .15s, color .15s;
+    position: relative;
+    margin-bottom: 2px;
+  }
+ 
+  .slink:hover {
+    background: rgba(255,255,255,.06);
+    color: var(--sb-text-bright);
+  }
+ 
+  /* Solid blue pill — exactly like the screenshot */
+  .slink--active {
+    background: var(--sb-accent) !important;
+    color: var(--sb-accent-text) !important;
+    font-weight: 600;
+  }
+ 
+  .slink--active::before { display: none; } /* no side bar needed with solid pill */
+
+    .slink--active2 {
+    background: #d3cbcb !important;
+    color: black !important;
+    font-weight: 600;
+  }
+ 
+  .slink--active2::before { display: none; } /* no side bar needed with solid pill */
+ 
+  /* Icon pill */
+  .slink__icon {
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .85rem;
+    flex-shrink: 0;
+    color: inherit;
+  }
+ 
+  /* Chevron */
+  .slink__chevron {
+    font-size: .65rem;
+    transition: transform .22s ease;
+    color: white;
+  }
+ 
+  .slink--collapsible[aria-expanded="true"] .slink__chevron {
+    transform: rotate(180deg);
+  }
+ 
+  /* ── Submenu ─────────────────────────────────── */
+  .submenu {
+    border-left: 1px solid var(--sb-border);
+    margin-left: 1rem;
+    padding-left: .35rem;
+    margin-top: 2px;
+  }
+ 
+  .slink--sub {
+    font-size: .78rem;
+    padding: .38rem .65rem;
+  }
+ 
+  /* ── Scroll area ─────────────────────────────── */
+  .sidebar-nav::-webkit-scrollbar { width: 4px; }
+  .sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+  .sidebar-nav::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,.1);
+    border-radius: 4px;
+  }
+ 
+  /* ── Footer help link ────────────────────────── */
+  .sidebar-footer {
+    border-top: 1px solid var(--sb-border); 
+    position: sticky;
+    bottom: 0;
+  }
+ 
+  .slink-help {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .55rem .75rem;
+    border-radius: var(--sb-radius);
+    color: #63a4ff;
+    font-size: .78rem;
+    font-weight: 600;
+    text-decoration: none;
+    background: rgba(13,110,253,.12);
+    border: 1px solid rgba(13,110,253,.25);
+    transition: background .15s;
+  }
+ 
+  .slink-help:hover {
+    background: rgba(13,110,253,.22);
+    color: #ffffff;
+  }
+ 
+  .slink-help i { font-size: .95rem; }
+</style>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 {% block extra_js %}{% endblock %}

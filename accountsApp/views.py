@@ -2431,10 +2431,10 @@ def bank_index(request):
             total=Sum('amount')
         )['total'] or Decimal('0.00')
 
-        bank.filtered_balance = (
-            bank.opening_balance + payment_total - expense_total
-        )
-
+        # bank.filtered_balance = (
+        #     bank.opening_balance + payment_total - expense_total
+        # )
+        bank.filtered_balance = bank.available_balance
         # =========================
         # 🗓 LAST TRANSACTION DATE
         # =========================
@@ -2908,6 +2908,163 @@ def bank_log_pdf(request, pk):
 
 
 
+# bank to bank transfer views will be added here
+
+# views.py
+from django.db.models import Q
+from django.shortcuts import render, redirect, get_object_or_404
+
+def transfer_list(request):
+
+    selected_company_id = request.session.get('selected_company_id')
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    banks = Bank.objects.filter(company_id=selected_company_id)
+
+    # 🔎 Filters
+    search = request.GET.get('q', '')
+    from_bank = request.GET.get('from_bank')
+    to_bank = request.GET.get('to_bank')
+
+    transfers = BankTransfer.objects.filter(
+        from_bank__company_id=selected_company_id
+    ).select_related('from_bank', 'to_bank').order_by('-id')
+
+    if search:
+        transfers = transfers.filter(
+            Q(from_bank__name__icontains=search) |
+            Q(to_bank__name__icontains=search)
+        )
+
+    if from_bank:
+        transfers = transfers.filter(from_bank_id=from_bank)
+
+    if to_bank:
+        transfers = transfers.filter(to_bank_id=to_bank)
+
+    return render(request, 'transfer/list.html', {
+        'transfers': transfers,
+        'banks': banks
+    })
+
+
+from decimal import Decimal
+from django.db import transaction
+from django.contrib import messages
+from django.shortcuts import render, redirect
+
+def transfer_create(request):
+
+    selected_company_id = request.session.get('selected_company_id')
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    banks = Bank.objects.filter(company_id=selected_company_id)
+
+    if request.method == 'POST':
+
+        from_bank_id = request.POST.get('from_bank')
+        to_bank_id = request.POST.get('to_bank')
+        transfer_date = request.POST.get('transfer_date')
+        amount_raw = request.POST.get('amount')
+
+        # =========================
+        # 🔐 VALIDATION
+        # =========================
+        if not amount_raw:
+            messages.error(request, "Amount is required")
+            return redirect('transfer_create')
+
+        try:
+            amount = Decimal(str(amount_raw).replace(',', '').strip())
+        except:
+            messages.error(request, "Invalid amount format")
+            return redirect('transfer_create')
+
+        if amount <= 0:
+            messages.error(request, "Amount must be greater than zero")
+            return redirect('transfer_create')
+
+        from_bank = banks.filter(id=from_bank_id).first()
+        to_bank = banks.filter(id=to_bank_id).first()
+
+        if not from_bank or not to_bank:
+            messages.error(request, "Invalid bank selection")
+            return redirect('transfer_create')
+
+        if from_bank.id == to_bank.id:
+            messages.error(request, "Cannot transfer to the same bank")
+            return redirect('transfer_create')
+
+        # 🚨 OPTIONAL: Prevent overdraft
+        if from_bank.available_balance < amount:
+            messages.error(
+                request,
+                f"Insufficient balance in {from_bank.name}"
+            )
+            return redirect('transfer_create')
+
+        # =========================
+        # 💾 SAVE TRANSFER
+        # =========================
+        with transaction.atomic():
+
+            BankTransfer.objects.create(
+                from_bank=from_bank,
+                to_bank=to_bank,
+                amount=amount,
+                transfer_date=transfer_date
+            )
+
+            # ✅ ONLY recalculate (NO manual +/-)
+            from_bank.recalculate_balance()
+            to_bank.recalculate_balance()
+
+        messages.success(request, "Transfer created successfully")
+        return redirect('transfer_list')
+
+    return render(request, 'transfer/create.html', {
+        'banks': banks
+    })
+
+
+
+
+def transfer_delete(request, pk):
+
+    selected_company_id = request.session.get('selected_company_id')
+
+    transfer = get_object_or_404(
+        BankTransfer,
+        pk=pk,
+        from_bank__company_id=selected_company_id
+    )
+
+    if request.method == 'POST':
+
+        with transaction.atomic():
+
+            from_bank = transfer.from_bank
+            to_bank = transfer.to_bank
+            amount = transfer.amount
+
+            # 🔁 REVERSE TRANSFER EFFECT (IMPORTANT)
+            from_bank.available_balance += amount
+            to_bank.available_balance -= amount
+
+            from_bank.save(update_fields=['available_balance'])
+            to_bank.save(update_fields=['available_balance'])
+
+            transfer.delete()
+
+        messages.success(request, "Transfer deleted successfully")
+        return redirect('transfer_list')
+
+    # 👉 GET → show confirm page
+    return render(request, 'transfer/delete.html', {
+        'transfer': transfer
+    })
 
 
 
@@ -3142,24 +3299,21 @@ def cash_delete(request, pk):
 
 
 
-from django.db.models import Sum, Max
+from django.db.models import Sum, Max, Q
 from django.shortcuts import render, redirect
 from decimal import Decimal
-
-from .models import Bank, Payment, Expense
+from .models import Bank
 
 
 def available_amount(request):
 
-    # 🏢 COMPANY FROM SESSION
     selected_company_id = request.session.get('selected_company_id')
     if not selected_company_id:
         return redirect('dashboard')
 
     # =========================
-    # 💵 CASH BANK (COMPANY BASED)
+    # 💵 CASH BANK
     # =========================
-
     cash_bank = Bank.objects.filter(
         company_id=selected_company_id,
         name__iexact='cash'
@@ -3170,74 +3324,40 @@ def available_amount(request):
 
     if cash_bank:
 
-        cash_payments = Payment.objects.filter(
-            bank=cash_bank,
-            client__company_id=selected_company_id
-        )
-
-        cash_expenses = Expense.objects.filter(
-            bank=cash_bank,
-            client__company_id=selected_company_id
-        )
-
-        total_cash = (
-            cash_bank.opening_balance
-            + (cash_payments.aggregate(t=Sum('amount'))['t'] or Decimal('0'))
-            - (cash_expenses.aggregate(t=Sum('amount'))['t'] or Decimal('0'))
-        )
+        # ✅ ALWAYS use model logic
+        total_cash = cash_bank.calculated_balance()
 
         last_cash_date = max(
             filter(None, [
-                cash_payments.aggregate(d=Max('payment_date'))['d'],
-                cash_expenses.aggregate(d=Max('expense_date'))['d'],
+                cash_bank.payments.aggregate(d=Max('payment_date'))['d'],
+                cash_bank.expenses.aggregate(d=Max('expense_date'))['d'],
+                cash_bank.transfers_in.aggregate(d=Max('transfer_date'))['d'],
+                cash_bank.transfers_out.aggregate(d=Max('transfer_date'))['d'],
             ]),
             default=None
         )
 
     # =========================
-    # 🏦 CHEQUE BANKS (ONLY USED BY COMPANY)
+    # 🏦 ALL OTHER BANKS (FIXED)
     # =========================
-    cheque_banks = (
-        Bank.objects
-        .exclude(name__iexact='cash')
-        .filter(
-            payments__client__company_id=selected_company_id
-        )
-        .distinct()
-    )
+    cheque_banks = Bank.objects.filter(
+        company_id=selected_company_id
+    ).exclude(name__iexact='cash')
 
     total_bank = Decimal('0.00')
 
     for bank in cheque_banks:
 
-        payments = Payment.objects.filter(
-            bank=bank,
-            client__company_id=selected_company_id
-        )
+        # ✅ use model calculation (includes transfers also)
+        bank.available_balance = bank.calculated_balance()
 
-        expenses = Expense.objects.filter(
-            bank=bank,
-            client__company_id=selected_company_id
-        )
-
-        payment_total = payments.aggregate(
-            total=Sum('amount')
-        )['total'] or Decimal('0.00')
-
-        expense_total = expenses.aggregate(
-            total=Sum('amount')
-        )['total'] or Decimal('0.00')
-
-        # ✅ REAL AVAILABLE BALANCE
-        bank.available_balance = (
-            bank.opening_balance + payment_total - expense_total
-        )
-
-        # 🗓 LAST TRANSACTION DATE
+        # 🗓 LAST ACTIVITY
         bank.last_transaction_date = max(
             filter(None, [
-                payments.aggregate(d=Max('payment_date'))['d'],
-                expenses.aggregate(d=Max('expense_date'))['d'],
+                bank.payments.aggregate(d=Max('payment_date'))['d'],
+                bank.expenses.aggregate(d=Max('expense_date'))['d'],
+                bank.transfers_in.aggregate(d=Max('transfer_date'))['d'],
+                bank.transfers_out.aggregate(d=Max('transfer_date'))['d'],
             ]),
             default=None
         )
@@ -3250,8 +3370,6 @@ def available_amount(request):
         'cheque_banks': cheque_banks,
         'total_bank': total_bank,
     })
-
-
 
 
 
@@ -5379,63 +5497,6 @@ Elite Accounts System
 
 
 
-# @login_required
-# def database_backup(request):
-
-#     try:
-#         now = datetime.now()
-#         month_folder = now.strftime('%Y-%m')
-#         timestamp = now.strftime('%Y-%m-%d_%H-%M')
-
-#         backup_root = os.path.join('/opt/backups/eliteAcc', month_folder)
-#         os.makedirs(backup_root, exist_ok=True)
-
-#         sql_file = os.path.join(
-#             backup_root,
-#             f'db_backup_{timestamp}.sql'
-#         )
-
-#         zip_file = os.path.join(
-#             backup_root,
-#             f'db_backup_{timestamp}.zip'
-#         )
-
-#         db = settings.DATABASES['default']
-
-#         dump_command = [
-#             "mysqldump",
-#             "--no-tablespaces",
-#             f"-u{db['USER']}",
-#             f"-p{db['PASSWORD']}",
-#             f"-h{db['HOST']}",
-#             f"-P{db['PORT']}",
-#             db['NAME']
-#         ]
-
-#         # Create SQL
-#         with open(sql_file, "w", encoding="utf-8") as f:
-#             subprocess.run(dump_command, stdout=f, check=True)
-
-#         # Zip it
-#         with zipfile.ZipFile(zip_file, 'w', zipfile.ZIP_DEFLATED) as zipf:
-#             zipf.write(sql_file, arcname=os.path.basename(sql_file))
-
-#         os.remove(sql_file)
-
-#         # 🔔 Set session alert
-#         request.session['backup_created'] = True
-
-#         # 📥 Download file
-#         with open(zip_file, 'rb') as f:
-#             response = HttpResponse(f.read(), content_type='application/zip')
-#             response['Content-Disposition'] = (
-#                 f'attachment; filename="{os.path.basename(zip_file)}"'
-#             )
-#             return response
-
-#     except Exception as e:
-#         messages.error(request, f"Backup failed: {str(e)}")
-#         return redirect('settings')
 
 
 import tempfile
@@ -5653,15 +5714,90 @@ def help(request):
 
 from django.http import HttpResponseBadRequest
 
+from django.conf import settings
+import sys
+ 
 def error_404(request, exception):
-    return render(request, 'errors/404.html', status=404)
-    
+
+    error_message = None
+
+    if settings.DEBUG:
+        error_message = str(exception)
+
+    return render(request, 'errors/404.html', {
+        'error_message': error_message
+    }, status=404)
+
 
 def error_500(request):
-    return render(request, 'errors/500.html', status=500)
+
+    error_message = None
+
+    if settings.DEBUG:
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        if exc_value:
+            error_message = f"{exc_type.__name__}: {exc_value}"
+
+    return render(request, 'errors/500.html', {
+        'error_message': error_message
+    }, status=500)
+
+
 
 def error_403(request, exception):
-    return render(request, 'errors/403.html', status=403)
+
+    error_message = None
+
+    if settings.DEBUG and exception:
+        error_message = f"{type(exception).__name__}: {exception}"
+
+    return render(request, 'errors/403.html', {
+        'error_message': error_message
+    }, status=403)
+
 
 def error_400(request, exception):
-    return render(request, 'errors/400.html', status=400)
+
+    error_message = None
+
+    if settings.DEBUG and exception:
+        error_message = f"{type(exception).__name__}: {exception}"
+
+    return render(request, 'errors/400.html', {
+        'error_message': error_message
+    }, status=400)
+
+
+
+from django.core.exceptions import PermissionDenied
+
+from django.conf import settings
+
+def error_403(request, exception=None):
+
+    error_message = None
+
+    if settings.DEBUG:
+        if exception:
+            error_message = f"{type(exception).__name__}: {exception}"
+        else:
+            error_message = "403 triggered manually (no exception info)"
+
+    return render(request, 'errors/403.html', {
+        'error_message': error_message
+    }, status=403)
+
+
+def error_400(request, exception=None):
+
+    error_message = None
+
+    if settings.DEBUG:
+        if exception:
+            error_message = f"{type(exception).__name__}: {exception}"
+        else:
+            error_message = "400 Bad Request triggered"
+
+    return render(request, 'errors/400.html', {
+        'error_message': error_message
+    }, status=400)
