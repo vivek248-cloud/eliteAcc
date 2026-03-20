@@ -2128,7 +2128,7 @@ from django.http import HttpResponse
 from django.shortcuts import redirect
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer
 from reportlab.lib.pagesizes import A4, landscape
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
 
@@ -2153,22 +2153,46 @@ def all_client_info_pdf(request):
     doc = SimpleDocTemplate(
         response,
         pagesize=landscape(A4),
-        rightMargin=20,
-        leftMargin=20,
+        rightMargin=15,
+        leftMargin=15,
         topMargin=20,
         bottomMargin=25
     )
 
     styles = getSampleStyleSheet()
+
+    # 🔥 SMALL TEXT STYLE
+    small = ParagraphStyle(
+        name='Small',
+        fontSize=8,
+        leading=10
+    )
+
+    bold = ParagraphStyle(
+        name='Bold',
+        fontSize=9,
+        leading=11,
+        fontName='Helvetica-Bold'
+    )
+
     elements = []
 
     elements.append(Paragraph("<b>All Clients Financial Statement</b>", styles['Title']))
-    elements.append(Spacer(1, 12))
+    elements.append(Spacer(1, 10))
 
+    # =============================
+    # TABLE DATA
+    # =============================
     table_data = [[
-        'Client', 'Company', 'Date',
-        'Prev Paid', 'Paid Now', 'Yet To Pay',
-        'Spend Detail', 'Spend Amount', 'Balance'
+        Paragraph('Date', bold),
+        Paragraph('Client', bold),
+        Paragraph('Company', bold),
+        Paragraph('Prev Paid', bold),
+        Paragraph('Paid Now', bold),
+        Paragraph('Yet To Pay', bold),
+        Paragraph('Spend Detail', bold),
+        Paragraph('Spend Amount', bold),
+        Paragraph('Balance', bold),
     ]]
 
     row_styles = []
@@ -2193,26 +2217,12 @@ def all_client_info_pdf(request):
         ledger = []
 
         for p in payments:
-            ledger.append({
-                'type': 'payment',
-                'date': p.payment_date,
-                'amount': p.amount,
-                'obj': p
-            })
+            ledger.append({'type': 'payment', 'date': p.payment_date, 'amount': p.amount, 'obj': p})
 
         for e in expenses:
-            ledger.append({
-                'type': 'expense',
-                'date': e.expense_date,
-                'amount': e.amount,
-                'obj': e
-            })
+            ledger.append({'type': 'expense', 'date': e.expense_date, 'amount': e.amount, 'obj': e})
 
-        ledger = sorted(
-            ledger,
-            key=lambda x: x['date'],
-            reverse=(order == 'new')
-        )
+        ledger = sorted(ledger, key=lambda x: x['date'], reverse=(order == 'new'))
 
         running_paid = Decimal('0.00')
         running_spent = Decimal('0.00')
@@ -2233,18 +2243,18 @@ def all_client_info_pdf(request):
                 balance = running_paid - running_spent
 
                 table_data.append([
-                    client.name,
-                    client.company.name,
-                    str(entry['date']),
-                    f"Rs. {prev_paid:.2f}",
-                    f"Rs. {entry['amount']:.2f}",
-                    f"Rs. {yet_to_pay:.2f}",
-                    '—',
-                    '—',
-                    f"Rs. {balance:.2f}",
+                    Paragraph(entry['date'].strftime('%d-%m-%Y'), small),
+                    Paragraph(client.name, small),
+                    Paragraph(client.company.name, small),
+                    Paragraph(f"Rs. {prev_paid:.2f}", small),
+                    Paragraph(f"Rs. {entry['amount']:.2f}", small),
+                    Paragraph(f"Rs. {yet_to_pay:.2f}", small),
+                    Paragraph('—', small),
+                    Paragraph('—', small),
+                    Paragraph(f"Rs. {balance:.2f}", small),
                 ])
 
-            else:  # expense
+            else:
 
                 running_spent += entry['amount']
                 grand_spent += entry['amount']
@@ -2253,22 +2263,21 @@ def all_client_info_pdf(request):
                 balance = running_paid - running_spent
 
                 table_data.append([
-                    client.name,
-                    client.company.name,
-                    str(entry['date']),
-                    f"Rs. {prev_paid:.2f}",
-                    '—',
-                    f"Rs. {yet_to_pay:.2f}",
-                    entry['obj'].description,
-                    f"Rs. {entry['amount']:.2f}",
-                    f"Rs. {balance:.2f}",
+                    Paragraph(entry['date'].strftime('%d-%m-%Y'), small),
+                    Paragraph(client.name, small),
+                    Paragraph(client.company.name, small),
+                    Paragraph(f"Rs. {prev_paid:.2f}", small),
+                    Paragraph('—', small),
+                    Paragraph(f"Rs. {yet_to_pay:.2f}", small),
+                    Paragraph(entry['obj'].description or '—', small),
+                    Paragraph(f"Rs. {entry['amount']:.2f}", small),
+                    Paragraph(f"Rs. {balance:.2f}", small),
                 ])
 
-            # 🔴 Highlight negative Yet To Pay (column index 5)
+            # 🔴 NEGATIVE COLORS
             if yet_to_pay < 0:
                 row_styles.append(('TEXTCOLOR', (5, row_index), (5, row_index), colors.red))
 
-            # 🔴 Highlight negative Balance (column index 8)
             if balance < 0:
                 row_styles.append(('TEXTCOLOR', (8, row_index), (8, row_index), colors.red))
 
@@ -2280,10 +2289,13 @@ def all_client_info_pdf(request):
         client_balance = running_paid - running_spent
 
         table_data.append([
-            f"{client.name} TOTAL", '', '', '',
-            f"Rs. {running_paid:.2f}", '',
-            '', f"Rs. {running_spent:.2f}",
-            f"Rs. {client_balance:.2f}",
+            Paragraph(f"{client.name} TOTAL", bold),
+            '', '', '',
+            Paragraph(f"Rs. {running_paid:.2f}", bold),
+            '',
+            '',
+            Paragraph(f"Rs. {running_spent:.2f}", bold),
+            Paragraph(f"Rs. {client_balance:.2f}", bold),
         ])
 
         row_styles.append(('FONTNAME', (0, row_index), (-1, row_index), 'Helvetica-Bold'))
@@ -2299,10 +2311,13 @@ def all_client_info_pdf(request):
     grand_balance = grand_paid - grand_spent
 
     table_data.append([
-        'GRAND TOTAL', '', '', '',
-        f"Rs. {grand_paid:.2f}", '',
-        '', f"Rs. {grand_spent:.2f}",
-        f"Rs. {grand_balance:.2f}",
+        Paragraph('GRAND TOTAL', bold),
+        '', '', '',
+        Paragraph(f"Rs. {grand_paid:.2f}", bold),
+        '',
+        '',
+        Paragraph(f"Rs. {grand_spent:.2f}", bold),
+        Paragraph(f"Rs. {grand_balance:.2f}", bold),
     ])
 
     row_styles.append(('BACKGROUND', (0, row_index), (-1, row_index), colors.lightgrey))
@@ -2312,20 +2327,25 @@ def all_client_info_pdf(request):
         row_styles.append(('TEXTCOLOR', (8, row_index), (8, row_index), colors.red))
 
     # =========================
-    # TABLE STYLE
+    # TABLE
     # =========================
     table = Table(
         table_data,
         repeatRows=1,
-        colWidths=[90, 90, 70, 75, 75, 75, 150, 80, 80]
+        colWidths=[65,80, 100, 70, 70, 75, 160, 75, 75]
     )
 
     table.setStyle(TableStyle([
-        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+        ('GRID', (0,0), (-1,-1), 0.4, colors.grey),
         ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
         ('ALIGN', (3,1), (-1,-1), 'RIGHT'),
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+
+        # padding fix
+        ('LEFTPADDING', (0,0), (-1,-1), 4),
+        ('RIGHTPADDING', (0,0), (-1,-1), 4),
+        ('TOPPADDING', (0,0), (-1,-1), 3),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
     ] + row_styles))
 
     elements.append(table)
@@ -4459,7 +4479,7 @@ def expense_index(request):
 
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, Spacer
 from reportlab.lib.pagesizes import landscape, A4
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from django.http import HttpResponse
 from django.shortcuts import redirect
@@ -4527,13 +4547,28 @@ def expense_pdf_export(request):
     doc = SimpleDocTemplate(
         response,
         pagesize=landscape(A4),
-        rightMargin=30,
-        leftMargin=30,
-        topMargin=30,
-        bottomMargin=30
+        rightMargin=20,
+        leftMargin=20,
+        topMargin=20,
+        bottomMargin=20
     )
 
     styles = getSampleStyleSheet()
+
+    # 🔥 Custom small text style
+    small_style = ParagraphStyle(
+        name='Small',
+        fontSize=8,
+        leading=10
+    )
+
+    bold_style = ParagraphStyle(
+        name='BoldSmall',
+        fontSize=9,
+        leading=11,
+        fontName='Helvetica-Bold'
+    )
+
     elements = []
 
     company = Company.objects.get(id=selected_company_id)
@@ -4551,64 +4586,82 @@ def expense_pdf_export(request):
             )
         )
 
-    elements.append(Spacer(1, 15))
+    elements.append(Spacer(1, 12))
 
     # =============================
     # TABLE DATA
     # =============================
     table_data = [[
-        'Date', 'Client', 'Category', 'Sub-Category',
-        'Worker Team', 'Worker Name',
-        'Mode', 'Bank', 'Amount'
+        Paragraph('Date', bold_style),
+        Paragraph('Client', bold_style),
+        Paragraph('Category', bold_style),
+        Paragraph('Sub-Category', bold_style),
+        Paragraph('Description', bold_style),
+        Paragraph('Worker Team', bold_style),
+        Paragraph('Worker Name', bold_style),
+        Paragraph('Mode', bold_style),
+        Paragraph('Bank', bold_style),
+        Paragraph('Amount', bold_style),
     ]]
 
     total_amount = Decimal('0.00')
 
     for e in expenses:
-
         total_amount += e.amount
 
         table_data.append([
-            e.expense_date.strftime('%d-%m-%Y'),
-            e.client.name,
-            e.category.name if e.category else '—',
-            e.subcategory.name if e.subcategory else '—',
-            e.salary_to.name if e.salary_to else '—',
-            e.worker_name.name if e.worker_name else '—',
-            e.spend_mode.capitalize(),
-            e.bank.name if e.bank else 'Cash',
-            f"{e.amount:.2f}"
+            Paragraph(e.expense_date.strftime('%d-%m-%Y'), small_style),
+            Paragraph(e.client.name, small_style),
+            Paragraph(e.category.name if e.category else '—', small_style),
+            Paragraph(e.subcategory.name if e.subcategory else '—', small_style),
+            Paragraph(e.description if e.description else '—', small_style),
+            Paragraph(e.salary_to.name if e.salary_to else '—', small_style),
+            Paragraph(e.worker_name.name if e.worker_name else '—', small_style),
+            Paragraph(e.spend_mode.capitalize(), small_style),
+            Paragraph(e.bank.name if e.bank else 'Cash', small_style),
+            Paragraph(f"{e.amount:.2f}", small_style),
         ])
 
+    # 🔥 Adjusted widths (important)
     table = Table(
         table_data,
         repeatRows=1,
-        colWidths=[70, 100, 90, 100, 90, 90, 60, 90, 80]
+        colWidths=[60, 90, 80, 90, 140, 90, 90, 50, 80, 70]
     )
 
     table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
-        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+        ('GRID', (0,0), (-1,-1), 0.4, colors.grey),
         ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+
+        # 🔥 Wrap + alignment fixes
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
         ('ALIGN', (-1,1), (-1,-1), 'RIGHT'),
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+
+        # Padding fix
+        ('LEFTPADDING', (0,0), (-1,-1), 5),
+        ('RIGHTPADDING', (0,0), (-1,-1), 5),
+        ('TOPPADDING', (0,0), (-1,-1), 4),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
     ]))
 
     elements.append(table)
-    elements.append(Spacer(1, 15))
+    elements.append(Spacer(1, 12))
 
     # =============================
-    # TOTAL BOX
+    # TOTAL
     # =============================
     total_table = Table(
-        [['TOTAL EXPENSE', f"Rs. {total_amount:.2f}"]],
-        colWidths=[300, 150]
+        [[
+            Paragraph('TOTAL EXPENSE', bold_style),
+            Paragraph(f"Rs. {total_amount:.2f}", bold_style)
+        ]],
+        colWidths=[400, 150]
     )
 
     total_table.setStyle(TableStyle([
         ('GRID', (0,0), (-1,-1), 1, colors.black),
         ('BACKGROUND', (0,0), (-1,-1), colors.whitesmoke),
-        ('FONTNAME', (0,0), (-1,-1), 'Helvetica-Bold'),
         ('ALIGN', (1,0), (1,0), 'RIGHT'),
         ('PADDING', (0,0), (-1,-1), 8),
     ]))
@@ -4617,7 +4670,6 @@ def expense_pdf_export(request):
 
     doc.build(elements)
     return response
-
 
 
 
