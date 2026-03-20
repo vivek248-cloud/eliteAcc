@@ -326,7 +326,7 @@ document.addEventListener('DOMContentLoaded', function () {
             </td>
 
             <td class="text-capitalize">
-                {{ expense.spend_mode }}
+                {{ expense.spend_mode }} <br> <span class="text-primary"><small>({{ expense.bank.name|default:"—" }})</small></span>
             </td>
 
             <td>{{ expense.expense_date }}</td>

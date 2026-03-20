@@ -72,7 +72,7 @@
                                     Sub Category
                                 </label>
                                 <select name="subcategory"
-                                        class="form-select bg-light bg-opacity-50 border-light-subtle shadow-none">
+                                        class="form-select bg-light bg-opacity-50 border-light-subtle shadow-none" required>
                                     <option value="">Select Sub Category</option>
                                     {% for sub in subcategories %}
                                         <option value="{{ sub.id }}"
@@ -129,7 +129,9 @@
                                             {% endfor %}
                                         </select>
                                     </div>
-
+                                    <div id="workerNameWarning" class="text-danger small d-none mt-1">
+                                        Please select a worker name
+                                    </div>
                                 </div>
 
                             </div>
@@ -147,11 +149,14 @@
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold text-uppercase text-muted">Bank Source</label>
                                 <select name="bank" id="bank_select" class="form-select bg-light bg-opacity-50 border-light-subtle shadow-none" required>
-                                    <option value="" data-type="cash">Cash Account</option>
                                     {% for bank in banks %}
-                                    <option value="{{ bank.id }}" data-type="{% if bank.name|lower == 'cash' %}cash{% else %}bank{% endif %}">
-                                        {{ bank.name }}
-                                    </option>
+                                        <option 
+                                            value="{{ bank.id }}" 
+                                            data-balance="{{ bank.available_balance|default:0 }}"
+                                            data-type="{% if bank.name|lower == 'cash' %}cash{% else %}bank{% endif %}">
+                                            
+                                            {{ bank.name }} (₹{{ bank.available_balance|default:0 }})
+                                        </option>
                                     {% endfor %}
                                 </select>
                                 <div id="cashWarning" class="form-text text-danger d-none small">⚠️ Selection must be <b>Cash</b>.</div>
@@ -177,7 +182,7 @@
                             <label class="form-label small fw-bold text-uppercase text-muted">Description</label>
                             <textarea name="description" class="form-control bg-light bg-opacity-50 border-light-subtle shadow-none" rows="2" placeholder="What was this expense for?" required></textarea>
                         </div>
-
+                        <div id="bank_balance_display" class="mt-2 text-success fw-semibold"></div>
                         <div class="d-grid mt-5">
                             <button type="submit" class="btn btn-primary fw-black py-3 rounded-3 shadow-sm text-uppercase tracking-wider">
                                 <i class="bi bi-cloud-check-fill me-2"></i> Save Expense Record
@@ -273,59 +278,182 @@ document.querySelector('[name="client"]').addEventListener("change", checkDuplic
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+
+    // =========================
+    // ELEMENTS
+    // =========================
     const spendMode = document.getElementById('spend_mode');
     const bankSelect = document.getElementById('bank_select');
-    const cashWarning = document.getElementById('cashWarning');
-    const chequeWarning = document.getElementById('chequeWarning');
     const form = document.getElementById('expenseForm');
 
+    const cashWarning = document.getElementById('cashWarning');
+    const chequeWarning = document.getElementById('chequeWarning');
+    const balanceDisplay = document.getElementById('bank_balance_display');
+
+    const categorySelect = document.getElementById("category_select");
+    const workerNameSelect = document.getElementById("worker_name_select");
+    const workerNameWarning = document.getElementById("workerNameWarning");
+
+    // =========================
+    // SHOW BALANCE
+    // =========================
+    function showBalance() {
+        const selectedOption = bankSelect.options[bankSelect.selectedIndex];
+
+        if (selectedOption) {
+            const balance = selectedOption.dataset.balance || 0;
+            balanceDisplay.innerText = "Available Balance: ₹" + balance;
+        } else {
+            balanceDisplay.innerText = "";
+        }
+    }
+
+    // =========================
+    // BANK FILTER BASED ON MODE
+    // =========================
     function updateBankOptions() {
+
         cashWarning.classList.add('d-none');
         chequeWarning.classList.add('d-none');
+
         const isCash = spendMode.value === 'cash';
+        let cashOption = null;
+        let firstBankOption = null;
 
         [...bankSelect.options].forEach(option => {
-            if (isCash) {
-                option.hidden = option.dataset.type !== 'cash';
-            } else {
-                option.hidden = option.dataset.type === 'cash';
+
+            if (option.dataset.type === 'cash') {
+                cashOption = option;
             }
+
+            if (option.dataset.type === 'bank' && !firstBankOption) {
+                firstBankOption = option;
+            }
+
+            // Show/hide logic
+            option.hidden = isCash
+                ? option.dataset.type !== 'cash'
+                : option.dataset.type === 'cash';
         });
 
         if (isCash) {
-            bankSelect.value = '';
+            // ✅ Select cash automatically
+            if (cashOption) {
+                bankSelect.value = cashOption.value;
+            }
             bankSelect.disabled = true;
+
         } else {
             bankSelect.disabled = false;
+
+            const selectedOption = bankSelect.options[bankSelect.selectedIndex];
+
+            // 🔥 If still cash → switch to first bank
+            if (selectedOption && selectedOption.dataset.type === 'cash') {
+                if (firstBankOption) {
+                    bankSelect.value = firstBankOption.value;
+                } else {
+                    bankSelect.value = "";
+                }
+            }
         }
+
+        showBalance();
     }
 
+    // =========================
+    // VALIDATE BANK
+    // =========================
     function validateSelection() {
+
         cashWarning.classList.add('d-none');
         chequeWarning.classList.add('d-none');
-        if (spendMode.value === 'cheque' && bankSelect.value === '') {
+
+        if (spendMode.value === 'cheque' && !bankSelect.value) {
             chequeWarning.classList.remove('d-none');
             return false;
         }
+
         return true;
     }
 
+    // =========================
+    // VALIDATE WORKER NAME
+    // =========================
+    function validateWorkerName() {
+
+        const selectedCategory = categorySelect.options[categorySelect.selectedIndex];
+        const categoryName = selectedCategory?.dataset.name;
+
+        if (categoryName === "salary") {
+
+            if (!workerNameSelect.value) {
+
+                // 🔥 SweetAlert instead of inline warning
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Worker Required',
+                    text: 'Please select a worker name for salary expense',
+                    confirmButtonText: 'OK'
+                });
+
+                workerNameSelect.focus(); // 👈 focus field
+                return false;
+            }
+
+            return true;
+        }
+
+        return true;
+    }
+
+    // =========================
+    // EVENTS
+    // =========================
     spendMode.addEventListener('change', () => {
         updateBankOptions();
         validateSelection();
     });
 
-    bankSelect.addEventListener('change', validateSelection);
+    bankSelect.addEventListener('change', () => {
+        validateSelection();
+        showBalance();
+    });
+
+        categorySelect.addEventListener('change', function () {
+        validateWorkerName();
+
+        const selectedCategory = this.options[this.selectedIndex];
+        const categoryName = selectedCategory?.dataset.name;
+
+        // 🔥 Show warning immediately if salary selected and no worker
+        if (categoryName === "salary" && !workerNameSelect.value) {
+            workerNameWarning.classList.remove("d-none");
+        } else {
+            workerNameWarning.classList.add("d-none");
+        }
+    });
+
+    workerNameSelect.addEventListener('change', validateWorkerName);
 
     form.addEventListener('submit', function (e) {
-        if (!validateSelection()) {
+
+        let valid = true;
+
+        if (!validateSelection()) valid = false;
+        if (!validateWorkerName()) valid = false;
+
+        if (!valid) {
             e.preventDefault();
         }
     });
+
+    // =========================
+    // INITIAL LOAD
+    // =========================
     updateBankOptions();
+    showBalance();
 });
-
-
 </script>
 
 <script>
@@ -338,6 +466,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const workerNameSelect = document.getElementById("worker_name_select");
 
     const subcategorySelect = document.querySelector("select[name='subcategory']");
+    const workerNameWarning = document.getElementById("workerNameWarning");
 
     // =========================
     // SHOW WORKER BOX IF SALARY
@@ -395,6 +524,22 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 
 });
+
+
+{% comment %} function validateWorkerName() {
+    const selectedCategory = categorySelect.options[categorySelect.selectedIndex];
+    const categoryName = selectedCategory.dataset.name;
+
+    if (categoryName === "salary") {
+        if (!workerNameSelect.value) {
+            workerNameWarning.classList.remove("d-none");
+            return false;
+        }
+    }
+
+    workerNameWarning.classList.add("d-none");
+    return true;
+} {% endcomment %}
 
 </script>
 
