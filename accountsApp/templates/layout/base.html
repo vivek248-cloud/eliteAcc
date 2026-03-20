@@ -458,9 +458,9 @@ document.addEventListener('DOMContentLoaded', function () {
     <div class="row">
         
         <aside class="col-md-2 d-none d-md-flex flex-column sidebar-shell p-0">
- 
-        <!-- Nav scroll area -->
-        <nav class="sidebar-nav flex-grow-1 px-3 pb-3 overflow-auto mt-3">
+        
+        <!-- Nav scroll area (fills between brand and footer) -->
+        <nav class="sidebar-nav flex-grow-1 px-3 pt-2 pb-3">
         
             <!-- Top-level links -->
             <a class="slink {% if 'company' in request.path %}slink--active{% endif %}" href="{% url 'company_index' %}">
@@ -528,7 +528,7 @@ document.addEventListener('DOMContentLoaded', function () {
         
             <a class="slink {% if request.resolver_match.url_name == 'expense_category_index' %}slink--active{% endif %}" href="{% url 'expense_category_index' %}">
             <span class="slink__icon"><i class="bi bi-diagram-2"></i></span>
-            <span>Spending Categories</span>
+            <span>Spendings Categories</span>
             </a>
         
             <a class="slink {% if request.resolver_match.url_name == 'expense_subcategory_index' %}slink--active{% endif %}" href="{% url 'expense_subcategory_index' %}">
@@ -564,7 +564,7 @@ document.addEventListener('DOMContentLoaded', function () {
         
         </nav>
         
-        <!-- Help footer -->
+        <!-- Help footer — pinned to bottom -->
         <div class="sidebar-footer px-3 py-3">
             <a class="slink-help" href="{% url 'help' %}">
             <i class="bi bi-question-circle-fill"></i>
@@ -702,58 +702,93 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 <style>
-  /* ── Tokens — matched to Elite Dream Builders app ── */
+    /* Indent sub-menus */
+    #bankSubmenu .nav-link {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-left: 10px;
+        padding-left: 15px;
+    }
+
+    #bankSubmenu .nav-link:hover, 
+    #bankSubmenu .nav-link.active {
+        color: #ffffff;
+        background: #ebdbdba1;
+    }
+
+    /* Chevron Rotation */
+    [aria-expanded="true"] .bi-chevron-down {
+        transform: rotate(180deg);
+        transition: transform 0.3s ease;
+    }
+    
+    [aria-expanded="false"] .bi-chevron-down {
+        transition: transform 0.3s ease;
+    }
+</style>
+
+<style>
+  /* ── Design tokens (matched to Elite Dream Builders) ── */
   :root {
-    --sb-bg:          #1e2130;   /* charcoal sidebar bg from screenshot  */
+    --sb-bg:          #1e2130;
     --sb-border:      rgba(255,255,255,.07);
-    --sb-accent:      #0d6efd;   /* Bootstrap primary blue — active pill  */
-    --sb-accent-text: #ffffff;   /* white text on active pill             */
-    --sb-text:        #b0b8cc;   /* inactive link text                    */
-    --sb-text-bright: #dde3f2;   /* hover text                            */
-    --sb-section:     #6c7a9c;   /* section label color                   */
+    --sb-accent:      #0d6efd;
+    --sb-accent-text: #ffffff;
+    --sb-text:        #b0b8cc;
+    --sb-text-bright: #dde3f2;
+    --sb-section:     #6c7a9c;
     --sb-radius:      8px;
+    --sb-width:       16.6667%;   /* col-md-2 */
     --sb-font:        'DM Sans', 'Segoe UI', sans-serif;
   }
  
-  /* ── Shell ───────────────────────────────────── */
+  /* ── Fixed sidebar shell ─────────────────────────────── */
   .sidebar-shell {
+    position: fixed !important;   /* stays in place as page scrolls */
+    top: 0;
+    left: 0;
+    width: var(--sb-width);
+    height: 100vh;                /* always full viewport height    */
+    z-index: 1030;
     background: var(--sb-bg);
     border-right: 1px solid var(--sb-border);
-    min-height: 100vh;
-    position: sticky;
-    top: 0;
     font-family: var(--sb-font);
-    font-size: 16px;
+    display: flex !important;
+    flex-direction: column;
+    /* Remove Bootstrap's col padding so we control it */
+    padding: 0 !important;
   }
  
-  /* ── Brand ───────────────────────────────────── */
-  .sidebar-brand {
-    border-bottom: 1px solid var(--sb-border);
+  /* ── Offset main content so it isn't hidden under the sidebar ── */
+  /*
+    In your base.html, ensure the content column has class "main-offset":
+      <div class="col-md-10 main-offset"> ... </div>
+    OR apply the rule directly to col-md-10 if that's always your layout:
+  */
+  .col-md-10 {
+    margin-left: var(--sb-width) !important;
+    max-width: calc(100% - var(--sb-width)) !important;
   }
  
-  .brand-orb {
-    width: 34px;
-    height: 34px;
-    border-radius: 9px;
-    background: #0d6efd;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    color: #fff;
-    flex-shrink: 0;
+  /* ── Scrollable nav area (between top padding and footer) ── */
+  .sidebar-nav {
+    margin-top: 4.5rem;       /* space from top and footer */
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex: 1 1 0;           /* grow to fill space, shrink to allow footer */
+    min-height: 0;         /* crucial: lets flexbox shrink below content  */
   }
  
-  .brand-name {
-    font-size: 1rem;
-    font-weight: 700;
-    letter-spacing: .02em;
-    color: var(--sb-text-bright);
+  .sidebar-nav::-webkit-scrollbar { width: 3px; }
+  .sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+  .sidebar-nav::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,.12);
+    border-radius: 3px;
   }
  
-  /* ── Section headers ─────────────────────────── */
+  /* ── Section headers ─────────────────────────────────── */
   .snav-section {
-    font-size: .8rem;
+    font-size: .89rem;
     font-weight: 700;
     letter-spacing: .13em;
     text-transform: uppercase;
@@ -762,7 +797,7 @@ document.addEventListener('DOMContentLoaded', function () {
     line-height: 1;
   }
  
-  /* ── Links ───────────────────────────────────── */
+  /* ── Nav links ───────────────────────────────────────── */
   .slink {
     display: flex;
     align-items: center;
@@ -774,7 +809,6 @@ document.addEventListener('DOMContentLoaded', function () {
     font-weight: 500;
     text-decoration: none;
     transition: background .15s, color .15s;
-    position: relative;
     margin-bottom: 2px;
   }
  
@@ -783,27 +817,23 @@ document.addEventListener('DOMContentLoaded', function () {
     color: var(--sb-text-bright);
   }
  
-  /* Solid blue pill — exactly like the screenshot */
   .slink--active {
     background: var(--sb-accent) !important;
     color: var(--sb-accent-text) !important;
     font-weight: 600;
   }
  
-  .slink--active::before { display: none; } /* no side bar needed with solid pill */
 
     .slink--active2 {
-    background: #d3cbcb !important;
-    color: black !important;
+    background: white !important;
+    color: #000000 !important;
     font-weight: 600;
   }
- 
-  .slink--active2::before { display: none; } /* no side bar needed with solid pill */
- 
-  /* Icon pill */
+
+  /* ── Icon ────────────────────────────────────────────── */
   .slink__icon {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -812,18 +842,21 @@ document.addEventListener('DOMContentLoaded', function () {
     color: inherit;
   }
  
-  /* Chevron */
+  /* ── Chevron ─────────────────────────────────────────── */
   .slink__chevron {
-    font-size: .65rem;
+    font-size: .62rem;
     transition: transform .22s ease;
-    color: white;
+    color: var(--sb-section);
+    margin-left: auto;
   }
+ 
+  .slink--active .slink__chevron { color: rgba(255,255,255,.7); }
  
   .slink--collapsible[aria-expanded="true"] .slink__chevron {
     transform: rotate(180deg);
   }
  
-  /* ── Submenu ─────────────────────────────────── */
+  /* ── Submenu ─────────────────────────────────────────── */
   .submenu {
     border-left: 1px solid var(--sb-border);
     margin-left: 1rem;
@@ -832,23 +865,14 @@ document.addEventListener('DOMContentLoaded', function () {
   }
  
   .slink--sub {
-    font-size: .78rem;
+    font-size: 1rem;
     padding: .38rem .65rem;
   }
  
-  /* ── Scroll area ─────────────────────────────── */
-  .sidebar-nav::-webkit-scrollbar { width: 4px; }
-  .sidebar-nav::-webkit-scrollbar-track { background: transparent; }
-  .sidebar-nav::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,.1);
-    border-radius: 4px;
-  }
- 
-  /* ── Footer help link ────────────────────────── */
+  /* ── Help footer (pinned to bottom) ──────────────────── */
   .sidebar-footer {
-    border-top: 1px solid var(--sb-border); 
-    position: sticky;
-    bottom: 0;
+    flex-shrink: 0;            /* never compress — always visible */
+    border-top: 1px solid var(--sb-border);
   }
  
   .slink-help {
@@ -868,11 +892,44 @@ document.addEventListener('DOMContentLoaded', function () {
  
   .slink-help:hover {
     background: rgba(13,110,253,.22);
-    color: #ffffff;
+    color: #63a4ff;
   }
  
-  .slink-help i { font-size: .95rem; }
+  .slink-help i { font-size: .92rem; }
+  media (max-width: 767.98px) {
+    .sidebar-shell { position: fixed !important; top: 0; left: 0; width: 100%; height: auto; }
+    .col-md-10 { margin-left: 0 !important; max-width: 100% !important; }
+    .sidebar-nav { margin-top: 0; }
+    .sidebar-footer { position: absolute; bottom: 0; width: 100%; }
+  }
+  
+
+  @media (max-width: 767.98px) {
+    /* Hide the sidebar entirely on mobile */
+    .sidebar-shell {
+      display: none !important;
+    }
+
+    /* Reset the main content offset so it takes full width */
+    .col-md-10 {
+      margin-left: 0 !important;
+      max-width: 100% !important;
+      width: 100% !important;
+    }
+  }
+
+  /* Ensure the offset only applies to desktops/tablets */
+  @media (min-width: 768px) {
+    .col-md-10 {
+      margin-left: var(--sb-width) !important;
+      max-width: calc(100% - var(--sb-width)) !important;
+    }
+  }
+
+  
 </style>
+
+
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 {% block extra_js %}{% endblock %}
