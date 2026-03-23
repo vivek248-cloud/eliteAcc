@@ -241,14 +241,15 @@
             </div>
         </div>
         <div class="col-lg-4">
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden h-100" style="background: #ffffff;">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="background: #ffffff; height: 450px;">
                 <div class="card-header bg-dark py-3 px-4 border-0 d-flex justify-content-between align-items-center">
                     <h6 class="text-white fw-black mb-0 text-uppercase tracking-wider" style="font-size: 0.85rem;">
                         <i class="bi bi-wallet2 me-2 text-white"></i> Bank Balances
                     </h6>
                     <span class="badge bg-light text-dark rounded-pill small">Real-time</span>
                 </div>
-                <div class="card-body p-0">
+
+                <div class="card-body p-0" style="overflow-y: auto; flex: 1;">
                     <div class="list-group list-group-flush">
                         {% for bank in banks %}
                         <div class="list-group-item border-0 px-4 py-3 d-flex justify-content-between align-items-center hover-bg-light transition-all">
@@ -268,7 +269,8 @@
                         {% endfor %}
                     </div>
                 </div>
-                <div class="card-footer bg-light  border-0 py-3 text-center">
+
+                <div class="card-footer bg-light border-0 py-3 text-center">
                     <a href="{% url 'bank_index' %}" class="text-decoration-none small fw-bold text-dark">
                         View Full Treasury <i class="bi bi-arrow-right ms-1"></i>
                     </a>
@@ -652,5 +654,21 @@ function clearFilters() {
     }
 </style>
 
+<style>
+    /* Modern slim scrollbar for the bank list */
+    .card-body::-webkit-scrollbar {
+        width: 6px;
+    }
+    .card-body::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .card-body::-webkit-scrollbar-thumb {
+        background: #e0e0e0;
+        border-radius: 10px;
+    }
+    .card-body::-webkit-scrollbar-thumb:hover {
+        background: #cccccc;
+    }
+</style>
 
 {% endblock %}
