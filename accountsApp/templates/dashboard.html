@@ -342,49 +342,106 @@ document.addEventListener('DOMContentLoaded', function () {
     const ctx = document.getElementById('profitTrendChart');
     if (!ctx) return;
 
+    const rawData = {{ profit_trend_values|safe }};
+    const labels = {{ profit_trend_labels|safe }};
+
+    // =========================
+    // 🔥 SMOOTHING FUNCTION
+    // =========================
+    function smoothData(data, windowSize = 2) {
+        return data.map((_, i, arr) => {
+            const start = Math.max(0, i - windowSize);
+            const end = Math.min(arr.length, i + windowSize + 1);
+            const subset = arr.slice(start, end);
+            const avg = subset.reduce((a, b) => a + b, 0) / subset.length;
+            return Math.round(avg);
+        });
+    }
+
+    const smoothedData = smoothData(rawData);
+
+    // =========================
+    // 🔥 SPIKE THRESHOLD
+    // =========================
+    const SPIKE_LIMIT = 200000;
+
     new Chart(ctx, {
         type: 'line',
         data: {
-            labels: {{ profit_trend_labels|safe }},
+            labels: labels,
             datasets: [{
                 label: 'Net Profit',
-                data: {{ profit_trend_values|safe }},
+                data: smoothedData,
+
                 borderColor: '#7f56d9',
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true,
+
+                // 🔥 Dynamic gradient
                 backgroundColor: (context) => {
                     const chart = context.chart;
                     const {ctx, chartArea} = chart;
                     if (!chartArea) return null;
+
                     const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
                     gradient.addColorStop(0, 'rgba(127, 86, 217, 0)');
                     gradient.addColorStop(1, 'rgba(127, 86, 217, 0.1)');
                     return gradient;
                 },
-                fill: true,
-                tension: 0.4,
+
+                // 🔥 Highlight spikes
+                pointBackgroundColor: (ctx) => {
+                    const value = rawData[ctx.dataIndex];
+
+                    if (value > SPIKE_LIMIT) return '#16a34a'; // big profit → green
+                    if (value < -SPIKE_LIMIT) return '#ef4444'; // big loss → red
+
+                    return '#ffffff';
+                },
+
+                pointBorderColor: '#7f56d9',
+                pointBorderWidth: 2,
                 pointRadius: 4,
-                pointBackgroundColor: '#fff',
-                borderWidth: 3
+                pointHoverRadius: 6
             }]
         },
+
         options: {
             responsive: true,
             maintainAspectRatio: false,
+
             plugins: {
                 legend: { display: false },
+
                 tooltip: {
                     padding: 12,
                     displayColors: false,
                     callbacks: {
-                        label: (ctx) => ` Profit: ₹ ${ctx.raw.toLocaleString()}`
+                        label: (ctx) => {
+                            const raw = rawData[ctx.dataIndex];
+                            return ` Profit: ₹ ${raw.toLocaleString('en-IN')}`;
+                        }
                     }
                 }
             },
+
             scales: {
-                y: { 
-                    grid: { borderDash: [5, 5], color: '#eaecf0' },
-                    ticks: { callback: v => '₹' + v.toLocaleString() }
+                y: {
+                    grid: {
+                        borderDash: [5, 5],
+                        color: '#eaecf0'
+                    },
+                    ticks: {
+                        callback: v => '₹ ' + Number(v).toLocaleString('en-IN')
+                    }
                 },
-                x: { grid: { display: false } }
+                x: {
+                    grid: { display: false },
+                    ticks: {
+                        color: '#6b7280'
+                    }
+                }
             }
         }
     });
