@@ -612,6 +612,16 @@ def home(request):
             'selected_company_id': None,
         })
 
+    days = request.GET.get('days')
+
+    if days:
+        try:
+            days_int = int(days)
+            ed = now().date()
+            sd = ed - timedelta(days=days_int)
+        except:
+            pass
+
     # =========================
     # BASE QUERYSETS
     # =========================
@@ -956,6 +966,7 @@ def home(request):
 
         'start_date': start_date,
         'end_date': end_date,
+        'days': days,
 
         'total_profit': total_profit,
         'profit_percentage': profit_percentage,

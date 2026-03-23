@@ -8,12 +8,53 @@
             <h4 class="fw-bold mb-0">Financial Executive Summary</h4>
             <p class="text-muted small">Real-time performance tracking</p>
         </div>
-        <div class="col-lg-6">
-            <form method="get" class="d-flex gap-2 justify-content-lg-end">
+        <div class="col-lg-7"> 
+            <form method="get" class="d-flex flex-wrap gap-3 justify-content-lg-start align-items-center">
+                <div class="date-range-group d-flex align-items-center shadow-sm border rounded-pill bg-white px-3 py-1">
+                    <i class="bi bi-calendar3 text-primary me-2"></i>
+                    <input type="date" name="start_date" value="{{ start_date }}"
+                        class="form-control form-control-sm border-0 bg-transparent p-0"
+                        style="width: 115px; font-size: 0.85rem;">
+                    
+                    <span class="text-muted mx-2 small fw-bold">to</span>
 
-                <input type="date" name="start_date" value="{{ start_date }}" class="form-control form-control-sm shadow-sm" style="width: 140px;">
-                <input type="date" name="end_date" value="{{ end_date }}" class="form-control form-control-sm shadow-sm" style="width: 140px;">
-                <button class="btn btn-sm btn-primary">Apply</button>
+                    <input type="date" name="end_date" value="{{ end_date }}"
+                        class="form-control form-control-sm border-0 bg-transparent p-0"
+                        style="width: 115px; font-size: 0.85rem;">
+                </div>
+
+                <div class="quick-filter-pill d-flex gap-1 bg-light p-1 border rounded-pill shadow-sm">
+                    <button type="button" onclick="setRange(7)"
+                        class="btn btn-sm rounded-pill px-3 {% if days == '7' %}btn-dark{% else %}btn-link text-muted text-decoration-none{% endif %}" style="font-size: 0.75rem;">
+                        7D
+                    </button>
+                    <button type="button" onclick="setRange(14)"
+                        class="btn btn-sm rounded-pill px-3 {% if days == '14' %}btn-dark{% else %}btn-link text-muted text-decoration-none{% endif %}" style="font-size: 0.75rem;">
+                        14D
+                    </button>
+                    <button type="button" onclick="setRange(30)"
+                        class="btn btn-sm rounded-pill px-3 {% if days == '30' %}btn-dark{% else %}btn-link text-muted text-decoration-none{% endif %}" style="font-size: 0.75rem;">
+                        30D
+                    </button>
+                    <button type="button" onclick="setRange(90)"
+                        class="btn btn-sm rounded-pill px-3 {% if days == '90' %}btn-dark{% else %}btn-link text-muted text-decoration-none{% endif %}" style="font-size: 0.75rem;">
+                        90D
+                    </button>
+                </div>
+
+                <div class="d-flex gap-2 align-items-center">
+                    <button type="submit" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm fw-bold">
+                        Apply
+                    </button>
+
+                    {% if start_date or end_date or days or selected_bank_id %}
+                    <button type="button" onclick="clearFilters()"
+                            class="btn btn-sm btn-light border rounded-pill text-danger fw-semibold px-3 shadow-sm">
+                        <i class="bi bi-arrow-counterclockwise"></i> Reset
+                    </button>
+                    {% endif %}
+                </div>
+
             </form>
         </div>
     </div>
@@ -526,6 +567,36 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
 
+<script>
+function setRange(days) {
+    const url = new URL(window.location.href);
+
+    // 🔥 remove manual date filters
+    url.searchParams.delete('start_date');
+    url.searchParams.delete('end_date');
+
+    // set days filter
+    url.searchParams.set('days', days);
+
+    window.location.href = url.toString();
+}
+</script>
+
+<script>
+function clearFilters() {
+    const url = new URL(window.location.href);
+
+    // 🔥 remove all filters
+    url.searchParams.delete('start_date');
+    url.searchParams.delete('end_date');
+    url.searchParams.delete('days');
+    url.searchParams.delete('bank');
+
+    window.location.href = url.pathname; // clean reload
+}
+</script>
+
+
 <style>
     .fw-black { font-weight: 800; }
     .transition-all { transition: all 0.2s ease; }
@@ -545,5 +616,41 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
 </style>
+
+
+<style>
+    /* Date Range Group Hover Effect */
+    .date-range-group {
+        transition: all 0.2s ease;
+        border-color: #e0e0e0 !important;
+    }
+    .date-range-group:focus-within {
+        border-color: #0d6efd !important;
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1) !important;
+    }
+
+    /* Clean up the date inputs */
+    .date-range-group input[type="date"]:focus {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    /* Quick Filter Toggle Styling */
+    .quick-filter-pill .btn-link:hover {
+        background: rgba(0,0,0,0.05);
+        color: #000 !important;
+    }
+    
+    .quick-filter-pill .btn-dark {
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    /* Modernizing the primary button */
+    .btn-primary.rounded-pill {
+        background: linear-gradient(145deg, #0d6efd, #0b5ed7);
+        border: none;
+    }
+</style>
+
 
 {% endblock %}

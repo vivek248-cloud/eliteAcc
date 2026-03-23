@@ -199,11 +199,15 @@
                             <label class="form-label small fw-bold text-uppercase text-muted">Description</label>
                             <textarea name="description" class="form-control bg-light bg-opacity-50 border-light-subtle shadow-none" rows="2" required>{{ expense.description }}</textarea>
                         </div>
-                        <div id="bank_balance_display" class="mt-2 text-success fw-semibold"></div>
+                        <div id="bank_balance_display" class="mt-2 text-primary fw-semibold"></div>
+                        <div id="amount_in_words" class="small text-danger mt-1 fw-semibold"></div>
                         <div class="d-grid mt-5">
                             <button type="submit" class="btn btn-primary fw-black py-3 rounded-3 shadow-sm text-uppercase tracking-wider">
                                 <i class="bi bi-arrow-repeat me-2"></i> Update Transaction Record
                             </button>
+                            <a href="{% url 'expense_index' %}" class="btn btn-secondary border btn-sm rounded-pill px-3 mt-3">
+                                <i class="bi bi-arrow-left me-1"></i> Back
+                            </a>
                         </div>
                     </form>
                 </div>
@@ -211,6 +215,67 @@
         </div>
     </div>
 </div>
+
+<script>
+function numberToWords(num) {
+    if (num === 0) return "Zero";
+
+    const a = [
+        "", "One", "Two", "Three", "Four", "Five", "Six",
+        "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve",
+        "Thirteen", "Fourteen", "Fifteen", "Sixteen",
+        "Seventeen", "Eighteen", "Nineteen"
+    ];
+
+    const b = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+
+    function convert(n) {
+        if (n < 20) return a[n];
+        if (n < 100) return b[Math.floor(n / 10)] + (n % 10 ? " " + a[n % 10] : "");
+        if (n < 1000) return a[Math.floor(n / 100)] + " Hundred" + (n % 100 ? " " + convert(n % 100) : "");
+        if (n < 100000) return convert(Math.floor(n / 1000)) + " Thousand" + (n % 1000 ? " " + convert(n % 1000) : "");
+        if (n < 10000000) return convert(Math.floor(n / 100000)) + " Lakh" + (n % 100000 ? " " + convert(n % 100000) : "");
+        return convert(Math.floor(n / 10000000)) + " Crore" + (n % 10000000 ? " " + convert(n % 10000000) : "");
+    }
+
+    return convert(num);
+}
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const amountInput = document.querySelector("input[name='amount']");
+    const wordsDisplay = document.getElementById("amount_in_words");
+
+    function updateWords() {
+        let value = amountInput.value;
+
+        if (!value) {
+            wordsDisplay.innerText = "";
+            return;
+        }
+
+        let number = parseInt(value);
+
+        if (isNaN(number)) {
+            wordsDisplay.innerText = "";
+            return;
+        }
+
+        wordsDisplay.innerText = numberToWords(number) + " Rupees Only";
+    }
+
+    // ✅ Run on page load (IMPORTANT for update page)
+    updateWords();
+
+    // ✅ Run on input change
+    amountInput.addEventListener("input", updateWords);
+
+});
+</script>
+
 
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
