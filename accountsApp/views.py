@@ -1140,6 +1140,12 @@ from decimal import Decimal
 from django.contrib.auth.decorators import login_required
 
 
+from django.contrib.auth.decorators import login_required
+from django.db.models import Sum, Q
+from django.shortcuts import render
+from decimal import Decimal
+
+
 @login_required(login_url='login')
 def client_index(request):
 
@@ -1160,7 +1166,7 @@ def client_index(request):
     client_data = []
 
     # =========================
-    # BUILD CLIENT DATA FIRST
+    # BUILD CLIENT DATA
     # =========================
     for client in clients:
 
@@ -1189,6 +1195,7 @@ def client_index(request):
         balance = payments_total - expenses_total
         yet_to_pay = client.budget - payments_total
 
+        # 🔥 IMPORTANT FIX (ADD THIS)
         client_data.append({
             'id': client.id,
             'name': client.name,
@@ -1199,10 +1206,11 @@ def client_index(request):
             'total_expenses': expenses_total,
             'balance': balance,
             'yet_to_pay': yet_to_pay,
+            'is_active': client.is_active,  # ✅ FIX
         })
 
     # =========================
-    # CALCULATE TOTALS AFTER LOOP
+    # TOTALS
     # =========================
     total_project_budget = sum(c['budget'] for c in client_data)
     total_paid = sum(c['total_paid'] for c in client_data)
@@ -1228,58 +1236,7 @@ def client_index(request):
 
 
 
-# from decimal import Decimal, InvalidOperation
-# from django.contrib.auth.decorators import login_required
-# from django.contrib import messages
-# from django.shortcuts import render, redirect
-# from .models import Client, Company
 
-
-# @login_required(login_url='login')
-# def client_create(request):
-
-#     # 🏢 COMPANY FROM SESSION
-#     selected_company_id = request.session.get('selected_company_id')
-
-#     if not selected_company_id:
-#         messages.error(request, "Please select a company first.")
-#         return redirect('dashboard')
-
-#     company = Company.objects.filter(id=selected_company_id).first()
-
-#     if not company:
-#         messages.error(request, "Company not found.")
-#         return redirect('dashboard')
-
-#     if request.method == 'POST':
-#         name = request.POST.get('name')
-#         location = request.POST.get('location')  # ✅ now used
-#         budget = request.POST.get('budget')
-
-#         if not name or not budget:
-#             messages.error(request, "Name and budget are required.")
-#             return redirect('client_create')
-
-#         try:
-#             budget_decimal = Decimal(budget)
-#         except InvalidOperation:
-#             messages.error(request, "Invalid budget amount.")
-#             return redirect('client_create')
-
-#         # ✅ CREATE CLIENT
-#         Client.objects.create(
-#             company=company,
-#             name=name,
-#             location=location,  # ✅ IMPORTANT FIX
-#             budget=budget_decimal
-#         )
-
-#         messages.success(request, "Client created successfully.")
-#         return redirect('client_index')
-
-#     return render(request, 'client/create.html', {
-#         'company': company,
-#     })
 
 
 from decimal import Decimal, InvalidOperation
@@ -1356,36 +1313,7 @@ def client_create(request):
 
 
 
-# @login_required(login_url='login')
-# def client_update(request, pk):
 
-#     # 🏢 COMPANY FROM SESSION
-#     selected_company_id = request.session.get('selected_company_id')
-
-#     if not selected_company_id:
-#         return redirect('dashboard')
-
-#     company = get_object_or_404(Company, id=selected_company_id)
-
-#     # 🔒 Fetch client ONLY from selected company
-#     client = get_object_or_404(
-#         Client,
-#         pk=pk,
-#         company_id=selected_company_id
-#     )
-
-#     if request.method == 'POST':
-#         client.name = request.POST.get('name')
-#         client.budget = Decimal(request.POST.get('budget'))
-#         client.location = request.POST.get('location')
-#         client.save()
-
-#         return redirect('client_index')
-
-#     return render(request, 'client/update.html', {
-#         'client': client,
-#         'company': company,
-#     })
 
 
 from decimal import Decimal, InvalidOperation
@@ -3588,7 +3516,7 @@ def payment_create(request):
     if not selected_company_id:
         return redirect('dashboard')
 
-    clients = Client.objects.filter(company_id=selected_company_id)
+    clients = Client.objects.filter(company_id=selected_company_id,is_active=True)
     banks = Bank.objects.filter(
         company_id=selected_company_id,
         is_active=True
@@ -3605,7 +3533,7 @@ def payment_create(request):
 
         client = Client.objects.get(
             id=client_id,
-            company_id=selected_company_id
+            company_id=selected_company_id,is_active=True
         )
 
         # 🔥 Get total already paid
@@ -3702,7 +3630,7 @@ def payment_update(request, pk):
         client__company_id=selected_company_id
     )
 
-    clients = Client.objects.filter(company_id=selected_company_id)
+    clients = Client.objects.filter(company_id=selected_company_id,is_active=True)
     banks = Bank.objects.filter(
         company_id=selected_company_id,
         is_active=True
@@ -4777,7 +4705,7 @@ def expense_create(request):
     # =========================
     # 📋 DROPDOWNS
     # =========================
-    clients = Client.objects.filter(company_id=selected_company_id)
+    clients = Client.objects.filter(company_id=selected_company_id,is_active=True)
 
     categories = ExpenseCategory.objects.filter(
         company_id=selected_company_id
@@ -4957,7 +4885,7 @@ def expense_update(request, pk):
     # =========================
     # 📋 DROPDOWNS
     # =========================
-    clients = Client.objects.filter(company_id=selected_company_id)
+    clients = Client.objects.filter(company_id=selected_company_id,is_active=True)
 
     categories = ExpenseCategory.objects.filter(
         company_id=selected_company_id
@@ -5158,6 +5086,37 @@ def expense_delete(request, pk):
 
     return render(request, 'expense/delete.html', {
         'expense': expense
+    })
+
+
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.shortcuts import get_object_or_404
+
+@require_POST
+def toggle_client_status(request, pk):
+
+    company_id = request.session.get('selected_company_id')
+
+    if not company_id:
+        return JsonResponse({'success': False, 'error': 'No company selected'}, status=400)
+
+    client = get_object_or_404(
+        Client,
+        pk=pk,
+        company_id=company_id
+    )
+
+    # 🔥 TOGGLE
+    client.is_active = not bool(client.is_active)
+    client.save(update_fields=['is_active'])
+
+    # 🔥 DEBUG (optional)
+    print(f"[TOGGLE] Client {client.id} → {client.is_active}")
+
+    return JsonResponse({
+        'success': True,
+        'is_active': client.is_active  # 🔥 IMPORTANT
     })
 
 

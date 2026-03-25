@@ -27,7 +27,7 @@ urlpatterns = [
     path('clients/<int:pk>/export/pdf/', client_info_pdf, name='client_info_pdf'),
     path('clients/all/', all_client_index, name='all_clients_statement'),
     path('clients/pdf/', all_client_info_pdf, name='all_client_info_pdf'),
-
+    path('clients/toggle/<int:pk>/', toggle_client_status, name='toggle_client_status'),
 
 
     path('banks/', bank_index, name='bank_index'),
@@ -36,7 +36,7 @@ urlpatterns = [
     path('banks/delete/<int:pk>/', bank_delete, name='bank_delete'),
     path('banks/<int:pk>/log/', bank_log, name='bank_log'),
     path('banks/<int:pk>/log/pdf/', bank_log_pdf, name='bank_log_pdf'),
-
+    path('banks/toggle/<int:pk>/', toggle_bank_status, name='toggle_bank_status'),
 
     path('transfers/', transfer_list, name='transfer_list'),
     path('transfers/create/', transfer_create, name='transfer_create'),
@@ -55,7 +55,7 @@ urlpatterns = [
     path('payments/create/', payment_create, name='payment_create'),
     path('payments/update/<int:pk>/', payment_update, name='payment_update'),
     path('payments/delete/<int:pk>/', payment_delete, name='payment_delete'),
-    path('banks/toggle/<int:pk>/', toggle_bank_status, name='toggle_bank_status'),
+    
 
     path('check-expense-duplicate/', check_expense_duplicate, name='check_expense_duplicate'),
     path('expenses/', expense_index, name='expense_index'),

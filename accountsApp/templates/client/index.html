@@ -2,6 +2,8 @@
 {% block title %}Clients{% endblock %}
 
 {% block content %}
+{% csrf_token %}
+
 <h4 class="mb-3">Client List</h4>
 
 <a href="{% url 'client_create' %}" class="btn btn-primary mb-3">
@@ -162,6 +164,27 @@
                 <small class="text-muted">
                     ({{ client.location|upper|default:"—" }})
                 </small>
+                
+                <div class="d-flex align-items-center gap-2 ms-3">
+
+                    <a href="javascript:void(0)"
+                    class="cyber-toggle {% if client.is_active == True %}toggle-on{% else %}toggle-off{% endif %}"
+                    data-url="{% url 'toggle_client_status' client.id %}"
+                    data-name="{{ client.name|escapejs }}"
+                    data-active="{% if client.is_active == True %}true{% else %}false{% endif %}"
+                    onclick="handleToggle(this)">
+
+                        <div class="cyber-thumb">
+                            <div class="thumb-core"></div>
+                        </div>
+                    </a>
+
+                    <small class="toggle-label text-uppercase fw-bold {% if client.is_active == True %}text-primary{% else %}text-muted{% endif %}"
+                        style="font-size: 0.6rem; min-width: 22px;">
+                        {% if client.is_active == True %}ON{% else %}OFF{% endif %}
+                    </small>
+
+                </div>
             </td>
 
             <td>{{ client.company.name }}</td>
@@ -356,4 +379,113 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 </script>
+
+
+
+<script>
+function handleToggle(element) {
+
+    let isActive = element.dataset.active === "true";
+    const url = element.dataset.url;
+    const name = element.dataset.name;
+
+    const action = isActive ? 'DEACTIVATE' : 'ACTIVATE';
+    const nextStatus = isActive ? 'INACTIVE' : 'ACTIVE';
+
+    Swal.fire({
+        title: 'SYSTEM UPDATE',
+        html: `<b>${action} ${name}?</b>`,
+        icon: isActive ? 'warning' : 'info',
+        showCancelButton: true,
+        confirmButtonText: `CONFIRM ${action}`,
+    }).then((result) => {
+
+        if (!result.isConfirmed) return;
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+
+            if (!data.success) throw new Error();
+
+            // ✅ USE SERVER VALUE (NOT GUESS)
+            isActive = data.is_active;
+            element.dataset.active = isActive;
+
+            element.classList.toggle('toggle-on', isActive);
+            element.classList.toggle('toggle-off', !isActive);
+
+            const label = element.parentElement.querySelector('.toggle-label');
+
+            label.innerText = isActive ? 'ON' : 'OFF';
+            label.classList.toggle('text-primary', isActive);
+            label.classList.toggle('text-muted', !isActive);
+        })
+        .catch(() => {
+            Swal.fire('Error', 'Update failed', 'error');
+        });
+    });
+}
+
+// CSRF
+function getCSRFToken() {
+    return document.cookie.split('; ')
+        .find(row => row.startsWith('csrftoken'))
+        ?.split('=')[1];
+}
+</script>
+
+
+
+<style>
+    .cyber-toggle {
+        width: 50px;
+        height: 24px;
+        background: #e2e8f0;
+        border-radius: 30px;
+        position: relative;
+        transition: all 0.4s ease;
+        border: 2px solid transparent;
+    }
+
+    .cyber-thumb {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 16px;
+        height: 16px;
+        background: white;
+        border-radius: 50%;
+        transition: all 0.3s shadow;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    /* Active State: Moving the thumb and changing background */
+    .toggle-on {
+        background: #0d6efd; /* Matches your sidebar accent */
+        box-shadow: 0 0 12px rgba(13, 110, 253, 0.3);
+    }
+    .toggle-on .cyber-thumb {
+        transform: translateX(26px);
+    }
+
+    /* Inactive State */
+    .toggle-off {
+        background: #cbd5e1;
+    }
+    
+    .cyber-toggle:hover {
+        transform: scale(1.05);
+        cursor: pointer;
+    }
+</style>
+
 {% endblock %}

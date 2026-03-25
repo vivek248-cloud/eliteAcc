@@ -87,6 +87,8 @@ class Client(models.Model):
         null=True,
         help_text="Client location or address"
     )
+    
+    is_active = models.BooleanField(default=True)
 
     name = models.CharField(max_length=255)
 
@@ -144,7 +146,7 @@ class Bank(models.Model):
         default=0
     )
     is_active = models.BooleanField(default=True)
-    
+
     available_balance = models.DecimalField(
         max_digits=12,
         decimal_places=2,
