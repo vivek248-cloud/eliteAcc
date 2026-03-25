@@ -2419,6 +2419,9 @@ def bank_index(request):
 
     for bank in banks:
 
+        # =========================
+        # 📊 BASE QUERYSETS
+        # =========================
         payments = bank.payments.filter(
             client__company_id=selected_company_id
         )
@@ -2449,26 +2452,26 @@ def bank_index(request):
             expenses = expenses.filter(expense_date__year=int(filter_year))
 
         # =========================
-        # 🔥 COUNT AFTER FILTER
+        # 🔥 COUNT (ASSIGN TO BANK)
         # =========================
-        payment_count = payments.count()
-        expense_count = expenses.count()
-
-        bank.transaction_count = payment_count + expense_count
-        bank.payment_count = payment_count
-        bank.expense_count = expense_count
+        bank.payment_count = payments.count()
+        bank.expense_count = expenses.count()
+        bank.transaction_count = bank.payment_count + bank.expense_count
 
         # =========================
-        # 💰 CALCULATIONS
+        # 💰 TOTALS
         # =========================
-        payment_total = payments.aggregate(
+        bank.payment_total = payments.aggregate(
             total=Sum('amount')
         )['total'] or Decimal('0.00')
 
-        expense_total = expenses.aggregate(
+        bank.expense_total = expenses.aggregate(
             total=Sum('amount')
         )['total'] or Decimal('0.00')
 
+        # =========================
+        # 💰 BALANCE
+        # =========================
         bank.filtered_balance = bank.available_balance
 
         # =========================
@@ -2487,11 +2490,12 @@ def bank_index(request):
             default=None
         )
 
+        # =========================
+        # ➕ TOTAL BANK
+        # =========================
         total_bank += bank.filtered_balance
 
-    bank.transaction_count = payment_count + expense_count
-    bank.payment_count = payment_count
-    bank.expense_count = expense_count
+
     return render(request, 'bank/index.html', {
         'banks': banks,
         'total_bank': total_bank,
