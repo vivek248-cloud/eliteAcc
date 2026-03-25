@@ -2419,9 +2419,6 @@ def bank_index(request):
 
     for bank in banks:
 
-        # =========================
-        # 📊 BASE QUERYSETS (COMPANY AWARE)
-        # =========================
         payments = bank.payments.filter(
             client__company_id=selected_company_id
         )
@@ -2452,6 +2449,16 @@ def bank_index(request):
             expenses = expenses.filter(expense_date__year=int(filter_year))
 
         # =========================
+        # 🔥 COUNT AFTER FILTER
+        # =========================
+        payment_count = payments.count()
+        expense_count = expenses.count()
+
+        bank.transaction_count = payment_count + expense_count
+        bank.payment_count = payment_count
+        bank.expense_count = expense_count
+
+        # =========================
         # 💰 CALCULATIONS
         # =========================
         payment_total = payments.aggregate(
@@ -2462,10 +2469,8 @@ def bank_index(request):
             total=Sum('amount')
         )['total'] or Decimal('0.00')
 
-        # bank.filtered_balance = (
-        #     bank.opening_balance + payment_total - expense_total
-        # )
         bank.filtered_balance = bank.available_balance
+
         # =========================
         # 🗓 LAST TRANSACTION DATE
         # =========================
@@ -2484,6 +2489,9 @@ def bank_index(request):
 
         total_bank += bank.filtered_balance
 
+    bank.transaction_count = payment_count + expense_count
+    bank.payment_count = payment_count
+    bank.expense_count = expense_count
     return render(request, 'bank/index.html', {
         'banks': banks,
         'total_bank': total_bank,
@@ -2528,7 +2536,8 @@ def bank_create(request):
         # 🔐 Prevent duplicate bank inside same company
         if Bank.objects.filter(
             company_id=selected_company_id,
-            name__iexact=name
+            name__iexact=name,
+            is_active=True
         ).exists():
             messages.error(request, "Bank with this name already exists.")
             return redirect('bank_create')
@@ -2576,7 +2585,8 @@ def bank_update(request, pk):
         # 🔐 Prevent duplicate rename
         if Bank.objects.filter(
             company_id=selected_company_id,
-            name__iexact=name
+            name__iexact=name,
+            is_active=True
         ).exclude(id=bank.id).exists():
             messages.error(request, "Another bank with this name already exists.")
             return redirect('bank_update', pk=bank.id)
@@ -2610,7 +2620,19 @@ def bank_delete(request, pk):
     })
 
 
+from django.shortcuts import redirect, get_object_or_404
 
+def toggle_bank_status(request, pk):
+    bank = get_object_or_404(
+        Bank,
+        pk=pk,
+        company_id=request.session.get('selected_company_id')
+    )
+
+    bank.is_active = not bank.is_active
+    bank.save()
+
+    return redirect('bank_index')
 
 
 from itertools import chain
@@ -2991,7 +3013,7 @@ def transfer_create(request):
     if not selected_company_id:
         return redirect('dashboard')
 
-    banks = Bank.objects.filter(company_id=selected_company_id)
+    banks = Bank.objects.filter(company_id=selected_company_id,is_active=True)
 
     if request.method == 'POST':
 
@@ -3372,7 +3394,7 @@ def available_amount(request):
     # 🏦 ALL OTHER BANKS (FIXED)
     # =========================
     cheque_banks = Bank.objects.filter(
-        company_id=selected_company_id
+        company_id=selected_company_id,is_active=True
     ).exclude(name__iexact='cash')
 
     total_bank = Decimal('0.00')
@@ -3564,7 +3586,8 @@ def payment_create(request):
 
     clients = Client.objects.filter(company_id=selected_company_id)
     banks = Bank.objects.filter(
-        company_id=selected_company_id
+        company_id=selected_company_id,
+        is_active=True
     ).order_by('name')
 
 
@@ -3631,7 +3654,7 @@ def payment_create(request):
 
                 bank = Bank.objects.get(
                     id=bank_id,
-                    company_id=selected_company_id
+                    company_id=selected_company_id,is_active=True
                 )
 
                 Payment.objects.create(
@@ -3677,7 +3700,8 @@ def payment_update(request, pk):
 
     clients = Client.objects.filter(company_id=selected_company_id)
     banks = Bank.objects.filter(
-        company_id=selected_company_id
+        company_id=selected_company_id,
+        is_active=True
     ).order_by('name')
 
 
@@ -3748,7 +3772,7 @@ def payment_update(request, pk):
 
                 bank = Bank.objects.get(
                     id=bank_id,
-                    company_id=selected_company_id
+                    company_id=selected_company_id,is_active=True
                 )
 
                 payment.bank = bank
@@ -4762,7 +4786,8 @@ def expense_create(request):
     workers = Worker.objects.filter(company_id=selected_company_id)
 
     banks = Bank.objects.filter(
-        company_id=selected_company_id
+        company_id=selected_company_id,
+        is_active=True
     ).order_by('name')
 
     cash_bank = Bank.objects.filter(
@@ -4945,7 +4970,8 @@ def expense_update(request, pk):
     ).select_related('worker')
 
     banks = Bank.objects.filter(
-        company_id=selected_company_id
+        company_id=selected_company_id,
+        is_active=True
     ).order_by('name')
 
     cash_bank = Bank.objects.filter(

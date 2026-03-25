@@ -105,6 +105,26 @@
                         ₹ {{ bank.filtered_balance|floatformat:2 }}
                     </h4>
                     <small class="text-muted">Available Balance</small>
+                    <div class="d-flex justify-content-center align-items-center gap-3 mt-2 small fw-semibold">
+
+                        <!-- IN -->
+                        <span class="d-flex align-items-center gap-1 text-success">
+                            <i class="bi bi-arrow-down-circle-fill"></i>
+                            {{ bank.payment_count }}
+                            <span class="text-muted fw-normal">In</span>
+                        </span>
+
+                        <!-- DIVIDER -->
+                        <span class="text-muted">•</span>
+
+                        <!-- OUT -->
+                        <span class="d-flex align-items-center gap-1 text-danger">
+                            <i class="bi bi-arrow-up-circle-fill"></i>
+                            {{ bank.expense_count }}
+                            <span class="text-muted fw-normal">Out</span>
+                        </span>
+
+                    </div>
                 </div>
             </div>
         </div>
@@ -135,6 +155,7 @@
                     <th class="text-end">Last Tx</th>
                     <th class="text-center">Log</th>
                     <th>Actions</th>
+                    <th>Status</th>
                 </tr>
             </thead>
             <tbody>
@@ -169,6 +190,22 @@
                             </a>
                         </div>
                     </td>
+<td>
+    <div class="d-flex align-items-center gap-2">
+        <a href="javascript:void(0)"
+           onclick="confirmToggle('{% url 'toggle_bank_status' bank.id %}', {{ bank.is_active|yesno:'true,false' }}, '{{ bank.name }}')"
+           class="cyber-toggle {% if bank.is_active %}toggle-on{% else %}toggle-off{% endif %}">
+            <div class="cyber-thumb">
+                {% if bank.is_active %}
+                    <div style="width:4px; height:4px; background:#0d6efd; border-radius:50%;"></div>
+                {% endif %}
+            </div>
+        </a>
+        <small class="text-muted fw-bold" style="font-size: 0.65rem;">
+            {% if bank.is_active %}ON{% else %}OFF{% endif %}
+        </small>
+    </div>
+</td>
                 </tr>
                 {% empty %}
                 <tr>
@@ -182,6 +219,90 @@
         </table>
     </div>
 </div>
+
+
+<script>
+function confirmToggle(url, isActive, bankName) {
+    const action = isActive ? 'Deactivate' : 'Activate';
+    const color = isActive ? '#ef4444' : '#10b981'; // Red for deactivating, Green for activating
+
+    Swal.fire({
+        title: `<span style="font-size: 1.25rem;">${action} Bank?</span>`,
+        html: `Are you sure you want to change <b>${bankName}</b> to <b style="color:${color}">${isActive ? 'Inactive' : 'Active'}</b>?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: `Yes, ${action}`,
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: color,
+        background: '#ffffff',
+        customClass: {
+            popup: 'rounded-5 border-0 shadow-lg',
+            confirmButton: 'rounded-pill px-4',
+            cancelButton: 'rounded-pill px-4'
+        },
+        backdrop: `rgba(30, 33, 48, 0.4)` // Dark overlay to match your sidebar
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Show a loading state before redirecting
+            Swal.fire({
+                title: 'Updating...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+            window.location.href = url;
+        }
+    });
+}
+</script>
+
+
+
+<style>
+    .cyber-toggle {
+        width: 50px;
+        height: 24px;
+        background: #e2e8f0;
+        border-radius: 30px;
+        position: relative;
+        transition: all 0.4s ease;
+        border: 2px solid transparent;
+    }
+
+    .cyber-thumb {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 16px;
+        height: 16px;
+        background: white;
+        border-radius: 50%;
+        transition: all 0.3s shadow;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    /* Active State: Moving the thumb and changing background */
+    .toggle-on {
+        background: #0d6efd; /* Matches your sidebar accent */
+        box-shadow: 0 0 12px rgba(13, 110, 253, 0.3);
+    }
+    .toggle-on .cyber-thumb {
+        transform: translateX(26px);
+    }
+
+    /* Inactive State */
+    .toggle-off {
+        background: #cbd5e1;
+    }
+    
+    .cyber-toggle:hover {
+        transform: scale(1.05);
+        cursor: pointer;
+    }
+</style>
+
 
 <style>
     :root {

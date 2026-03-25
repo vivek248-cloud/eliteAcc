@@ -143,7 +143,8 @@ class Bank(models.Model):
         decimal_places=2,
         default=0
     )
-
+    is_active = models.BooleanField(default=True)
+    
     available_balance = models.DecimalField(
         max_digits=12,
         decimal_places=2,
@@ -255,6 +256,7 @@ class Payment(models.Model):
         (CHEQUE, 'Cheque'),
     ]
 
+    
     client = models.ForeignKey(
         Client,
         on_delete=models.CASCADE,

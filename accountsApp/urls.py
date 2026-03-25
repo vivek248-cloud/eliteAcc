@@ -55,6 +55,7 @@ urlpatterns = [
     path('payments/create/', payment_create, name='payment_create'),
     path('payments/update/<int:pk>/', payment_update, name='payment_update'),
     path('payments/delete/<int:pk>/', payment_delete, name='payment_delete'),
+    path('banks/toggle/<int:pk>/', toggle_bank_status, name='toggle_bank_status'),
 
     path('check-expense-duplicate/', check_expense_duplicate, name='check_expense_duplicate'),
     path('expenses/', expense_index, name='expense_index'),
