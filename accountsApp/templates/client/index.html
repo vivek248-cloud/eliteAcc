@@ -148,6 +148,7 @@
             <th class="text-center">Balance</th>
             <th class="text-center">Yet to Pay</th>
             <th class="text-center">Action</th>
+            <th class="text-center">Status</th>
         </tr>
     </thead>
 
@@ -164,27 +165,6 @@
                 <small class="text-muted">
                     ({{ client.location|upper|default:"—" }})
                 </small>
-                
-                <div class="d-flex align-items-center gap-2 ms-3">
-
-                    <a href="javascript:void(0)"
-                    class="cyber-toggle {% if client.is_active == True %}toggle-on{% else %}toggle-off{% endif %}"
-                    data-url="{% url 'toggle_client_status' client.id %}"
-                    data-name="{{ client.name|escapejs }}"
-                    data-active="{% if client.is_active == True %}true{% else %}false{% endif %}"
-                    onclick="handleToggle(this)">
-
-                        <div class="cyber-thumb">
-                            <div class="thumb-core"></div>
-                        </div>
-                    </a>
-
-                    <small class="toggle-label text-uppercase fw-bold {% if client.is_active == True %}text-primary{% else %}text-muted{% endif %}"
-                        style="font-size: 0.6rem; min-width: 22px;">
-                        {% if client.is_active == True %}ON{% else %}OFF{% endif %}
-                    </small>
-
-                </div>
             </td>
 
             <td>{{ client.company.name }}</td>
@@ -278,12 +258,34 @@
             <td class="d-flex gap-2 justify-content-center">
                 <a href="{% url 'client_update' client.id %}"
                    class="btn btn-sm btn-outline-warning">
-                    Edit
+                    <i class="bi bi-pencil-square"></i>
                 </a>
                 <a href="{% url 'client_delete' client.id %}"
                    class="btn btn-sm btn-outline-danger">
-                    Delete
+                    <i class="bi bi-trash"></i>
                 </a>
+            </td>
+            <td class="text-center" style="max-width: 100px;">
+                <div class="d-flex align-items-center gap-2 ms-3">
+
+                    <a href="javascript:void(0)"
+                    class="cyber-toggle {% if client.is_active == True %}toggle-on{% else %}toggle-off{% endif %}"
+                    data-url="{% url 'toggle_client_status' client.id %}"
+                    data-name="{{ client.name|escapejs }}"
+                    data-active="{% if client.is_active == True %}true{% else %}false{% endif %}"
+                    onclick="handleToggle(this)">
+
+                        <div class="cyber-thumb">
+                            <div class="thumb-core"></div>
+                        </div>
+                    </a>
+
+                    <small class="toggle-label text-uppercase fw-bold {% if client.is_active == True %}text-primary{% else %}text-muted{% endif %}"
+                        style="font-size: 0.6rem; min-width: 22px;">
+                        {% if client.is_active == True %}ON{% else %}OFF{% endif %}
+                    </small>
+
+                </div>
             </td>
         </tr>
         {% empty %}

@@ -334,12 +334,12 @@ document.addEventListener('DOMContentLoaded', function () {
             <td class="d-flex gap-2">
                 <a href="{% url 'expense_update' expense.id %}"
                    class="btn btn-sm btn-outline-warning">
-                    Edit
+                    <i class="bi bi-pencil-square"></i>
                 </a>
 
                 <a href="{% url 'expense_delete' expense.id %}"
                    class="btn btn-sm btn-outline-danger">
-                    Delete
+                    <i class="bi bi-trash"></i>
                 </a>
             </td>
         </tr>

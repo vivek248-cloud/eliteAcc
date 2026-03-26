@@ -4018,6 +4018,27 @@ def worker_name_delete(request, pk):
     })
 
 
+from django.shortcuts import get_object_or_404, render, redirect
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+@require_POST
+def toggle_worker_name_status(request, pk):
+
+    wn = get_object_or_404(
+        WorkerName,
+        pk=pk,
+        worker__company_id=request.session.get('selected_company_id')
+    )
+
+    wn.is_active = not wn.is_active
+    wn.save(update_fields=['is_active'])
+
+    return JsonResponse({
+        'success': True,
+        'is_active': wn.is_active
+    })
+
+
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -4728,7 +4749,7 @@ def expense_create(request):
     ).first()
 
     worker_names = WorkerName.objects.filter(
-        worker__company_id=selected_company_id
+        worker__company_id=selected_company_id,is_active=True
     ).select_related('worker')
 
     # =========================
@@ -4898,7 +4919,7 @@ def expense_update(request, pk):
     workers = Worker.objects.filter(company_id=selected_company_id)
 
     worker_names = WorkerName.objects.filter(
-        worker__company_id=selected_company_id
+        worker__company_id=selected_company_id,is_active=True
     ).select_related('worker')
 
     banks = Bank.objects.filter(

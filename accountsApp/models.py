@@ -305,7 +305,7 @@ class WorkerName(models.Model):
         related_name='names'
     )
     name = models.CharField(max_length=100)
-
+    is_active = models.BooleanField(default=True)
     class Meta:
         unique_together = ('worker', 'name')
 

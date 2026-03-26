@@ -85,6 +85,7 @@ urlpatterns = [
     path('worker-names/create/', worker_name_create, name='worker_name_create'),
     path('worker-names/<int:pk>/update/', worker_name_update, name='worker_name_update'),
     path('worker-names/<int:pk>/delete/', worker_name_delete, name='worker_name_delete'),
+    path('worker-names/toggle/<int:pk>/',toggle_worker_name_status,name='toggle_worker_name_status'),
 
     path('salary/', salary_index, name='salary_index'),
     path('salary/pdf/', salary_pdf, name='salary_pdf'),

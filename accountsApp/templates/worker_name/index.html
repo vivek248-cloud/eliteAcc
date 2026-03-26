@@ -67,6 +67,7 @@
                         <th class="pe-4 py-3 text-end text-muted small fw-bold text-uppercase">
                             Actions
                         </th>
+                        <th class="pe-4 py-3 text-end text-muted small fw-bold text-uppercase">status</th>
                     </tr>
                 </thead>
 
@@ -123,8 +124,30 @@
                                             <i class="bi bi-trash3 me-2"></i>
                                             Delete
                                         </a>
+                                        
                                     </li>
                                 </ul>
+                            </div>
+                        </td>
+                        <td class="pe-4 text-end">
+                            <div class="d-flex align-items-center gap-2 justify-content-end">
+
+                                <a href="javascript:void(0)"
+                                class="cyber-toggle {% if wn.is_active %}toggle-on{% else %}toggle-off{% endif %}"
+                                data-url="{% url 'toggle_worker_name_status' wn.id %}"
+                                data-name="{{ wn.name|escapejs }}"
+                                data-active="{{ wn.is_active|yesno:'true,false' }}"
+                                onclick="handleToggle(this, event)">
+
+                                    <div class="cyber-thumb">
+                                        <div class="thumb-core"></div>
+                                    </div>
+                                </a>
+
+                                <small class="toggle-label {% if wn.is_active %}text-primary{% else %}text-muted{% endif %}">
+                                    {% if wn.is_active %}ON{% else %}OFF{% endif %}
+                                </small>
+
                             </div>
                         </td>
                     </tr>
@@ -149,6 +172,84 @@
     </div>
 </div>
 
+
+<script>
+function handleToggle(element, event) {
+
+    event.preventDefault(); // 🔥 IMPORTANT
+
+    let isActive = element.dataset.active === "true";
+    const url = element.dataset.url;
+    const name = element.dataset.name;
+
+    const action = isActive ? 'DEACTIVATE' : 'ACTIVATE';
+
+    Swal.fire({
+        title: 'SYSTEM UPDATE',
+        html: `<b>${action} ${name}?</b>`,
+        icon: isActive ? 'warning' : 'info',
+        showCancelButton: true,
+        confirmButtonText: `CONFIRM ${action}`,
+    }).then((result) => {
+
+        if (!result.isConfirmed) return;
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(res => {
+            if (!res.ok) throw new Error("Request failed");
+            return res.json();
+        })
+        .then(data => {
+
+            if (!data.success) throw new Error();
+
+            // 🔥 ALWAYS TRUST SERVER VALUE
+            isActive = data.is_active === true;
+            element.dataset.active = isActive;
+
+            // 🔥 UPDATE UI
+            element.classList.toggle('toggle-on', isActive);
+            element.classList.toggle('toggle-off', !isActive);
+
+            const label = element.parentElement.querySelector('.toggle-label');
+
+            if (label) {
+                label.innerText = isActive ? 'ON' : 'OFF';
+                label.classList.toggle('text-primary', isActive);
+                label.classList.toggle('text-muted', !isActive);
+            }
+
+        })
+        .catch(err => {
+            console.error(err);
+            Swal.fire('Error', 'Update failed', 'error');
+        });
+    });
+}
+
+// 🔥 SAFE CSRF
+function getCSRFToken() {
+    const name = 'csrftoken';
+    const cookies = document.cookie.split(';');
+
+    for (let c of cookies) {
+        c = c.trim();
+        if (c.startsWith(name + '=')) {
+            return c.substring(name.length + 1);
+        }
+    }
+    return '';
+}
+</script>
+
+
+
 <style>
     body { background-color:#fbfbfb; }
     .fw-black { font-weight:900; }
@@ -156,5 +257,75 @@
     .table thead th { border-top:none; }
     .dropdown-item { font-size:0.85rem; font-weight:500; }
     .dropdown-item:active { background-color:#f8f9fa; color:inherit; }
+    /* ===== TOGGLE BASE ===== */
+.cyber-toggle {
+    width: 42px;
+    height: 22px;
+    border-radius: 50px;
+    background: #e5e7eb;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    border: 1px solid #e2e8f0;
+}
+
+/* ===== ON STATE ===== */
+.cyber-toggle.toggle-on {
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
+    box-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
+}
+
+/* ===== OFF STATE ===== */
+.cyber-toggle.toggle-off {
+    background: #e5e7eb;
+}
+
+/* ===== THUMB ===== */
+.cyber-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #ffffff;
+    position: absolute;
+    left: 2px;
+    transition: all 0.25s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ===== MOVE THUMB ===== */
+.cyber-toggle.toggle-on .cyber-thumb {
+    transform: translateX(20px);
+}
+
+/* ===== INNER CORE ===== */
+.thumb-core {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #6365f100;
+    opacity: 0;
+    transition: 0.2s;
+}
+
+.cyber-toggle.toggle-on .thumb-core {
+    opacity: 1;
+}
+
+/* ===== LABEL ===== */
+.toggle-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    transition: all 0.2s ease;
+}
+
+/* ===== HOVER EFFECT ===== */
+.cyber-toggle:hover {
+    transform: scale(1.05);
+}
 </style>
 {% endblock %}
