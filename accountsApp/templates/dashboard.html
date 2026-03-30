@@ -16,14 +16,21 @@
 
             <!-- 👋 Greeting Chip -->
             <div class="greeting-chip d-inline-flex align-items-center gap-2 bg-light border rounded-pill px-3 py-1 mb-3 shadow-sm">
+
+                <!-- Avatar -->
                 <div class="greeting-avatar d-flex align-items-center justify-content-center rounded-circle bg-primary text-white border"
                     style="width: 48px; height: 48px; font-size: 20px; flex-shrink: 0;">
-                    <span>👋</span>
+                    <span id="greetingIcon">👋</span>
                 </div>
+
+                <!-- Text -->
                 <div class="greeting-text text-start lh-sm">
-                    <div class="fw-semibold text-dark" style="font-size: 1rem;">{{ greeting }}</div>
-                    <div class="text-muted" style="font-size: 0.72rem;">{{ today_date }}</div>
+                    <div id="greetingText" class="fw-semibold text-dark" style="font-size: 1rem;">
+                        Hello 👋
+                    </div>
+                    <div id="greetingDate" class="text-muted" style="font-size: 0.72rem;"></div>
                 </div>
+
             </div>
 
 
@@ -358,6 +365,44 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<script>
+function updateGreeting() {
+    const now = new Date();
+    const hour = now.getHours();
+
+    let greeting = "Hello 👋";
+    let icon = "👋";
+
+    if (hour < 12) {
+        greeting = "Good Morning ☀️";
+        icon = "☀️";
+    } else if (hour < 17) {
+        greeting = "Good Afternoon 🌤️";
+        icon = "🌤️";
+    } else if (hour < 21) {
+        greeting = "Good Evening 🌙";
+        icon = "🌙";
+    } else {
+        greeting = "Working Late? 💻";
+        icon = "💻";
+    }
+
+    // Format date
+    const options = { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' };
+    const formattedDate = now.toLocaleDateString('en-IN', options);
+
+    // Apply to UI
+    document.getElementById("greetingText").innerText = greeting;
+    document.getElementById("greetingIcon").innerText = icon;
+    document.getElementById("greetingDate").innerText = formattedDate;
+}
+
+updateGreeting();
+</script>
+
+
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const ctx = document.getElementById('profitTrendChart');
