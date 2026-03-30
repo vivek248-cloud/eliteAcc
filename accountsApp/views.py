@@ -16,7 +16,7 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
-
+from django.utils.timezone import now
 
 def login_view(request):
 
@@ -945,6 +945,18 @@ def home(request):
 
     current_date = now()
 
+    current_hour = now().hour
+
+    if current_hour < 12:
+        greeting = "Good Morning ☀️"
+    elif current_hour < 17:
+        greeting = "Good Afternoon 🌤️"
+    elif current_hour < 21:
+        greeting = "Good Evening 🌙"
+    else:
+        greeting = "Working Late? 💻"
+
+
     return render(request, 'dashboard.html', {
         'companies': companies,
         'selected_company_id': selected_company_id,
@@ -1001,6 +1013,8 @@ def home(request):
 
         'expense_labels': json.dumps(expense_labels),
         'expense_values': json.dumps(expense_values),
+        'greeting': greeting,
+        "today_date": timezone.localdate().strftime("%A, %d %b %Y"),  # e.g. "Monday, 30 Mar 2026"
     })
 
 
