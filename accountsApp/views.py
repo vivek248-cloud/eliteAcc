@@ -590,6 +590,7 @@ def switch_company(request, pk):
 from django.utils.timezone import now
 from django.db.models.functions import TruncMonth
 from django.db.models import Avg
+from django.utils.timezone import localtime
 
 
 @login_required(login_url='login')
@@ -945,7 +946,7 @@ def home(request):
 
     current_date = now()
 
-    current_hour = now().hour
+    current_hour = localtime().hour
 
     if current_hour < 12:
         greeting = "Good Morning ☀️"
@@ -955,7 +956,6 @@ def home(request):
         greeting = "Good Evening 🌙"
     else:
         greeting = "Working Late? 💻"
-
 
     return render(request, 'dashboard.html', {
         'companies': companies,
