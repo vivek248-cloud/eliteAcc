@@ -55,6 +55,15 @@
         select:focus {
             height: 38px;
         }
+        #calcToggle {
+        transition: all 0.3s ease;
+        }
+
+        #calcToggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+        }
+
     </style>
 </head>
 <body>
@@ -238,6 +247,20 @@ setInterval(checkSession, 1000);
         <div class="d-flex align-items-center gap-2 ms-auto">
 
             <!-- Bell -->
+        <div class="d-flex align-items-center justify-content-between w-100">
+
+            <!-- LEFT: Calculator -->
+            <div>
+                <button id="calcToggle"
+                        class="btn btn-dark text-white rounded-circle p-2 px-3 d-flex align-items-center justify-content-center shadow-sm"
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="bottom"
+                        title="Open Calculator">
+                    <i class="bi bi-calculator fs-5"></i>
+                </button>
+            </div>
+
+            <!-- RIGHT: Notification Bell -->
             <div class="position-relative">
                 <button type="button"
                         class="btn btn-link text-white p-0 border-0 position-relative"
@@ -248,12 +271,14 @@ setInterval(checkSession, 1000);
 
                     {% if alert_count > 0 %}
                     <span id="alertBadge"
-                          class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                        class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
                         {{ alert_count }}
                     </span>
                     {% endif %}
                 </button>
             </div>
+
+        </div>
 
             <!-- Company Switcher -->
             <div class="dropdown company-switcher">
@@ -699,6 +724,195 @@ document.addEventListener('DOMContentLoaded', function () {
         </div>
     </div>
 </div>
+
+
+
+<div id="calculator" class="card shadow-lg p-3"
+     style="width:280px; position:fixed; bottom:80px; right:20px; display:none; z-index:9999; border-radius:16px;">
+
+  <!-- Drag handle -->
+  <div id="calcDragHandle" style="text-align:center; font-size:11px; color:#888; margin-bottom:10px; cursor:grab; letter-spacing:0.02em;">
+    ⠿ drag to move
+  </div>
+
+  <!-- Display -->
+  <div style="background:#f5f5f5; border:1px solid #e0e0e0; border-radius:10px; padding:10px 14px; margin-bottom:14px; text-align:right;">
+    <div id="calcExpr" style="font-size:12px; color:#aaa; min-height:16px; margin-bottom:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></div>
+    <div id="calcVal" style="font-size:28px; font-weight:500; color:#111; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">0</div>
+  </div>
+
+  <!-- Buttons -->
+  <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px;">
+    <button class="btn btn-danger btn-sm"   onclick="cc()">C</button>
+    <button class="btn btn-secondary btn-sm" onclick="toggleSign()">+/−</button>
+    <button class="btn btn-secondary btn-sm" onclick="percent()">%</button>
+    <button class="btn btn-warning btn-sm"   onclick="press('/')">÷</button>
+
+    <button class="btn btn-light btn-sm" onclick="press('7')">7</button>
+    <button class="btn btn-light btn-sm" onclick="press('8')">8</button>
+    <button class="btn btn-light btn-sm" onclick="press('9')">9</button>
+    <button class="btn btn-warning btn-sm" onclick="press('*')">×</button>
+
+    <button class="btn btn-light btn-sm" onclick="press('4')">4</button>
+    <button class="btn btn-light btn-sm" onclick="press('5')">5</button>
+    <button class="btn btn-light btn-sm" onclick="press('6')">6</button>
+    <button class="btn btn-warning btn-sm" onclick="press('-')">−</button>
+
+    <button class="btn btn-light btn-sm" onclick="press('1')">1</button>
+    <button class="btn btn-light btn-sm" onclick="press('2')">2</button>
+    <button class="btn btn-light btn-sm" onclick="press('3')">3</button>
+    <button class="btn btn-warning btn-sm" onclick="press('+')">+</button>
+
+    <button class="btn btn-light btn-sm" onclick="press('0')" style="grid-column:span 2;">0</button>
+    <button class="btn btn-light btn-sm" onclick="pressDot()">.</button>
+    <button class="btn btn-success btn-sm" onclick="calculate()">=</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  let expr = '';
+  let justCalc = false;
+  const valEl  = document.getElementById('calcVal');
+  const exprEl = document.getElementById('calcExpr');
+  const calcEl = document.getElementById('calculator');
+  const handle = document.getElementById('calcDragHandle');
+
+  /* ---------- toggle visibility ---------- */
+  document.getElementById('calcToggle').onclick = () => {
+    calcEl.style.display = calcEl.style.display === 'none' ? 'block' : 'none';
+  };
+
+  /* ---------- display helper ---------- */
+  function updateDisplay(v, e) {
+    valEl.textContent  = v;
+    exprEl.textContent = e || '';
+  }
+
+  /* ---------- button handlers ---------- */
+  window.press = function (ch) {
+    const ops = ['+', '-', '*', '/'];
+    if (justCalc) {
+      if (ops.includes(ch)) {
+        expr = valEl.textContent + ch;
+        justCalc = false;
+        updateDisplay(valEl.textContent, expr);
+        return;
+      }
+      expr = '';
+      justCalc = false;
+    }
+    const lastChar = expr.slice(-1);
+    if (ops.includes(ch)) {
+      if (expr === '' && ch !== '-') return;
+      if (ops.includes(lastChar)) expr = expr.slice(0, -1);
+    }
+    expr += ch;
+    const parts = expr.split(/[+\-*/]/);
+    updateDisplay(parts[parts.length - 1] || '0', expr);
+  };
+
+  window.pressDot = function () {
+    if (justCalc) { expr = '0'; justCalc = false; }
+    const parts = expr.split(/[+\-*/]/);
+    const cur   = parts[parts.length - 1];
+    if (cur.includes('.')) return;
+    if (!cur) expr += '0';
+    expr += '.';
+    updateDisplay(expr.split(/[+\-*/]/).pop() || '0', expr);
+  };
+
+  window.cc = function () {
+    expr = ''; justCalc = false; updateDisplay('0', '');
+  };
+
+  window.toggleSign = function () {
+    const match = expr.match(/^(.*[+\-*/])?(-?)(\d*\.?\d+)$/);
+    if (!match) return;
+    const pre = match[1] || '', neg = match[2], num = match[3];
+    expr = pre + (neg ? '' : '-') + num;
+    updateDisplay((neg ? '' : '-') + num, expr);
+  };
+
+  window.percent = function () {
+    try {
+      const v = Function('"use strict"; return (' + expr + ')')();
+      const r = parseFloat((v / 100).toPrecision(12));
+      updateDisplay(r, expr + '%');
+      expr = String(r);
+      justCalc = true;
+    } catch (e) { updateDisplay('Error', ''); expr = ''; }
+  };
+
+  window.calculate = function () {
+    if (!expr) return;
+    try {
+      const safe   = expr.replace(/[^0-9+\-*/.()]/g, '');
+      const result = Function('"use strict"; return (' + safe + ')')();
+      if (!isFinite(result)) { updateDisplay('Error', expr + '='); expr = ''; return; }
+      const rounded = parseFloat(result.toPrecision(12));
+      updateDisplay(rounded, expr + '=');
+      expr      = String(rounded);
+      justCalc  = true;
+    } catch (e) { updateDisplay('Error', expr + '='); expr = ''; }
+  };
+
+  /* ---------- keyboard support ---------- */
+  document.addEventListener('keydown', e => {
+    if (calcEl.style.display === 'none') return;
+    if ('0123456789'.includes(e.key))        press(e.key);
+    else if (['+','-','*','/'].includes(e.key)) press(e.key);
+    else if (e.key === 'Enter' || e.key === '=') calculate();
+    else if (e.key === 'Backspace') {
+      if (justCalc) { cc(); return; }
+      expr = expr.slice(0, -1);
+      const parts = expr.split(/[+\-*/]/);
+      updateDisplay(parts[parts.length - 1] || '0', expr);
+    }
+    else if (e.key === 'Escape') cc();
+    else if (e.key === '.') pressDot();
+  });
+
+  /* ---------- drag support ---------- */
+  let dragging = false, ox = 0, oy = 0;
+
+  function startDrag(clientX, clientY) {
+    dragging = true;
+    const r = calcEl.getBoundingClientRect();
+    ox = clientX - r.left;
+    oy = clientY - r.top;
+    calcEl.style.position = 'fixed';
+    calcEl.style.bottom   = 'auto';
+    calcEl.style.right    = 'auto';
+    calcEl.style.left     = r.left + 'px';
+    calcEl.style.top      = r.top  + 'px';
+    handle.style.cursor   = 'grabbing';
+  }
+
+  function moveDrag(clientX, clientY) {
+    if (!dragging) return;
+    calcEl.style.left = (clientX - ox) + 'px';
+    calcEl.style.top  = (clientY - oy) + 'px';
+  }
+
+  function endDrag() { dragging = false; handle.style.cursor = 'grab'; }
+
+  handle.addEventListener('mousedown',  e => { startDrag(e.clientX, e.clientY); e.preventDefault(); });
+  document.addEventListener('mousemove', e => moveDrag(e.clientX, e.clientY));
+  document.addEventListener('mouseup',   endDrag);
+
+  handle.addEventListener('touchstart', e => {
+    startDrag(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault();
+  }, { passive: false });
+  document.addEventListener('touchmove', e => {
+    if (dragging) { moveDrag(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); }
+  }, { passive: false });
+  document.addEventListener('touchend', endDrag);
+
+  handle.style.cursor = 'grab';
+})();
+</script>
+
 
 
 <style>
