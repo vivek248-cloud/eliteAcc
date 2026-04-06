@@ -2,843 +2,1468 @@
 {% block title %}Executive Dashboard{% endblock %}
 
 {% block content %}
-<div class="fade-in">
-    <div class="row align-items-center mb-4">
 
-        <!-- LEFT SIDE -->
-        <div class="col-lg-6">
-            <h4 class="fw-bold mb-0">Financial Executive Summary</h4>
-            <p class="text-muted small">Real-time performance tracking</p>
+<style>
+/* ========== SaaS Dashboard Theme ========== */
+:root {
+    --dash-primary: #6366f1;
+    --dash-primary-dark: #4f46e5;
+    --dash-primary-light: #818cf8;
+    --dash-secondary: #8b5cf6;
+    --dash-success: #10b981;
+    --dash-success-light: #d1fae5;
+    --dash-warning: #f59e0b;
+    --dash-warning-light: #fef3c7;
+    --dash-danger: #ef4444;
+    --dash-danger-light: #fee2e2;
+    --dash-info: #3b82f6;
+    --dash-info-light: #dbeafe;
+    --dash-dark: #0f172a;
+    --dash-gray-900: #1e293b;
+    --dash-gray-700: #334155;
+    --dash-gray-600: #475569;
+    --dash-gray-500: #64748b;
+    --dash-gray-400: #94a3b8;
+    --dash-gray-300: #cbd5e1;
+    --dash-gray-200: #e2e8f0;
+    --dash-gray-100: #f1f5f9;
+    --dash-gray-50: #f8fafc;
+    --dash-white: #ffffff;
+    --dash-gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --dash-gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --dash-gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --dash-gradient-4: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    --dash-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --dash-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --dash-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --dash-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --dash-shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --dash-radius: 16px;
+    --dash-radius-md: 12px;
+    --dash-radius-sm: 8px;
+}
+
+/* ========== Base Styles ========== */
+.dashboard-container {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ========== Page Header ========== */
+.dash-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.dash-header-left {
+    flex: 1;
+    min-width: 280px;
+}
+
+.dash-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--dash-dark);
+    margin: 0 0 0.25rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.dash-title-icon {
+    width: 48px;
+    height: 48px;
+    background: var(--dash-gradient-1);
+    border-radius: var(--dash-radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.25rem;
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+}
+
+.dash-subtitle {
+    color: var(--dash-gray-500);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.dash-header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1rem;
+}
+
+/* ========== Greeting Chip ========== */
+.greeting-chip-modern {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: var(--dash-white);
+    border: 1px solid var(--dash-gray-200);
+    border-radius: 50px;
+    padding: 0.5rem 1.25rem 0.5rem 0.5rem;
+    box-shadow: var(--dash-shadow-md);
+    animation: slideInRight 0.5s ease-out;
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.greeting-avatar-modern {
+    width: 44px;
+    height: 44px;
+    background: var(--dash-gradient-1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.greeting-text-modern {
+    text-align: left;
+}
+
+.greeting-text-modern .greeting-main {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--dash-dark);
+}
+
+.greeting-text-modern .greeting-date {
+    font-size: 0.7rem;
+    color: var(--dash-gray-500);
+    font-weight: 500;
+}
+
+/* ========== Filter Controls ========== */
+.dash-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.date-range-modern {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--dash-white);
+    border: 1px solid var(--dash-gray-200);
+    border-radius: 50px;
+    padding: 0.5rem 1rem;
+    box-shadow: var(--dash-shadow);
+    transition: all 0.2s ease;
+}
+
+.date-range-modern:focus-within {
+    border-color: var(--dash-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.date-range-modern i {
+    color: var(--dash-primary);
+    font-size: 0.9rem;
+}
+
+.date-range-modern input {
+    border: none;
+    background: transparent;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--dash-gray-700);
+    width: 110px;
+    padding: 0;
+}
+
+.date-range-modern input:focus {
+    outline: none;
+}
+
+.date-range-modern .separator {
+    color: var(--dash-gray-400);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.quick-filters {
+    display: flex;
+    gap: 4px;
+    background: var(--dash-gray-100);
+    border-radius: 50px;
+    padding: 4px;
+    border: 1px solid var(--dash-gray-200);
+}
+
+.quick-filter-btn {
+    padding: 0.375rem 0.875rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 50px;
+    background: transparent;
+    color: var(--dash-gray-600);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.quick-filter-btn:hover {
+    background: var(--dash-white);
+    color: var(--dash-dark);
+}
+
+.quick-filter-btn.active {
+    background: var(--dash-dark);
+    color: var(--dash-white);
+    box-shadow: var(--dash-shadow);
+}
+
+.filter-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-apply {
+    padding: 0.5rem 1.25rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 50px;
+    background: var(--dash-gradient-1);
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    transition: all 0.2s ease;
+}
+
+.btn-apply:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+}
+
+.btn-reset {
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: 1px solid var(--dash-gray-200);
+    border-radius: 50px;
+    background: var(--dash-white);
+    color: var(--dash-danger);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-reset:hover {
+    background: var(--dash-danger-light);
+    border-color: var(--dash-danger);
+}
+
+/* ========== Stats Cards ========== */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+}
+
+@media (max-width: 1200px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 576px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.stat-card {
+    position: relative;
+    background: var(--dash-white);
+    border-radius: var(--dash-radius);
+    padding: 1.5rem;
+    box-shadow: var(--dash-shadow-md);
+    border: 1px solid var(--dash-gray-100);
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--dash-shadow-xl);
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+}
+
+.stat-card.revenue::before { background: var(--dash-gradient-4); }
+.stat-card.outflow::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+.stat-card.margin::before { background: var(--dash-gradient-3); }
+.stat-card.receivables::before { background: linear-gradient(90deg, #ef4444, #f87171); }
+
+.stat-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--dash-radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+.stat-card.revenue .stat-icon {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(52, 211, 153, 0.1));
+    color: var(--dash-success);
+}
+
+.stat-card.outflow .stat-icon {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(251, 191, 36, 0.1));
+    color: var(--dash-warning);
+}
+
+.stat-card.margin .stat-icon {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(96, 165, 250, 0.1));
+    color: var(--dash-info);
+}
+
+.stat-card.receivables .stat-icon {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(248, 113, 113, 0.1));
+    color: var(--dash-danger);
+}
+
+.stat-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--dash-gray-500);
+    background: var(--dash-gray-100);
+    padding: 0.25rem 0.625rem;
+    border-radius: 20px;
+}
+
+.stat-value {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--dash-dark);
+    margin-bottom: 0.25rem;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+.stat-description {
+    font-size: 0.8rem;
+    color: var(--dash-gray-500);
+    margin: 0;
+}
+
+.stat-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.625rem;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.stat-badge.positive {
+    background: var(--dash-success-light);
+    color: var(--dash-success);
+}
+
+.stat-badge.negative {
+    background: var(--dash-danger-light);
+    color: var(--dash-danger);
+}
+
+/* ========== Main Content Cards ========== */
+.dash-card {
+    background: var(--dash-white);
+    border-radius: var(--dash-radius);
+    box-shadow: var(--dash-shadow-md);
+    border: 1px solid var(--dash-gray-100);
+    overflow: hidden;
+    height: 100%;
+    transition: all 0.3s ease;
+}
+
+.dash-card:hover {
+    box-shadow: var(--dash-shadow-lg);
+}
+
+.dash-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--dash-gray-100);
+    background: var(--dash-gray-50);
+}
+
+.dash-card-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--dash-dark);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.dash-card-title i {
+    font-size: 1rem;
+}
+
+.dash-card-title .income { color: var(--dash-success); }
+.dash-card-title .expense { color: var(--dash-danger); }
+
+.dash-card-body {
+    padding: 0;
+}
+
+.dash-card-footer {
+    padding: 1rem 1.5rem;
+    background: var(--dash-gray-50);
+    border-top: 1px solid var(--dash-gray-100);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* ========== Transaction List ========== */
+.transaction-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.transaction-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--dash-gray-100);
+    transition: all 0.2s ease;
+}
+
+.transaction-item:last-child {
+    border-bottom: none;
+}
+
+.transaction-item:hover {
+    background: var(--dash-gray-50);
+}
+
+.transaction-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.transaction-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--dash-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.125rem;
+}
+
+.transaction-icon.income {
+    background: var(--dash-success-light);
+    color: var(--dash-success);
+}
+
+.transaction-icon.expense {
+    background: var(--dash-danger-light);
+    color: var(--dash-danger);
+}
+
+.transaction-details h6 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--dash-dark);
+    margin: 0 0 0.125rem 0;
+}
+
+.transaction-details small {
+    font-size: 0.75rem;
+    color: var(--dash-gray-500);
+}
+
+.transaction-details .highlight {
+    color: var(--dash-primary);
+    font-weight: 600;
+}
+
+.transaction-amount {
+    font-size: 1.125rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+.transaction-amount.income {
+    color: var(--dash-success);
+}
+
+.transaction-amount.expense {
+    color: var(--dash-danger);
+}
+
+/* ========== Empty State ========== */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1.5rem;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    color: var(--dash-gray-300);
+    margin-bottom: 1rem;
+}
+
+.empty-state p {
+    color: var(--dash-gray-500);
+    font-size: 0.875rem;
+    margin: 0;
+}
+
+/* ========== View All Button ========== */
+.btn-view-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: none;
+    border-radius: var(--dash-radius-sm);
+    background: var(--dash-dark);
+    color: var(--dash-white);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn-view-all:hover {
+    background: var(--dash-gray-700);
+    color: var(--dash-white);
+    transform: translateX(2px);
+}
+
+/* ========== Chart Container ========== */
+.chart-container {
+    position: relative;
+    height: 350px;
+    padding: 1.5rem;
+}
+
+.chart-container-sm {
+    height: 280px;
+}
+
+/* ========== Bank Balance Card ========== */
+.bank-card {
+    background: var(--dash-white);
+    border-radius: var(--dash-radius);
+    box-shadow: var(--dash-shadow-md);
+    border: 1px solid var(--dash-gray-100);
+    overflow: hidden;
+    height: 100%;
+}
+
+.bank-card-header {
+    background: var(--dash-dark);
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.bank-card-header h6 {
+    color: var(--dash-white);
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.bank-card-header .badge {
+    background: rgba(255,255,255,0.15);
+    color: var(--dash-white);
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 0.25rem 0.625rem;
+    border-radius: 20px;
+}
+
+.bank-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.bank-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--dash-gray-100);
+    transition: all 0.2s ease;
+}
+
+.bank-item:hover {
+    background: var(--dash-gray-50);
+}
+
+.bank-item:last-child {
+    border-bottom: none;
+}
+
+.bank-info {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+}
+
+.bank-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--dash-info-light);
+    border-radius: var(--dash-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--dash-info);
+    font-size: 1rem;
+}
+
+.bank-details h6 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--dash-dark);
+    margin: 0 0 0.125rem 0;
+}
+
+.bank-details small {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--dash-gray-400);
+    letter-spacing: 0.025em;
+}
+
+.bank-balance {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--dash-dark);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+.bank-card-footer {
+    padding: 1rem 1.5rem;
+    background: var(--dash-gray-50);
+    border-top: 1px solid var(--dash-gray-100);
+    text-align: center;
+}
+
+.bank-card-footer a {
+    color: var(--dash-dark);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    transition: all 0.2s ease;
+}
+
+.bank-card-footer a:hover {
+    color: var(--dash-primary);
+}
+
+/* ========== Mini Chart Cards ========== */
+.mini-chart-card {
+    background: var(--dash-white);
+    border-radius: var(--dash-radius);
+    box-shadow: var(--dash-shadow-md);
+    border: 1px solid var(--dash-gray-100);
+    overflow: hidden;
+    height: 100%;
+}
+
+.mini-chart-header {
+    padding: 1.25rem 1.5rem 0;
+}
+
+.mini-chart-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    color: var(--dash-dark);
+    margin: 0;
+}
+
+.mini-chart-body {
+    padding: 1rem 1.5rem 1.5rem;
+    height: 280px;
+}
+
+/* ========== No Company State ========== */
+.no-company-state {
+    text-align: center;
+    padding: 5rem 2rem;
+    background: var(--dash-white);
+    border-radius: var(--dash-radius);
+    box-shadow: var(--dash-shadow-md);
+}
+
+.no-company-state img {
+    width: 140px;
+    opacity: 0.4;
+    margin-bottom: 1.5rem;
+}
+
+.no-company-state h5 {
+    font-weight: 600;
+    color: var(--dash-gray-600);
+    margin: 0;
+}
+
+/* ========== Footer Stats ========== */
+.footer-stat {
+    font-size: 0.8rem;
+}
+
+.footer-stat .label {
+    color: var(--dash-gray-500);
+    font-weight: 600;
+}
+
+.footer-stat .value {
+    font-weight: 700;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+.footer-stat .value.income { color: var(--dash-success); }
+.footer-stat .value.expense { color: var(--dash-danger); }
+
+/* ========== Scrollbar Styling ========== */
+.bank-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.bank-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.bank-list::-webkit-scrollbar-thumb {
+    background: var(--dash-gray-300);
+    border-radius: 10px;
+}
+
+.bank-list::-webkit-scrollbar-thumb:hover {
+    background: var(--dash-gray-400);
+}
+
+/* ========== Responsive ========== */
+@media (max-width: 992px) {
+    .dash-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .dash-header-right {
+        align-items: flex-start;
+        width: 100%;
+    }
+    
+    .dash-filters {
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .dash-title {
+        font-size: 1.5rem;
+    }
+    
+    .date-range-modern input {
+        width: 95px;
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
+    }
+}
+
+/* ========== Animations ========== */
+.stagger-1 { animation-delay: 0.1s; }
+.stagger-2 { animation-delay: 0.2s; }
+.stagger-3 { animation-delay: 0.3s; }
+.stagger-4 { animation-delay: 0.4s; }
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-slide-up {
+    animation: slideUp 0.5s ease-out forwards;
+    opacity: 0;
+}
+</style>
+
+<div class="dashboard-container">
+    <!-- ========== Header Section ========== -->
+    <div class="dash-header">
+        <div class="dash-header-left">
+            <h1 class="dash-title">
+                <span class="dash-title-icon">
+                    <i class="bi bi-graph-up-arrow"></i>
+                </span>
+                Financial Executive Summary
+            </h1>
+            <p class="dash-subtitle">Real-time performance tracking & analytics</p>
         </div>
-
-        <!-- RIGHT SIDE (Greeting + Filters) -->
-        <div class="col-lg-6 text-lg-end">
-
-            <!-- 👋 Greeting Chip -->
-            <div class="greeting-chip d-inline-flex align-items-center gap-2 bg-light border rounded-pill px-3 py-1 mb-3 shadow-sm">
-
-                <!-- Avatar -->
-                <div class="greeting-avatar d-flex align-items-center justify-content-center rounded-circle bg-primary text-white border"
-                    style="width: 48px; height: 48px; font-size: 20px; flex-shrink: 0;">
+        
+        <div class="dash-header-right">
+            <!-- Greeting Chip -->
+            <div class="greeting-chip-modern">
+                <div class="greeting-avatar-modern">
                     <span id="greetingIcon">👋</span>
                 </div>
-
-                <!-- Text -->
-                <div class="greeting-text text-start lh-sm">
-                    <div id="greetingText" class="fw-semibold text-dark" style="font-size: 1rem;">
-                        Hello 👋
-                    </div>
-                    <div id="greetingDate" class="text-muted" style="font-size: 0.72rem;"></div>
+                <div class="greeting-text-modern">
+                    <div id="greetingText" class="greeting-main">Hello 👋</div>
+                    <div id="greetingDate" class="greeting-date"></div>
                 </div>
-
             </div>
-
-
-            <!-- FILTER FORM -->
-            <form method="get" class="d-flex flex-wrap gap-3 justify-content-lg-end align-items-center">
-
-                <div class="date-range-group d-flex align-items-center shadow-sm border rounded-pill bg-white px-3 py-1">
-                    <i class="bi bi-calendar3 text-primary me-2"></i>
-                    <input type="date" name="start_date" value="{{ start_date }}"
-                        class="form-control form-control-sm border-0 bg-transparent p-0"
-                        style="width: 115px; font-size: 0.85rem;">
-
-                    <span class="text-muted mx-2 small fw-bold">to</span>
-
-                    <input type="date" name="end_date" value="{{ end_date }}"
-                        class="form-control form-control-sm border-0 bg-transparent p-0"
-                        style="width: 115px; font-size: 0.85rem;">
+            
+            <!-- Filter Form -->
+            <form method="get" class="dash-filters">
+                <div class="date-range-modern">
+                    <i class="bi bi-calendar3"></i>
+                    <input type="date" name="start_date" value="{{ start_date }}">
+                    <span class="separator">to</span>
+                    <input type="date" name="end_date" value="{{ end_date }}">
                 </div>
-
-                <div class="quick-filter-pill d-flex gap-1 bg-light p-1 border rounded-pill shadow-sm">
-                    <button type="button" onclick="setRange(7)"
-                        class="btn btn-sm rounded-pill px-3 {% if days == '7' %}btn-dark{% else %}btn-link text-muted text-decoration-none{% endif %}" style="font-size: 0.75rem;">
-                        7D
-                    </button>
-                    <button type="button" onclick="setRange(14)"
-                        class="btn btn-sm rounded-pill px-3 {% if days == '14' %}btn-dark{% else %}btn-link text-muted text-decoration-none{% endif %}" style="font-size: 0.75rem;">
-                        14D
-                    </button>
-                    <button type="button" onclick="setRange(30)"
-                        class="btn btn-sm rounded-pill px-3 {% if days == '30' %}btn-dark{% else %}btn-link text-muted text-decoration-none{% endif %}" style="font-size: 0.75rem;">
-                        30D
-                    </button>
-                    <button type="button" onclick="setRange(90)"
-                        class="btn btn-sm rounded-pill px-3 {% if days == '90' %}btn-dark{% else %}btn-link text-muted text-decoration-none{% endif %}" style="font-size: 0.75rem;">
-                        90D
-                    </button>
+                
+                <div class="quick-filters">
+                    <button type="button" onclick="setRange(7)" 
+                            class="quick-filter-btn {% if days == '7' %}active{% endif %}">7D</button>
+                    <button type="button" onclick="setRange(14)" 
+                            class="quick-filter-btn {% if days == '14' %}active{% endif %}">14D</button>
+                    <button type="button" onclick="setRange(30)" 
+                            class="quick-filter-btn {% if days == '30' %}active{% endif %}">30D</button>
+                    <button type="button" onclick="setRange(90)" 
+                            class="quick-filter-btn {% if days == '90' %}active{% endif %}">90D</button>
                 </div>
-
-
-                <div class="d-flex gap-2 align-items-center">
-                    <button type="submit" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm fw-bold">
-                        Apply
+                
+                <div class="filter-actions">
+                    <button type="submit" class="btn-apply">
+                        <i class="bi bi-funnel me-1"></i> Apply
                     </button>
-
                     {% if start_date or end_date or days or selected_bank_id %}
-                    <button type="button" onclick="clearFilters()"
-                            class="btn btn-sm btn-light border rounded-pill text-danger fw-semibold px-3 shadow-sm">
+                    <button type="button" onclick="clearFilters()" class="btn-reset">
                         <i class="bi bi-arrow-counterclockwise"></i> Reset
                     </button>
                     {% endif %}
                 </div>
-
             </form>
         </div>
     </div>
 
     {% if selected_company_id %}
-    <div class="row g-3 mb-4">
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm rounded-3 h-100" style="border-top: 4px solid #718672 !important;">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="p-2 rounded-2" style="background-color: rgba(113, 134, 114, 0.1);">
-                            <i class="bi bi-arrow-down-left" style="color: #718672; font-size: 1.2rem;"></i>
-                        </div>
-                        <span class="text-muted small fw-bold text-uppercase">Revenue</span>
-                    </div>
-                    <h3 class="fw-bold mb-1" style="color: #2d3436;">₹ {{ total_payments|floatformat:0 }}</h3>
-                    <p class="text-muted small mb-0">Total Recived</p>
+    <!-- ========== Stats Cards ========== -->
+    <div class="stats-grid">
+        <div class="stat-card revenue animate-slide-up stagger-1">
+            <div class="stat-card-header">
+                <div class="stat-icon">
+                    <i class="bi bi-arrow-down-left"></i>
                 </div>
+                <span class="stat-label">Revenue</span>
             </div>
+            <div class="stat-value">₹{{ total_payments|floatformat:0 }}</div>
+            <p class="stat-description">Total amount received</p>
         </div>
-
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm rounded-3 h-100" style="border-top: 4px solid #ffb74d !important;">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="p-2 rounded-2" style="background-color: rgba(255, 183, 77, 0.1);">
-                            <i class="bi bi-arrow-up-right" style="color: #f57c00; font-size: 1.2rem;"></i>
-                        </div>
-                        <span class="text-muted small fw-bold text-uppercase">Outflow</span>
-                    </div>
-                    <h3 class="fw-bold mb-1" style="color: #2d3436;">₹ {{ total_expenses|floatformat:0 }}</h3>
-                    <p class="text-muted small mb-0">Total Spending</p>
+        
+        <div class="stat-card outflow animate-slide-up stagger-2">
+            <div class="stat-card-header">
+                <div class="stat-icon">
+                    <i class="bi bi-arrow-up-right"></i>
                 </div>
+                <span class="stat-label">Outflow</span>
             </div>
+            <div class="stat-value">₹{{ total_expenses|floatformat:0 }}</div>
+            <p class="stat-description">Total spending</p>
         </div>
+        
+        <div class="stat-card margin animate-slide-up stagger-3">
+            <div class="stat-card-header">
+                <div class="stat-icon">
+                    <i class="bi bi-graph-up-arrow"></i>
+                </div>
+                <span class="stat-label">Net Margin</span>
+            </div>
+            <div class="stat-value">₹{{ total_profit|floatformat:0 }}</div>
+            <span class="stat-badge {% if total_profit >= 0 %}positive{% else %}negative{% endif %}">
+                <i class="bi {% if total_profit >= 0 %}bi-arrow-up{% else %}bi-arrow-down{% endif %}"></i>
+                {{ profit_percentage|floatformat:1 }}% Profit
+            </span>
+        </div>
+        
+        <div class="stat-card receivables animate-slide-up stagger-4">
+            <div class="stat-card-header">
+                <div class="stat-icon">
+                    <i class="bi bi-hourglass-split"></i>
+                </div>
+                <span class="stat-label">Receivables</span>
+            </div>
+            <div class="stat-value" style="color: var(--dash-danger);">₹{{ total_balance|floatformat:0 }}</div>
+            <p class="stat-description">Yet to be received</p>
+        </div>
+    </div>
 
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm rounded-3 h-100" style="border-top: 4px solid #4fc3f7 !important;">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="p-2 rounded-2" style="background-color: rgba(79, 195, 247, 0.1);">
-                            <i class="bi bi-graph-up-arrow" style="color: #0288d1; font-size: 1.2rem;"></i>
-                        </div>
-                        <span class="text-muted small fw-bold text-uppercase">Net Margin</span>
-                    </div>
-                    <h3 class="fw-bold mb-1" style="color: #2d3436;">₹ {{ total_profit|floatformat:0 }}</h3>
-                    <span class="badge rounded-pill {% if total_profit >= 0 %}bg-success{% else %}bg-danger{% endif %} bg-opacity-10 {% if total_profit >= 0 %}text-success{% else %}text-danger{% endif %}">
-                        {{ profit_percentage|floatformat:1 }}% Profitability
+    <!-- ========== Recent Transactions ========== -->
+    <div class="row g-4 mb-4">
+        <!-- Recent Payments -->
+        <div class="col-lg-6">
+            <div class="dash-card">
+                <div class="dash-card-header">
+                    <h6 class="dash-card-title">
+                        <i class="bi bi-arrow-down-left-circle-fill income"></i>
+                        Recent Received
+                    </h6>
+                    <a href="{% url 'payment_index' %}" class="btn-view-all">
+                        View All <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+                
+                <div class="dash-card-body">
+                    <ul class="transaction-list">
+                        {% for p in recent_payments %}
+                        <li class="transaction-item">
+                            <div class="transaction-info">
+                                <div class="transaction-icon income">
+                                    <i class="bi bi-cash-stack"></i>
+                                </div>
+                                <div class="transaction-details">
+                                    <h6>{{ p.client.name }}</h6>
+                                    <small>
+                                        {{ p.payment_date|date:"d M" }} • 
+                                        <span class="highlight">{{ p.bank.name }}</span>
+                                    </small>
+                                </div>
+                            </div>
+                            <span class="transaction-amount income">+₹{{ p.amount|floatformat:0 }}</span>
+                        </li>
+                        {% empty %}
+                        <li class="empty-state">
+                            <i class="bi bi-inbox"></i>
+                            <p>No incoming payments recorded yet.</p>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                
+                <div class="dash-card-footer">
+                    <span class="footer-stat">
+                        <span class="label">Current Month</span>
+                        <strong class="ms-1">{{ current_date|date:"M Y" }}</strong>
+                    </span>
+                    <span class="footer-stat">
+                        <span class="label">Received:</span>
+                        <span class="value income">₹{{ monthly_received_total|default:"0" }}</span>
                     </span>
                 </div>
             </div>
         </div>
-
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm rounded-3 h-100" style="border-top: 4px solid #ef5350 !important;">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="p-2 rounded-2" style="background-color: rgba(239, 83, 80, 0.1);">
-                            <i class="bi bi-hourglass-split" style="color: #d32f2f; font-size: 1.2rem;"></i>
-                        </div>
-                        <span class="text-muted small fw-bold text-uppercase">Receivables</span>
-                    </div>
-                    <h3 class="fw-bold mb-1" style="color: #d32f2f;">₹ {{ total_balance|floatformat:0 }}</h3>
-                    <p class="text-muted small mb-0">Yet to be received</p>
-                </div>
-            </div>
-        </div>
-    </div>
-{% if selected_company_id %}
-<div class="row g-4 mb-4" >
-    <div class="col-md-6">
-        <div class="card border-0 shadow-sm rounded-4 overflow-hidden h-100" style="background: #ffffff;">
-            <div class="card-header bg-white py-4 px-4 border-0 d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="fw-black text-dark mb-0 text-uppercase tracking-wider" style="font-size: 0.85rem;">
-                        <i class="bi bi-arrow-down-left-circle text-success me-2"></i> Recent Received
+        
+        <!-- Recent Expenses -->
+        <div class="col-lg-6">
+            <div class="dash-card">
+                <div class="dash-card-header">
+                    <h6 class="dash-card-title">
+                        <i class="bi bi-arrow-up-right-circle-fill expense"></i>
+                        Recent Spendings
                     </h6>
+                    <a href="{% url 'expense_index' %}" class="btn-view-all">
+                        View All <i class="bi bi-arrow-right"></i>
+                    </a>
                 </div>
-                <a href="{% url 'payment_index' %}" class="btn btn-dark text-white btn-sm rounded-3 fw-bold px-3 border-0">
-                    View All
-                </a>
-            </div>
-
-            <div class="card-body p-0">
-                <div class="list-group list-group-flush">
-                    {% for p in recent_payments %}
-                    <div class="list-group-item border-0 px-4 py-3 d-flex justify-content-between align-items-center hover-bg-light-success transition-all">
-                        <div class="d-flex align-items-center">
-                            <div class="bg-success bg-opacity-10 p-2 rounded-3 me-3 text-success shadow-sm">
-                                <i class="bi bi-cash-stack fs-5"></i>
-                            </div>
-                            <div>
-                                <p class="mb-0 fw-bold text-dark">{{ p.client.name }}</p>
-                                <small class="text-muted fw-semibold" style="font-size: 0.75rem;">
-                                    {{ p.payment_date|date:"d M" }} • 
-                                    <span class="text-primary text-uppercase">{{ p.bank.name }}</span>
-                                </small>
-                            </div>
-                        </div>
-                        <div class="text-end">
-                            <span class="d-block fw-black text-success fs-5">+ ₹{{ p.amount|floatformat:0 }}</span>
-                        </div>
-                    </div>
-                    {% empty %}
-                    <div class="py-5 text-center">
-                        <i class="bi bi-cloud-slash text-light display-4"></i>
-                        <p class="text-muted small mt-2">No incoming payments recorded yet.</p>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <div class="card-footer bg-light  border-0 py-3 px-4">
-                <div class="d-flex justify-content-between align-items-center small">
-                    <span class="text-muted fw-bold">Current Month  &ensp;<b>{{ current_date|date:"M Y" }}</b></span>
-                    <span class="text-success fw-black">Received: ₹{{ monthly_received_total|default:"0" }}</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-6">
-        <div class="card border-0 shadow-sm rounded-4 overflow-hidden h-100" style="background: #ffffff;">
-            <div class="card-header bg-white py-4 px-4 border-0 d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="fw-black text-dark mb-0 text-uppercase tracking-wider" style="font-size: 0.85rem;">
-                        <i class="bi bi-arrow-up-right-circle text-danger me-2"></i> Recent Spendings
-                    </h6>
-                </div>
-                <a href="{% url 'expense_index' %}" class="btn btn-dark text-white btn-sm rounded-3 fw-bold px-3 border-0">
-                    View All
-                </a>
-            </div>
-
-            <div class="card-body p-0">
-                <div class="list-group list-group-flush">
-                    {% for e in recent_expenses %}
-                    <div class="list-group-item border-0 px-4 py-3 d-flex justify-content-between align-items-center hover-bg-light transition-all">
-                        <div class="d-flex align-items-center">
-                            <div class="bg-danger bg-opacity-10 p-2 rounded-3 me-3 text-danger shadow-sm">
-                                <i class="bi bi-receipt fs-5"></i>
-                            </div>
-                            <div>
-                                <p class="mb-0 fw-bold text-dark">{{ e.category.name|default:"General Expense" }}</p>
-                                <small class="text-muted fw-semibold" style="font-size: 0.75rem;">
-                                    {{ e.expense_date|date:"d M" }} • 
-                                    <span class="text-primary">{{ e.client.name }}</span>
-                                </small>
-                            </div>
-                        </div>
-                        <div class="text-end">
-                            <span class="d-block fw-black text-danger fs-5">- ₹{{ e.amount|floatformat:0 }}</span>
-                        </div>
-                    </div>
-                    {% empty %}
-                    <div class="py-5 text-center">
-                        <i class="bi bi-shield-check text-light display-4"></i>
-                        <p class="text-muted small mt-2">All settled. No recent spendings found.</p>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <div class="card-footer bg-light  border-0 py-3 px-4">
-                <div class="d-flex justify-content-between align-items-center small">
-                    <span class="text-muted fw-bold">Recent Cycle</span>
-                    <span class="text-danger fw-black">Total: ₹{{ recent_total|default:"0" }}</span>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
-
-    <div class="row g-3 mb-4">
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-body p-4">
-                    <h6 class="fw-bold mb-4">Profit & Spend Trend</h6>
-                    <div style="height: 350px;">
-                        <canvas id="profitTrendChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="background: #ffffff; height: 450px;">
-                <div class="card-header bg-dark py-3 px-4 border-0 d-flex justify-content-between align-items-center">
-                    <h6 class="text-white fw-black mb-0 text-uppercase tracking-wider" style="font-size: 0.85rem;">
-                        <i class="bi bi-wallet2 me-2 text-white"></i> Bank Balances
-                    </h6>
-                    <span class="badge bg-light text-dark rounded-pill small">Real-time</span>
-                </div>
-
-                <div class="card-body p-0" style="overflow-y: auto; flex: 1;">
-                    <div class="list-group list-group-flush">
-                        {% for bank in banks %}
-                        <div class="list-group-item border-0 px-4 py-3 d-flex justify-content-between align-items-center hover-bg-light transition-all">
-                            <div class="d-flex align-items-center">
-                                <div class="bg-light p-2 rounded-3 me-3 text-primary shadow-sm">
-                                    <i class="bi bi-bank2 fs-5"></i>
+                
+                <div class="dash-card-body">
+                    <ul class="transaction-list">
+                        {% for e in recent_expenses %}
+                        <li class="transaction-item">
+                            <div class="transaction-info">
+                                <div class="transaction-icon expense">
+                                    <i class="bi bi-receipt"></i>
                                 </div>
-                                <div>
-                                    <span class="d-block fw-bold text-dark mb-0">{{ bank.name }}</span>
-                                    <small class="text-muted text-uppercase fw-semibold" style="font-size: 0.65rem;">Active Account</small>
+                                <div class="transaction-details">
+                                    <h6>{{ e.category.name|default:"General Expense" }}</h6>
+                                    <small>
+                                        {{ e.expense_date|date:"d M" }} • 
+                                        <span class="highlight">{{ e.client.name }}</span>
+                                    </small>
                                 </div>
                             </div>
-                            <div class="text-end">
-                                <span class="d-block fw-black text-dark fs-5">₹ {{ bank.available_balance|floatformat:0 }}</span>
-                            </div>
-                        </div>
+                            <span class="transaction-amount expense">-₹{{ e.amount|floatformat:0 }}</span>
+                        </li>
+                        {% empty %}
+                        <li class="empty-state">
+                            <i class="bi bi-shield-check"></i>
+                            <p>All settled. No recent spendings found.</p>
+                        </li>
                         {% endfor %}
-                    </div>
+                    </ul>
                 </div>
+                
+                <div class="dash-card-footer">
+                    <span class="footer-stat">
+                        <span class="label">Recent Cycle</span>
+                    </span>
+                    <span class="footer-stat">
+                        <span class="label">Total:</span>
+                        <span class="value expense">₹{{ recent_total|default:"0" }}</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                <div class="card-footer bg-light border-0 py-3 text-center">
-                    <a href="{% url 'bank_index' %}" class="text-decoration-none small fw-bold text-dark">
-                        View Full Treasury <i class="bi bi-arrow-right ms-1"></i>
+    <!-- ========== Charts Row 1 ========== -->
+    <div class="row g-4 mb-4">
+        <!-- Profit Trend Chart -->
+        <div class="col-lg-8">
+            <div class="dash-card">
+                <div class="dash-card-header">
+                    <h6 class="dash-card-title">
+                        <i class="bi bi-activity" style="color: var(--dash-primary);"></i>
+                        Profit & Spend Trend
+                    </h6>
+                </div>
+                <div class="chart-container">
+                    <canvas id="profitTrendChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Bank Balances -->
+        <div class="col-lg-4">
+            <div class="bank-card">
+                <div class="bank-card-header">
+                    <h6>
+                        <i class="bi bi-wallet2"></i>
+                        Bank Balances
+                    </h6>
+                    <span class="badge">
+                        <i class="bi bi-lightning-fill me-1"></i> Real-time
+                    </span>
+                </div>
+                
+                <ul class="bank-list">
+                    {% for bank in banks %}
+                    <li class="bank-item">
+                        <div class="bank-info">
+                            <div class="bank-icon">
+                                <i class="bi bi-bank2"></i>
+                            </div>
+                            <div class="bank-details">
+                                <h6>{{ bank.name }}</h6>
+                                <small>Active Account</small>
+                            </div>
+                        </div>
+                        <span class="bank-balance">₹{{ bank.available_balance|floatformat:0 }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                
+                <div class="bank-card-footer">
+                    <a href="{% url 'bank_index' %}">
+                        View Full Treasury <i class="bi bi-arrow-right"></i>
                     </a>
                 </div>
             </div>
         </div>
     </div>
 
-
-
-
-
+    <!-- ========== Charts Row 2 ========== -->
     <div class="row g-4 mb-4">
-
-        <!-- 🥧 Top Categories -->
+        <!-- Top Expense Categories -->
         <div class="col-md-4">
-            <div class="card shadow-sm border-0 rounded-4 h-100">
-                <div class="card-body p-4">
-                    <h6 class="fw-bold text-uppercase small text-dark mb-3">
+            <div class="mini-chart-card">
+                <div class="mini-chart-header">
+                    <h6 class="mini-chart-title">
+                        <i class="bi bi-pie-chart me-2" style="color: var(--dash-warning);"></i>
                         Top Expense Categories
                     </h6>
-                    <canvas id="categoryChart" height="250"></canvas>
+                </div>
+                <div class="mini-chart-body">
+                    <canvas id="categoryChart"></canvas>
                 </div>
             </div>
         </div>
-
-        <!-- 👷 Salary Distribution -->
+        
+        <!-- Salary Distribution -->
         <div class="col-md-4">
-            <div class="card shadow-sm border-0 rounded-4 h-100">
-                <div class="card-body p-4">
-                    <h6 class="fw-bold text-uppercase small text-dark mb-3">
+            <div class="mini-chart-card">
+                <div class="mini-chart-header">
+                    <h6 class="mini-chart-title">
+                        <i class="bi bi-people me-2" style="color: var(--dash-info);"></i>
                         Salary by Team
                     </h6>
-                    <canvas id="salaryChart" height="250"></canvas>
+                </div>
+                <div class="mini-chart-body">
+                    <canvas id="salaryChart"></canvas>
                 </div>
             </div>
         </div>
-
-        <!-- 📉 Monthly Trend -->
+        
+        <!-- Monthly Expense Trend -->
         <div class="col-md-4">
-            <div class="card shadow-sm border-0 rounded-4 h-100">
-                <div class="card-body p-4">
-                    <h6 class="fw-bold text-uppercase small text-dark mb-3">
+            <div class="mini-chart-card">
+                <div class="mini-chart-header">
+                    <h6 class="mini-chart-title">
+                        <i class="bi bi-graph-down me-2" style="color: var(--dash-danger);"></i>
                         Monthly Expense Trend
                     </h6>
-                    <canvas id="monthlyExpenseChart" height="250"></canvas>
+                </div>
+                <div class="mini-chart-body">
+                    <canvas id="monthlyExpenseChart"></canvas>
                 </div>
             </div>
         </div>
-
     </div>
 
-
-
-</div>
-
-
     {% else %}
-    <div class="text-center py-5">
-        <img src="https://cdn-icons-png.flaticon.com/512/4076/4076549.png" width="120" class="opacity-25 mb-3">
+    <!-- ========== No Company Selected ========== -->
+    <div class="no-company-state">
+        <img src="https://cdn-icons-png.flaticon.com/512/4076/4076549.png" alt="Select Company">
         <h5>Select a company to view financial insights</h5>
     </div>
     {% endif %}
 </div>
 
+<!-- ========== Scripts ========== -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
 <script>
+// Greeting Update
 function updateGreeting() {
     const now = new Date();
     const hour = now.getHours();
-
     let greeting = "Hello 👋";
     let icon = "👋";
 
     if (hour < 12) {
-        greeting = "Good Morning ☀️";
+        greeting = "Good Morning";
         icon = "☀️";
     } else if (hour < 17) {
-        greeting = "Good Afternoon 🌤️";
+        greeting = "Good Afternoon";
         icon = "🌤️";
     } else if (hour < 21) {
-        greeting = "Good Evening 🌙";
+        greeting = "Good Evening";
         icon = "🌙";
     } else {
-        greeting = "Working Late? 💻";
+        greeting = "Working Late?";
         icon = "💻";
     }
 
-    // Format date
     const options = { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' };
     const formattedDate = now.toLocaleDateString('en-IN', options);
 
-    // Apply to UI
     document.getElementById("greetingText").innerText = greeting;
     document.getElementById("greetingIcon").innerText = icon;
     document.getElementById("greetingDate").innerText = formattedDate;
 }
-
 updateGreeting();
-</script>
 
-
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const ctx = document.getElementById('profitTrendChart');
-    if (!ctx) return;
-
-    const rawData = {{ profit_trend_values|safe }};
-    const labels = {{ profit_trend_labels|safe }};
-
-    // =========================
-    // 🔥 SMOOTHING FUNCTION
-    // =========================
-    function smoothData(data, windowSize = 2) {
-        return data.map((_, i, arr) => {
-            const start = Math.max(0, i - windowSize);
-            const end = Math.min(arr.length, i + windowSize + 1);
-            const subset = arr.slice(start, end);
-            const avg = subset.reduce((a, b) => a + b, 0) / subset.length;
-            return Math.round(avg);
-        });
-    }
-
-    const smoothedData = smoothData(rawData);
-
-    // =========================
-    // 🔥 SPIKE THRESHOLD
-    // =========================
-    const SPIKE_LIMIT = 200000;
-
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Net Profit',
-                data: smoothedData,
-
-                borderColor: '#7f56d9',
-                borderWidth: 3,
-                tension: 0.4,
-                fill: true,
-
-                // 🔥 Dynamic gradient
-                backgroundColor: (context) => {
-                    const chart = context.chart;
-                    const {ctx, chartArea} = chart;
-                    if (!chartArea) return null;
-
-                    const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
-                    gradient.addColorStop(0, 'rgba(127, 86, 217, 0)');
-                    gradient.addColorStop(1, 'rgba(127, 86, 217, 0.1)');
-                    return gradient;
-                },
-
-                // 🔥 Highlight spikes
-                pointBackgroundColor: (ctx) => {
-                    const value = rawData[ctx.dataIndex];
-
-                    if (value > SPIKE_LIMIT) return '#16a34a'; // big profit → green
-                    if (value < -SPIKE_LIMIT) return '#ef4444'; // big loss → red
-
-                    return '#ffffff';
-                },
-
-                pointBorderColor: '#7f56d9',
-                pointBorderWidth: 2,
-                pointRadius: 4,
-                pointHoverRadius: 6
-            }]
-        },
-
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-
-            plugins: {
-                legend: { display: false },
-
-                tooltip: {
-                    padding: 12,
-                    displayColors: false,
-                    callbacks: {
-                        label: (ctx) => {
-                            const raw = rawData[ctx.dataIndex];
-                            return ` Profit: ₹ ${raw.toLocaleString('en-IN')}`;
-                        }
-                    }
-                }
-            },
-
-            scales: {
-                y: {
-                    grid: {
-                        borderDash: [5, 5],
-                        color: '#eaecf0'
-                    },
-                    ticks: {
-                        callback: v => '₹ ' + Number(v).toLocaleString('en-IN')
-                    }
-                },
-                x: {
-                    grid: { display: false },
-                    ticks: {
-                        color: '#6b7280'
-                    }
-                }
-            }
-        }
-    });
-});
-
-
-
-{% comment %} Top Expense Categories {% endcomment %}
-
-new Chart(document.getElementById('categoryChart'), {
-    type: 'pie',
-    data: {
-        labels: {{ expense_category_labels|safe }},
-        datasets: [{
-            data: {{ expense_category_values|safe }},
-        }]
-    },
-    options: {
-        plugins: {
-            legend: { position: 'bottom' }
-        }
-    }
-});
-
-
-
-
-{% comment %} Salary by Team {% endcomment %}
-
-
-new Chart(document.getElementById('salaryChart'), {
-    type: 'bar',
-    data: {
-        labels: {{ salary_team_labels|safe }},
-        datasets: [{
-            label: 'Salary',
-            data: {{ salary_team_values|safe }},
-        }]
-    },
-    options: {
-        plugins: { legend: { display: false } },
-        scales: {
-            y: {
-                ticks: {
-                    callback: value => '₹' + value
-                }
-            }
-        }
-    }
-});
-
-
-{% comment %} Monthly Expense Trend {% endcomment %}
-
-new Chart(document.getElementById('monthlyExpenseChart'), {
-    type: 'line',
-    data: {
-        labels: {{ monthly_expense_labels|safe }},
-        datasets: [{
-            label: 'Expenses',
-            data: {{ monthly_expense_values|safe }},
-            fill: true,
-            tension: 0.4
-        }]
-    },
-    options: {
-        plugins: { legend: { display: false } },
-        scales: {
-            y: {
-                ticks: {
-                    callback: value => '₹' + value
-                }
-            }
-        }
-    }
-});
-
-
-
-</script>
-
-
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-
-    const canvas = document.getElementById('monthlyExpenseChart');
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    const values = {{ monthly_expense_values|safe }};
-
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: {{ monthly_expense_labels|safe }},
-            datasets: [{
-                label: 'Monthly Expenses',
-                data: values,
-                borderColor: '#ef4444',
-                borderWidth: 3,
-                tension: 0.4,
-                pointRadius: 4,
-                pointHoverRadius: 6,
-                pointBackgroundColor: '#ffffff',
-                pointBorderColor: '#ef4444',
-                pointBorderWidth: 2,
-                fill: true,
-                backgroundColor: function(context) {
-                    const chart = context.chart;
-                    const { ctx, chartArea } = chart;
-                    if (!chartArea) return null;
-
-                    const gradient = ctx.createLinearGradient(
-                        0,
-                        chartArea.bottom,
-                        0,
-                        chartArea.top
-                    );
-
-                    gradient.addColorStop(0, 'rgba(239, 68, 68, 0)');
-                    gradient.addColorStop(1, 'rgba(239, 68, 68, 0.15)');
-
-                    return gradient;
-                }
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-
-            animation: {
-                duration: 1000,
-                easing: 'easeOutQuart'
-            },
-
-            interaction: {
-                mode: 'index',
-                intersect: false
-            },
-
-            plugins: {
-                legend: { display: false },
-
-                tooltip: {
-                    backgroundColor: '#111827',
-                    padding: 14,
-                    displayColors: false,
-                    callbacks: {
-                        label: function(context) {
-                            return 'Expense: ₹ ' +
-                                Number(context.raw).toLocaleString('en-IN');
-                        }
-                    }
-                }
-            },
-
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        borderDash: [5, 5],
-                        color: '#e5e7eb'
-                    },
-                    ticks: {
-                        callback: function(value) {
-                            return '₹ ' +
-                                Number(value).toLocaleString('en-IN');
-                        }
-                    }
-                },
-
-                x: {
-                    grid: { display: false },
-                    ticks: {
-                        color: '#6b7280'
-                    }
-                }
-            }
-        }
-    });
-});
-</script>
-
-
-<script>
+// Range Filter
 function setRange(days) {
     const url = new URL(window.location.href);
-
-    // 🔥 remove manual date filters
     url.searchParams.delete('start_date');
     url.searchParams.delete('end_date');
-
-    // set days filter
     url.searchParams.set('days', days);
-
     window.location.href = url.toString();
 }
-</script>
 
-<script>
+// Clear Filters
 function clearFilters() {
     const url = new URL(window.location.href);
-
-    // 🔥 remove all filters
     url.searchParams.delete('start_date');
     url.searchParams.delete('end_date');
     url.searchParams.delete('days');
     url.searchParams.delete('bank');
-
-    window.location.href = url.pathname; // clean reload
+    window.location.href = url.pathname;
 }
 </script>
 
 <script>
-    (function () {
-        const full = "{{ greeting|escapejs }}";
-        const el = document.getElementById("greeting-typewriter");
-        let i = 0;
-        const interval = setInterval(() => {
-            el.textContent += full[i++];
-            if (i >= full.length) clearInterval(interval);
-        }, 45);
-    })();
+document.addEventListener('DOMContentLoaded', function () {
+    // Chart.js Global Defaults
+    Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+    Chart.defaults.font.size = 12;
+    Chart.defaults.color = '#64748b';
+
+    // ========== Profit Trend Chart ==========
+    const profitCtx = document.getElementById('profitTrendChart');
+    if (profitCtx) {
+        const rawData = {{ profit_trend_values|safe }};
+        const labels = {{ profit_trend_labels|safe }};
+
+        function smoothData(data, windowSize = 2) {
+            return data.map((_, i, arr) => {
+                const start = Math.max(0, i - windowSize);
+                const end = Math.min(arr.length, i + windowSize + 1);
+                const subset = arr.slice(start, end);
+                return Math.round(subset.reduce((a, b) => a + b, 0) / subset.length);
+            });
+        }
+
+        const smoothedData = smoothData(rawData);
+
+        new Chart(profitCtx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Net Profit',
+                    data: smoothedData,
+                    borderColor: '#6366f1',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    backgroundColor: (context) => {
+                        const chart = context.chart;
+                        const {ctx, chartArea} = chart;
+                        if (!chartArea) return null;
+                        const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                        gradient.addColorStop(0, 'rgba(99, 102, 241, 0)');
+                        gradient.addColorStop(1, 'rgba(99, 102, 241, 0.15)');
+                        return gradient;
+                    },
+                    pointBackgroundColor: (ctx) => {
+                        const value = rawData[ctx.dataIndex];
+                        if (value > 200000) return '#10b981';
+                        if (value < -200000) return '#ef4444';
+                        return '#ffffff';
+                    },
+                    pointBorderColor: '#6366f1',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#0f172a',
+                        padding: 14,
+                        cornerRadius: 8,
+                        displayColors: false,
+                        callbacks: {
+                            label: (ctx) => `Profit: ₹${rawData[ctx.dataIndex].toLocaleString('en-IN')}`
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        grid: { borderDash: [5, 5], color: '#e2e8f0' },
+                        ticks: { callback: v => '₹' + Number(v).toLocaleString('en-IN') }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+
+    // ========== Category Pie Chart ==========
+    const categoryCtx = document.getElementById('categoryChart');
+    if (categoryCtx) {
+        new Chart(categoryCtx, {
+            type: 'doughnut',
+            data: {
+                labels: {{ expense_category_labels|safe }},
+                datasets: [{
+                    data: {{ expense_category_values|safe }},
+                    backgroundColor: [
+                        '#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981',
+                        '#3b82f6', '#14b8a6', '#f97316', '#ef4444', '#84cc16'
+                    ],
+                    borderWidth: 0,
+                    hoverOffset: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { boxWidth: 12, padding: 15, usePointStyle: true }
+                    }
+                }
+            }
+        });
+    }
+
+    // ========== Salary Bar Chart ==========
+    const salaryCtx = document.getElementById('salaryChart');
+    if (salaryCtx) {
+        new Chart(salaryCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ salary_team_labels|safe }},
+                datasets: [{
+                    label: 'Salary',
+                    data: {{ salary_team_values|safe }},
+                    backgroundColor: '#3b82f6',
+                    borderRadius: 6,
+                    barThickness: 24
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: {
+                        grid: { borderDash: [5, 5], color: '#e2e8f0' },
+                        ticks: { callback: v => '₹' + v.toLocaleString('en-IN') }
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    // ========== Monthly Expense Line Chart ==========
+    const monthlyCtx = document.getElementById('monthlyExpenseChart');
+    if (monthlyCtx) {
+        const monthlyValues = {{ monthly_expense_values|safe }};
+        
+        new Chart(monthlyCtx, {
+            type: 'line',
+            data: {
+                labels: {{ monthly_expense_labels|safe }},
+                datasets: [{
+                    label: 'Expenses',
+                    data: monthlyValues,
+                    borderColor: '#ef4444',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    backgroundColor: (context) => {
+                        const chart = context.chart;
+                        const {ctx, chartArea} = chart;
+                        if (!chartArea) return null;
+                        const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+                        gradient.addColorStop(0, 'rgba(239, 68, 68, 0)');
+                        gradient.addColorStop(1, 'rgba(239, 68, 68, 0.15)');
+                        return gradient;
+                    },
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: '#ef4444',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#0f172a',
+                        padding: 12,
+                        cornerRadius: 8,
+                        displayColors: false,
+                        callbacks: {
+                            label: (ctx) => `Expense: ₹${Number(ctx.raw).toLocaleString('en-IN')}`
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { borderDash: [5, 5], color: '#e2e8f0' },
+                        ticks: { callback: v => '₹' + Number(v).toLocaleString('en-IN') }
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+});
 </script>
-
-
-<style>
-    .fw-black { font-weight: 800; }
-    .transition-all { transition: all 0.2s ease; }
-    .hover-bg-light:hover { 
-        background-color: #0303031f !important; /* Extremely light red on hover */
-        cursor: default; 
-    }
-
-    /* Ensure these are in your main CSS if not already added */
-    .fw-black { font-weight: 800; }
-    .transition-all { transition: all 0.2s ease; }
-    
-    /* Subtle green glow on hover for payments */
-    .hover-bg-light-success:hover { 
-        background-color: #0303031f !important; /* Extremely light red on hover */
-        cursor: default; 
-    }
-
-</style>
-
-
-<style>
-    /* Date Range Group Hover Effect */
-    .date-range-group {
-        transition: all 0.2s ease;
-        border-color: #e0e0e0 !important;
-    }
-    .date-range-group:focus-within {
-        border-color: #0d6efd !important;
-        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1) !important;
-    }
-
-    /* Clean up the date inputs */
-    .date-range-group input[type="date"]:focus {
-        outline: none !important;
-        box-shadow: none !important;
-    }
-
-    /* Quick Filter Toggle Styling */
-    .quick-filter-pill .btn-link:hover {
-        background: rgba(0,0,0,0.05);
-        color: #000 !important;
-    }
-    
-    .quick-filter-pill .btn-dark {
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    }
-
-    /* Modernizing the primary button */
-    .btn-primary.rounded-pill {
-        background: linear-gradient(145deg, #0d6efd, #0b5ed7);
-        border: none;
-    }
-</style>
-
-<style>
-    /* Modern slim scrollbar for the bank list */
-    .card-body::-webkit-scrollbar {
-        width: 6px;
-    }
-    .card-body::-webkit-scrollbar-track {
-        background: transparent;
-    }
-    .card-body::-webkit-scrollbar-thumb {
-        background: #e0e0e0;
-        border-radius: 10px;
-    }
-    .card-body::-webkit-scrollbar-thumb:hover {
-        background: #cccccc;
-    }
-
-    @keyframes chipSlideIn {
-        from { opacity: 0; transform: translateY(-8px); }
-        to   { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes avatarPop {
-        0%   { transform: scale(0.6); opacity: 0; }
-        70%  { transform: scale(1.15); }
-        100% { transform: scale(1); opacity: 1; }
-    }
-    @keyframes textFadeIn {
-        from { opacity: 0; transform: translateX(-6px); }
-        to   { opacity: 1; transform: translateX(0); }
-    }
-    @keyframes wavingHand {
-        0%, 100% { transform: rotate(0deg); }
-        20%      { transform: rotate(20deg); }
-        40%      { transform: rotate(-10deg); }
-        60%      { transform: rotate(15deg); }
-        80%      { transform: rotate(-5deg); }
-    }
-
-    .greeting-chip {
-        animation: chipSlideIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
-    }
-    .greeting-avatar {
-        animation: avatarPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both;
-    }
-    .greeting-avatar span {
-        display: inline-block;
-        animation: wavingHand 1.2s ease-in-out 0.7s 2;
-    }
-    .greeting-text {
-        animation: textFadeIn 0.4s ease 0.35s both;
-    }
-</style>
 
 {% endblock %}
