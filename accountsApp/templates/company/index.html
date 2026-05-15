@@ -2,137 +2,1297 @@
 {% block title %}Company Directory | Elite Accounts{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h4 class="fw-bold text-dark mb-1">Company Directory</h4>
-        <p class="text-muted small mb-0">Manage and monitor all registered business entities</p>
+<div class="container-fluid px-4 py-5">
+    
+    <!-- Modern Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+                <div>
+                    <nav aria-label="breadcrumb" class="mb-2">
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item">
+                                <a href="{% url 'dashboard' %}" class="text-decoration-none text-primary">
+                                    <i class="bi bi-house-door me-1"></i>Dashboard
+                                </a>
+                            </li>
+                            <li class="breadcrumb-item active" aria-current="page">Companies</li>
+                        </ol>
+                    </nav>
+                    <h1 class="h3 fw-bold text-dark mb-2">Company Directory</h1>
+                    <p class="text-muted mb-0">Manage your business entities and track key metrics</p>
+                </div>
+                <div>
+                    <a href="{% url 'company_create' %}" class="btn btn-primary px-4">
+                        <i class="bi bi-plus-circle me-2"></i>Add Company
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
-    <a href="{% url 'company_create' %}" class="btn btn-primary px-4 rounded-3 shadow-sm">
-        <i class="bi bi-plus-circle me-2"></i>Add New Company
-    </a>
-</div>
 
-<div class="card border-0 shadow-sm rounded-3 overflow-hidden">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead style="background: #1a76d1; border-bottom: 1px solid #e4e3e3;">
-                    <tr>
-                        <th class="ps-4 py-3 text-muted small fw-bold" style="width: 80px;">#</th>
-                        <th class="py-3 text-muted small fw-bold">COMPANY</th>
-                        <th class="py-3 text-muted small fw-bold">LOGO</th>
-                        <th class="py-3 text-muted small fw-bold text-center">STATS</th>
-                        <th class="pe-4 py-3 text-muted small fw-bold text-end">ACTIONS</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for company in companies %}
-                    <tr>
+    <!-- Enhanced Stats Grid -->
+    <div class="row g-4 mb-5">
+        <div class="col-xl-3 col-lg-6">
+            <div class="stats-card">
+                <div class="stats-card-inner">
+                    <div class="stats-icon bg-primary">
+                        <i class="bi bi-buildings"></i>
+                    </div>
+                    <div class="stats-content">
+                        <span class="stats-label">Total Companies</span>
+                        <h3 class="stats-value">{{ total_companies }}</h3>
+                        <span class="stats-badge success">
+                            <i class="bi bi-arrow-up"></i> Active
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-                        <!-- # -->
-                        <td class="ps-4 text-muted small fw-semibold">
-                            #{{ forloop.counter|stringformat:"02d" }}
-                        </td>
+        <div class="col-xl-3 col-lg-6">
+            <div class="stats-card">
+                <div class="stats-card-inner">
+                    <div class="stats-icon bg-success">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <div class="stats-content">
+                        <span class="stats-label">Total Clients</span>
+                        <h3 class="stats-value">{{ total_all_clients }}</h3>
+                        <span class="stats-badge success">
+                            <i class="bi bi-arrow-up"></i> 12% increase
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-                        <!-- COMPANY DETAILS -->
-                        <td>
-                            <div class="fw-bold text-dark">
-                                {{ company.name }}
-                            </div>
-                            <div class="text-muted small">
-                                Created {{ company.created_at|date:"d M Y" }}
-                            </div>
-                        </td>
+        <div class="col-xl-3 col-lg-6">
+            <div class="stats-card">
+                <div class="stats-card-inner">
+                    <div class="stats-icon bg-info">
+                        <i class="bi bi-bank2"></i>
+                    </div>
+                    <div class="stats-content">
+                        <span class="stats-label">Bank Accounts</span>
+                        <h3 class="stats-value">{{ total_all_banks }}</h3>
+                        <span class="stats-badge success">
+                            <i class="bi bi-arrow-up"></i> 8% increase
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
 
+        <div class="col-xl-3 col-lg-6">
+            <div class="stats-card">
+                <div class="stats-card-inner">
+                    <div class="stats-icon bg-warning">
+                        <i class="bi bi-person-badge"></i>
+                    </div>
+                    <div class="stats-content">
+                        <span class="stats-label">Total Workers</span>
+                        <h3 class="stats-value">{{ total_all_workers }}</h3>
+                        <span class="stats-badge success">
+                            <i class="bi bi-arrow-up"></i> 5% increase
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                        <td>
-                            <div class="d-flex align-items-center gap-3">
-                                {% if company.logo %}
-                                    <img src="{{ company.logo.url }}"
-                                        style="height:40px;width:40px;object-fit:cover;border-radius:8px;">
-                                {% else %}
-                                    <div class="bg-light border rounded d-flex align-items-center justify-content-center"
-                                        style="height:40px;width:40px;">
-                                        <i class="bi bi-building text-muted"></i>
+    <!-- Enhanced Table Card -->
+    <div class="card modern-card">
+        <!-- Card Header -->
+        <div class="card-header">
+            <div class="row align-items-center g-3">
+                <div class="col-lg-5 col-md-12">
+                    <div class="search-box">
+                        <i class="bi bi-search search-icon"></i>
+                        <input type="text" 
+                               class="search-input" 
+                               id="searchInput"
+                               placeholder="Search companies by name...">
+                    </div>
+                </div>
+                <div class="col-lg-7 col-md-12">
+                    <div class="d-flex gap-2 justify-content-lg-end flex-wrap">
+                        <div class="dropdown">
+                            <button class="btn btn-filter" type="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-funnel me-2"></i>Filter
+                                <i class="bi bi-chevron-down ms-1 small"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-modern">
+                                <li><h6 class="dropdown-header">Sort By</h6></li>
+                                <li><a class="dropdown-item" href="#"><i class="bi bi-sort-alpha-down me-2"></i>Name (A-Z)</a></li>
+                                <li><a class="dropdown-item" href="#"><i class="bi bi-sort-alpha-up me-2"></i>Name (Z-A)</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><h6 class="dropdown-header">Date</h6></li>
+                                <li><a class="dropdown-item" href="#"><i class="bi bi-calendar-check me-2"></i>Newest First</a></li>
+                                <li><a class="dropdown-item" href="#"><i class="bi bi-calendar me-2"></i>Oldest First</a></li>
+                            </ul>
+                        </div>
+                        <div class="btn-group view-toggle" role="group">
+                            <button type="button" class="btn btn-toggle active" data-view="table" data-bs-toggle="tooltip" title="Table View">
+                                <i class="bi bi-list-ul"></i>
+                            </button>
+                            <button type="button" class="btn btn-toggle" data-view="grid" data-bs-toggle="tooltip" title="Grid View">
+                                <i class="bi bi-grid-3x3"></i>
+                            </button>
+                        </div>
+                        <button class="btn btn-filter" onclick="window.print()" data-bs-toggle="tooltip" title="Print">
+                            <i class="bi bi-printer"></i>
+                        </button>
+                        <button class="btn btn-filter" data-bs-toggle="tooltip" title="Export">
+                            <i class="bi bi-download"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table View -->
+        <div id="tableView" class="table-container">
+            <div class="table-responsive">
+                <table class="table modern-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="selectAll">
+                                </div>
+                            </th>
+                            <th>COMPANY</th>
+                            <th class="text-center">CLIENTS</th>
+                            <th class="text-center">BANKS</th>
+                            <th class="text-center">TEAMS</th>
+                            <th class="text-center">WORKERS</th>
+                            <th class="text-center">STATUS</th>
+                            <th class="text-end">ACTIONS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="companiesTableBody">
+                        {% for company in companies %}
+                        <tr class="company-row" data-company-name="{{ company.name|lower }}">
+                            <td>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox">
+                                </div>
+                            </td>
+                            <td>
+                                <div class="company-info">
+                                    {% if company.logo %}
+                                        <img src="{{ company.logo.url }}" 
+                                             class="company-avatar" 
+                                             alt="{{ company.name }}">
+                                    {% else %}
+                                        <div class="company-avatar-placeholder">
+                                            <i class="bi bi-building"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div class="company-details">
+                                        <h6 class="company-name">{{ company.name }}</h6>
+                                        <span class="company-date">Created {{ company.created_at|date:"M d, Y" }}</span>
                                     </div>
-                                {% endif %}
-                            </div>
-                        </td>
-
-
-                        <!-- STATS -->
-                        <td class="text-center">
-                            <div class="d-flex flex-wrap justify-content-center gap-2">
-
-                                <span class="badge rounded-pill bg-primary bg-opacity-10 text-primary fw-semibold px-3 py-2">
-                                    {{ company.total_clients }} Clients
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <span class="stat-number">{{ company.total_clients }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="stat-number">{{ company.total_banks }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="stat-number">{{ company.total_worker_teams }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="stat-number">{{ company.total_workers }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="status-badge active">
+                                    <i class="bi bi-check-circle-fill me-1"></i>Active
                                 </span>
-
-                                <span class="badge rounded-pill bg-success bg-opacity-10 text-success fw-semibold px-3 py-2">
-                                    {{ company.total_banks }} Banks
-                                </span>
-
-                                <span class="badge rounded-pill bg-warning bg-opacity-10 text-warning fw-semibold px-3 py-2">
-                                    {{ company.total_worker_teams }} Teams
-                                </span>
-
-                                <span class="badge rounded-pill bg-dark bg-opacity-10 text-dark fw-semibold px-3 py-2">
-                                    {{ company.total_workers }} Workers
-                                </span>
-
-                            </div>
-                        </td>
-
-
-                        <!-- ACTIONS -->
-                        <td class="pe-4 text-end">
-                            <div class="d-flex justify-content-end gap-2">
-
-                                <a href="{% url 'company_update' company.id %}" 
-                                class="btn btn-sm btn-light border shadow-sm rounded-2">
-                                    <i class="bi bi-pencil-square me-1"></i> Edit
-                                </a>
-
-                                <a href="{% url 'company_delete' company.id %}" 
-                                class="btn btn-sm btn-outline-danger rounded-2">
-                                    <i class="bi bi-trash"></i>
-                                </a>
-
-                            </div>
-                        </td>
-
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="5" class="text-center py-5">
-                            <div class="py-4">
-                                <i class="bi bi-building-exclamation text-muted display-4"></i>
-                                <p class="text-muted mt-3">No companies found in the directory.</p>
-                                <a href="{% url 'company_create' %}" class="btn btn-sm btn-primary mt-2">
-                                    Create your first company
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <a href="{% url 'company_update' company.id %}" 
+                                       class="btn btn-action"
+                                       data-bs-toggle="tooltip" 
+                                       title="Edit Company">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </a>
+                                    <div class="dropdown">
+                                        <button class="btn btn-action" type="button" data-bs-toggle="dropdown">
+                                            <i class="bi bi-three-dots-vertical"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-modern dropdown-menu-end">
+                                            <li>
+                                                <a class="dropdown-item" href="{% url 'company_update' company.id %}">
+                                                    <i class="bi bi-pencil me-2"></i>Edit Company
+                                                </a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <a class="dropdown-item text-danger" 
+                                                   href="#"
+                                                   onclick="confirmDelete('{{ company.name }}', '{% url 'company_delete' company.id %}'); return false;">
+                                                    <i class="bi bi-trash me-2"></i>Delete Company
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8">
+                                <div class="empty-state">
+                                    <div class="empty-icon">
+                                        <i class="bi bi-building"></i>
+                                    </div>
+                                    <h5 class="empty-title">No companies yet</h5>
+                                    <p class="empty-text">Get started by creating your first company</p>
+                                    <a href="{% url 'company_create' %}" class="btn btn-primary mt-3">
+                                        <i class="bi bi-plus-circle me-2"></i>Add Your First Company
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
                     </tbody>
+                </table>
+            </div>
+        </div>
 
-            </table>
+        <!-- Grid View -->
+        <div id="gridView" class="grid-container" style="display: none;">
+            <div class="row g-4">
+                {% for company in companies %}
+                <div class="col-xxl-3 col-xl-4 col-lg-6 col-md-6 company-card" data-company-name="{{ company.name|lower }}">
+                    <div class="grid-card">
+                        <div class="grid-card-header">
+                            {% if company.logo %}
+                                <img src="{{ company.logo.url }}" 
+                                     class="grid-company-logo" 
+                                     alt="{{ company.name }}">
+                            {% else %}
+                                <div class="grid-company-logo-placeholder">
+                                    <i class="bi bi-building"></i>
+                                </div>
+                            {% endif %}
+                            <div class="dropdown">
+                                <button class="btn btn-action-grid" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-modern dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'company_update' company.id %}">
+                                            <i class="bi bi-pencil me-2"></i>Edit
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#">
+                                            <i class="bi bi-eye me-2"></i>View Details
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item text-danger" 
+                                           href="#"
+                                           onclick="confirmDelete('{{ company.name }}', '{% url 'company_delete' company.id %}'); return false;">
+                                            <i class="bi bi-trash me-2"></i>Delete
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="grid-card-body">
+                            <h6 class="grid-company-name">{{ company.name }}</h6>
+                            <p class="grid-company-date">Since {{ company.created_at|date:"M Y" }}</p>
+                            
+                            <div class="grid-stats">
+                                <div class="grid-stat-item">
+                                    <span class="grid-stat-value">{{ company.total_clients }}</span>
+                                    <span class="grid-stat-label">Clients</span>
+                                </div>
+                                <div class="grid-stat-item">
+                                    <span class="grid-stat-value">{{ company.total_banks }}</span>
+                                    <span class="grid-stat-label">Banks</span>
+                                </div>
+                                <div class="grid-stat-item">
+                                    <span class="grid-stat-value">{{ company.total_worker_teams }}</span>
+                                    <span class="grid-stat-label">Teams</span>
+                                </div>
+                                <div class="grid-stat-item">
+                                    <span class="grid-stat-value">{{ company.total_workers }}</span>
+                                    <span class="grid-stat-label">Workers</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid-card-footer">
+                            <span class="status-badge active">
+                                <i class="bi bi-check-circle-fill me-1"></i>Active
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Enhanced Pagination -->
+        {% if companies %}
+        <div class="card-footer">
+            <div class="pagination-wrapper">
+                <div class="pagination-info">
+                    Showing <strong>1-{{ companies.count }}</strong> of <strong>{{ companies.count }}</strong> results
+                </div>
+                <nav>
+                    <ul class="pagination modern-pagination">
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#"><i class="bi bi-chevron-left"></i></a>
+                        </li>
+                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                        <li class="page-item"><a class="page-link" href="#">3</a></li>
+                        <li class="page-item">
+                            <a class="page-link" href="#"><i class="bi bi-chevron-right"></i></a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- No Search Results -->
+    <div id="noResults" class="card modern-card mt-4" style="display: none;">
+        <div class="card-body">
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <i class="bi bi-search"></i>
+                </div>
+                <h5 class="empty-title">No results found</h5>
+                <p class="empty-text">Try adjusting your search or filter criteria</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Enhanced Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modern-modal">
+            <div class="modal-header">
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div class="modal-icon danger">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </div>
+                <h4 class="modal-title">Delete Company?</h4>
+                <p class="modal-text">
+                    Are you sure you want to delete <strong id="companyNameToDelete"></strong>? 
+                    This action cannot be undone and will remove all associated data.
+                </p>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-danger flex-fill" id="confirmDeleteBtn">
+                        <i class="bi bi-trash me-2"></i>Delete Company
+                    </button>
+                    <button type="button" class="btn btn-light flex-fill" data-bs-dismiss="modal">
+                        Cancel
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
-<div class="row mt-4">
-    <div class="col-md-4">
-        <div class="p-3 bg-white rounded-3 shadow-xs d-flex align-items-center border">
-            <div class="bg-success bg-opacity-10 p-2 rounded-2 me-3">
-                <i class="bi bi-check-circle text-success"></i>
-            </div>
-            <div>
-                <p class="text-muted small mb-0">Total Entities</p>
-                <h6 class="fw-bold mb-0">{{ companies.count }} Companies</h6>
-            </div>
-        </div>
-    </div>
-</div>
+<style>
+/* ========== MODERN VARIABLES ========== */
+:root {
+    --primary-color: #6366f1;
+    --primary-hover: #4f46e5;
+    --success-color: #10b981;
+    --danger-color: #ef4444;
+    --warning-color: #f59e0b;
+    --info-color: #06b6d4;
+    
+    --bg-light: #f8fafc;
+    --bg-white: #ffffff;
+    --border-color: #e2e8f0;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --text-muted: #94a3b8;
+    
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    
+    --radius: 0.75rem;
+    --radius-sm: 0.5rem;
+    --radius-lg: 1rem;
+    
+    --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body {
+    background-color: var(--bg-light);
+    color: var(--text-primary);
+}
+
+/* ========== ENHANCED STATS CARDS ========== */
+.stats-card {
+    background: var(--bg-white);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+    height: 100%;
+}
+
+.stats-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.stats-card-inner {
+    padding: 1.5rem;
+    display: flex;
+    gap: 1.25rem;
+    align-items: flex-start;
+}
+
+.stats-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+    flex-shrink: 0;
+}
+
+.stats-icon.bg-primary { background: linear-gradient(135deg, var(--primary-color), var(--primary-hover)); }
+.stats-icon.bg-success { background: linear-gradient(135deg, #10b981, #059669); }
+.stats-icon.bg-info { background: linear-gradient(135deg, #06b6d4, #0891b2); }
+.stats-icon.bg-warning { background: linear-gradient(135deg, #f59e0b, #d97706); }
+
+.stats-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.stats-label {
+    display: block;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.stats-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    line-height: 1;
+    margin-bottom: 0.75rem;
+}
+
+.stats-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.625rem;
+    border-radius: 100px;
+}
+
+.stats-badge.success {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+/* ========== MODERN CARD ========== */
+.modern-card {
+    background: var(--bg-white);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: none;
+    overflow: hidden;
+}
+
+.modern-card .card-header {
+    background: var(--bg-white);
+    border-bottom: 1px solid var(--border-color);
+    padding: 1.5rem;
+}
+
+.modern-card .card-footer {
+    background: var(--bg-white);
+    border-top: 1px solid var(--border-color);
+    padding: 1.25rem 1.5rem;
+}
+
+/* ========== SEARCH BOX ========== */
+.search-box {
+    position: relative;
+}
+
+.search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 1.125rem;
+    pointer-events: none;
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-light);
+    transition: var(--transition);
+    font-size: 0.9375rem;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    background: var(--bg-white);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* ========== BUTTONS ========== */
+.btn {
+    padding: 0.625rem 1.25rem;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    font-size: 0.9375rem;
+    transition: var(--transition);
+    border: none;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+    color: white;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, var(--primary-hover), #3730a3);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-filter {
+    background: var(--bg-white);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 0.625rem 1rem;
+}
+
+.btn-filter:hover {
+    background: var(--bg-light);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+.btn-light {
+    background: var(--bg-light);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+.btn-light:hover {
+    background: var(--bg-white);
+    color: var(--text-primary);
+}
+
+.btn-danger {
+    background: var(--danger-color);
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #dc2626;
+}
+
+/* ========== VIEW TOGGLE ========== */
+.view-toggle .btn-toggle {
+    background: var(--bg-white);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 0.625rem 0.875rem;
+}
+
+.view-toggle .btn-toggle:hover {
+    background: var(--bg-light);
+    color: var(--text-primary);
+}
+
+.view-toggle .btn-toggle.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+/* ========== MODERN TABLE ========== */
+.table-container {
+    overflow-x: auto;
+}
+
+.modern-table {
+    width: 100%;
+    margin: 0;
+}
+
+.modern-table thead {
+    background-color: #f1f5f9;
+}
+
+.modern-table thead th {
+    padding: 1rem 1.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border: none;
+}
+
+.modern-table tbody td {
+    padding: 1.25rem 1.5rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modern-table tbody tr {
+    transition: var(--transition);
+}
+
+.modern-table tbody tr:hover {
+    background-color: #fafbfc;
+}
+
+.modern-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* ========== COMPANY INFO ========== */
+.company-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.company-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-sm);
+    object-fit: cover;
+    border: 2px solid var(--border-color);
+}
+
+.company-avatar-placeholder {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-color);
+    font-size: 1.125rem;
+}
+
+.company-details {
+    min-width: 0;
+}
+
+.company-name {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 0.25rem 0;
+}
+
+.company-date {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+}
+
+.stat-number {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.9375rem;
+}
+
+/* ========== STATUS BADGE ========== */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.375rem 0.75rem;
+    border-radius: 100px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+}
+
+.status-badge.active {
+    background-color: #dcfce7;
+    color: #166534;
+}
+
+.status-badge i {
+    font-size: 0.75rem;
+}
+
+/* ========== ACTION BUTTONS ========== */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+.btn-action {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-light);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    transition: var(--transition);
+}
+
+.btn-action:hover {
+    background: var(--bg-white);
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* ========== GRID VIEW ========== */
+.grid-container {
+    padding: 1.5rem;
+}
+
+.grid-card {
+    background: var(--bg-white);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: var(--transition);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.grid-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary-color);
+}
+
+.grid-card-header {
+    padding: 1.5rem 1.5rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.grid-company-logo {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-sm);
+    object-fit: cover;
+    border: 2px solid var(--border-color);
+}
+
+.grid-company-logo-placeholder {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-sm);
+    background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-color);
+    font-size: 1.5rem;
+}
+
+.btn-action-grid {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    transition: var(--transition);
+}
+
+.btn-action-grid:hover {
+    background: var(--bg-light);
+    color: var(--text-primary);
+    border-radius: var(--radius-sm);
+}
+
+.grid-card-body {
+    padding: 0 1.5rem 1.5rem;
+    flex: 1;
+}
+
+.grid-company-name {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0.75rem 0 0.25rem 0;
+}
+
+.grid-company-date {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    margin-bottom: 1.25rem;
+}
+
+.grid-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+}
+
+.grid-stat-item {
+    background: var(--bg-light);
+    padding: 0.875rem;
+    border-radius: var(--radius-sm);
+    text-align: center;
+}
+
+.grid-stat-value {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.grid-stat-label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.grid-card-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border-color);
+    background: #fafbfc;
+}
+
+/* ========== DROPDOWN ========== */
+.dropdown-menu-modern {
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-lg);
+    border-radius: var(--radius-sm);
+    padding: 0.5rem;
+    min-width: 200px;
+}
+
+.dropdown-header {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.dropdown-item {
+    padding: 0.625rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.9375rem;
+    color: var(--text-primary);
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+}
+
+.dropdown-item:hover {
+    background-color: var(--bg-light);
+}
+
+.dropdown-item.text-danger:hover {
+    background-color: #fee2e2;
+    color: var(--danger-color);
+}
+
+.dropdown-divider {
+    margin: 0.5rem 0;
+}
+
+/* ========== PAGINATION ========== */
+.pagination-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.pagination-info {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+}
+
+.pagination-info strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.modern-pagination {
+    margin: 0;
+    gap: 0.25rem;
+}
+
+.modern-pagination .page-link {
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 0.5rem 0.875rem;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.modern-pagination .page-link:hover {
+    background: var(--bg-light);
+    border-color: var(--border-color);
+}
+
+.modern-pagination .page-item.active .page-link {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+}
+
+.modern-pagination .page-item.disabled .page-link {
+    background: var(--bg-light);
+    border-color: var(--border-color);
+    color: var(--text-muted);
+}
+
+/* ========== BREADCRUMB ========== */
+.breadcrumb {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    font-size: 0.875rem;
+}
+
+.breadcrumb-item a {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.breadcrumb-item a:hover {
+    color: var(--primary-hover);
+}
+
+.breadcrumb-item.active {
+    color: var(--text-secondary);
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    content: "›";
+    color: var(--text-muted);
+    font-size: 1rem;
+    padding: 0 0.5rem;
+}
+
+/* ========== CHECKBOX ========== */
+.form-check-input {
+    width: 1.125rem;
+    height: 1.125rem;
+    border: 2px solid var(--border-color);
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.form-check-input:focus {
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* ========== EMPTY STATE ========== */
+.empty-state {
+    padding: 4rem 2rem;
+    text-align: center;
+}
+
+.empty-icon {
+    width: 80px;
+    height: 80px;
+    background: var(--bg-light);
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    font-size: 2rem;
+    color: var(--text-muted);
+}
+
+.empty-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.empty-text {
+    color: var(--text-secondary);
+    margin-bottom: 0;
+}
+
+/* ========== MODAL ========== */
+.modern-modal {
+    border: none;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xl);
+}
+
+.modern-modal .modal-header {
+    border: none;
+    padding: 1.5rem 1.5rem 0;
+}
+
+.modern-modal .modal-body {
+    padding: 2rem;
+}
+
+.modal-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    font-size: 2.5rem;
+}
+
+.modal-icon.danger {
+    background-color: #fee2e2;
+    color: var(--danger-color);
+}
+
+.modal-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+}
+
+.modal-text {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+    line-height: 1.6;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+/* ========== ANIMATIONS ========== */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.company-row,
+.company-card {
+    animation: fadeIn 0.3s ease;
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+    .stats-value {
+        font-size: 1.75rem;
+    }
+    
+    .search-box {
+        margin-bottom: 0.75rem;
+    }
+    
+    .modern-table {
+        font-size: 0.875rem;
+    }
+    
+    .pagination-wrapper {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+/* ========== PRINT STYLES ========== */
+@media print {
+    body {
+        background-color: white;
+    }
+    
+    .btn,
+    .dropdown,
+    .form-check,
+    .breadcrumb,
+    .card-footer,
+    .action-buttons {
+        display: none !important;
+    }
+    
+    .modern-card {
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+    }
+}
+</style>
+
+<script>
+// Search Functionality
+const searchInput = document.getElementById('searchInput');
+const tableView = document.getElementById('tableView');
+const gridView = document.getElementById('gridView');
+const noResults = document.getElementById('noResults');
+
+if (searchInput) {
+    searchInput.addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase().trim();
+        const tableRows = document.querySelectorAll('.company-row');
+        const gridCards = document.querySelectorAll('.company-card');
+        let hasResults = false;
+
+        tableRows.forEach(row => {
+            const companyName = row.dataset.companyName;
+            if (companyName.includes(searchTerm)) {
+                row.style.display = '';
+                hasResults = true;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        gridCards.forEach(card => {
+            const companyName = card.dataset.companyName;
+            if (companyName.includes(searchTerm)) {
+                card.style.display = '';
+                hasResults = true;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        const currentView = document.querySelector('[data-view].active').dataset.view;
+        
+        if (!hasResults && searchTerm !== '') {
+            tableView.style.display = 'none';
+            gridView.style.display = 'none';
+            noResults.style.display = 'block';
+        } else {
+            noResults.style.display = 'none';
+            if (currentView === 'table') {
+                tableView.style.display = 'block';
+                gridView.style.display = 'none';
+            } else {
+                tableView.style.display = 'none';
+                gridView.style.display = 'block';
+            }
+        }
+    });
+}
+
+// View Toggle
+const viewButtons = document.querySelectorAll('[data-view]');
+viewButtons.forEach(button => {
+    button.addEventListener('click', function() {
+        const view = this.dataset.view;
+        
+        viewButtons.forEach(btn => btn.classList.remove('active'));
+        this.classList.add('active');
+
+        if (view === 'table') {
+            tableView.style.display = 'block';
+            gridView.style.display = 'none';
+        } else {
+            tableView.style.display = 'none';
+            gridView.style.display = 'block';
+        }
+    });
+});
+
+// Select All Checkbox
+const selectAll = document.getElementById('selectAll');
+if (selectAll) {
+    selectAll.addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('tbody .form-check-input');
+        checkboxes.forEach(cb => cb.checked = this.checked);
+    });
+}
+
+// Delete Confirmation Modal
+let deleteUrl = '';
+const deleteModalElement = document.getElementById('deleteModal');
+const deleteModal = deleteModalElement ? new bootstrap.Modal(deleteModalElement) : null;
+
+function confirmDelete(companyName, url) {
+    if (deleteModal) {
+        document.getElementById('companyNameToDelete').textContent = companyName;
+        deleteUrl = url;
+        deleteModal.show();
+    }
+}
+
+const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+if (confirmDeleteBtn) {
+    confirmDeleteBtn.addEventListener('click', function() {
+        if (deleteUrl) {
+            window.location.href = deleteUrl;
+        }
+    });
+}
+
+// Initialize Tooltips
+const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
+});
+</script>
+
 {% endblock %}

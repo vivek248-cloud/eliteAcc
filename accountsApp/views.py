@@ -1075,17 +1075,33 @@ from django.db.models import Count
 
 
 
+from django.shortcuts import render
+from django.db.models import Count, Sum
+from .models import Company
+
 def company_index(request):
     companies = Company.objects.annotate(
         total_clients=Count('clients', distinct=True),
         total_banks=Count('banks', distinct=True),
         total_worker_teams=Count('workers', distinct=True),
-        total_workers=Count('workers__names', distinct=True),  # ✅ FIXED
+        total_workers=Count('workers__names', distinct=True),
     ).order_by('-id')
-
-    return render(request, 'company/index.html', {
-        'companies': companies
-    })
+    
+    # Calculate overall statistics
+    total_companies = companies.count()
+    total_all_clients = sum(c.total_clients for c in companies)
+    total_all_banks = sum(c.total_banks for c in companies)
+    total_all_workers = sum(c.total_workers for c in companies)
+    
+    context = {
+        'companies': companies,
+        'total_companies': total_companies,
+        'total_all_clients': total_all_clients,
+        'total_all_banks': total_all_banks,
+        'total_all_workers': total_all_workers,
+    }
+    
+    return render(request, 'company/index.html', context)
 
 
 #create view for Company
