@@ -769,6 +769,12 @@ document.addEventListener('DOMContentLoaded', function () {
   </div>
 </div>
 
+
+
+
+
+
+
 <script>
 (function () {
   let expr = '';
@@ -911,6 +917,161 @@ document.addEventListener('DOMContentLoaded', function () {
 
   handle.style.cursor = 'grab';
 })();
+</script>
+
+
+
+
+
+
+//alert for local backup download
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const today = new Date().getDay();
+
+    // Monday only
+    if (today !== 1) return;
+
+    // Already closed today?
+    const hiddenDate = localStorage.getItem(
+        "backupDownloadReminderHidden"
+    );
+
+    const currentDate = new Date()
+        .toISOString()
+        .split('T')[0];
+
+    if (hiddenDate === currentDate) return;
+
+    const alertHtml = `
+    <div id="backupReminder" style="
+        position:fixed;
+        bottom:20px;
+        right:20px;
+        width:360px;
+        background:#fff;
+        border-radius:18px;
+        overflow:hidden;
+        box-shadow:0 15px 35px rgba(0,0,0,0.12);
+        z-index:999999;
+        border:1px solid #e9ecef;
+        animation:slideUp .4s ease;
+    ">
+
+        <div style="
+            padding:16px 18px;
+            background:linear-gradient(135deg,#0d6efd,#4facfe);
+            color:#fff;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+        ">
+
+            <div>
+                <div style="
+                    font-size:15px;
+                    font-weight:700;
+                ">
+                    Weekly Backup Ready
+                </div>
+
+                <div style="
+                    font-size:12px;
+                    opacity:.9;
+                ">
+                    Sunday auto backup completed
+                </div>
+            </div>
+
+            <button
+                onclick="closeBackupReminder()"
+                style="
+                    border:none;
+                    background:none;
+                    color:white;
+                    font-size:20px;
+                    cursor:pointer;
+                "
+            >
+                ×
+            </button>
+
+        </div>
+
+        <div style="padding:18px;">
+
+            <p style="
+                margin:0 0 16px;
+                font-size:14px;
+                line-height:1.6;
+                color:#555;
+            ">
+                Download a local copy of the latest database backup
+                for additional safety and disaster recovery.
+            </p>
+
+            <div class="d-flex gap-2">
+
+                <a
+                    href="/backups/history/"
+                    class="btn btn-primary w-100"
+                >
+                    <i class="bi bi-download me-2"></i>
+                    Download Backup
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <style>
+
+    @keyframes slideUp {
+
+        from {
+            opacity:0;
+            transform:translateY(20px);
+        }
+
+        to {
+            opacity:1;
+            transform:translateY(0);
+        }
+    }
+
+    </style>
+    `;
+
+    document.body.insertAdjacentHTML(
+        'beforeend',
+        alertHtml
+    );
+
+});
+
+function closeBackupReminder() {
+
+    const currentDate = new Date()
+        .toISOString()
+        .split('T')[0];
+
+    localStorage.setItem(
+        "backupDownloadReminderHidden",
+        currentDate
+    );
+
+    const el = document.getElementById(
+        "backupReminder"
+    );
+
+    if (el) {
+        el.remove();
+    }
+}
 </script>
 
 
