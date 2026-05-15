@@ -2,190 +2,280 @@
 {% block title %}Settings | Elite Accounts{% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid py-4 px-4">
     <div class="row justify-content-center">
-        <div class="col-md-9 col-lg-8">
+        <div class="col-12 col-xl-10">
 
-            <div class="d-flex justify-content-between align-items-center mb-4">
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
                 <div>
-                    <h4 class="fw-bold text-dark mb-0">System Settings</h4>
-                    <p class="text-muted small mb-0">Manage your account security and application preferences</p>
+                    <h3 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
+                        <i class="bi bi-gear-fill text-primary"></i>
+                        System Settings
+                    </h3>
+                    <p class="text-muted mb-0">Manage your account security and application preferences</p>
                 </div>
-                <div class="text-end">
-                    <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill">Version 1.1</span>
+                <div class="d-flex gap-2 align-items-center">
+                    <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill border border-primary border-opacity-25">
+                        <i class="bi bi-shield-check me-1"></i>Secure
+                    </span>
+                    <span class="badge bg-light text-dark px-3 py-2 rounded-pill">Version 1.1</span>
                 </div>
             </div>
 
-            <div class="card border-0 shadow-sm rounded-3 mb-4" style="background-color: #f8f9fa; border-left: 4px solid #6c757d !important;">
-                <div class="card-body d-flex align-items-center justify-content-between">
-                    <div>
-                        <h6 class="fw-bold mb-1"><i class="bi bi-gear-wide-connected me-2"></i>Advanced Administration</h6>
-                        <p class="text-muted small mb-0">Access the core Django admin panel for full database customization.</p>
+            <!-- Admin Panel Quick Access -->
+            <div class="alert alert-dark border-0 shadow-sm rounded-4 mb-4 bg-primary" role="alert">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                    <div class="d-flex align-items-start gap-3">
+                        <div class="bg-white bg-opacity-25 rounded-3 p-3">
+                            <i class="bi bi-gear-wide-connected fs-3 text-white"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-1 text-white">
+                                <i class="bi bi-star-fill text-warning me-1" style="font-size: 0.8rem;"></i>
+                                Advanced Administration
+                            </h6>
+                            <p class="mb-0 text-white-50 small">
+                                Access the core Django admin panel for full database customization and advanced configurations.
+                            </p>
+                        </div>
                     </div>
-                    <a href="/admin/" class="btn btn-dark btn-sm px-4 rounded-3" target="_blank">
-                        Open Admin <i class="bi bi-box-arrow-up-right ms-1"></i>
+                    <a href="/admin/" class="btn btn-light px-4 py-2 rounded-pill fw-semibold" target="_blank">
+                        Open Admin Panel <i class="bi bi-box-arrow-up-right ms-1"></i>
                     </a>
                 </div>
             </div>
 
-            <div class="row g-4">
-                <div class="col-md-6">
-                    <div class="card border-0 shadow-sm rounded-3 h-100">
-                        <div class="card-header bg-white border-0 fw-bold pt-3">
-                            <i class="bi bi-shield-lock text-primary me-2"></i>Security
-                        </div>
-                        <div class="card-body">
-                            <p class="text-muted small">Update your login credentials regularly to maintain account integrity.</p>
-                            <a href="{% url 'password_change' %}" class="btn btn-outline-primary btn-sm w-100 rounded-3">
-                                Change Password
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-6">
-                    <div class="card border-0 shadow-sm rounded-3 h-100">
-                        <div class="card-header bg-white border-0 fw-bold pt-3">
-                            <i class="bi bi-database-down text-danger me-2"></i>
-                            Database Backup
-                        </div>
-
-                        <div class="card-body">
-                            <p class="text-muted small">
-                                Export a full snapshot of your financial records to a local file.
+            <!-- Main Settings Grid -->
+            <div class="row g-4 mb-4">
+                
+                <!-- Security Settings -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 hover-lift">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="icon-wrapper bg-primary-subtle rounded-3 p-3 me-3">
+                                    <i class="bi bi-shield-lock-fill text-primary fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold mb-0">Security</h6>
+                                    <small class="text-muted">Account Protection</small>
+                                </div>
+                            </div>
+                            <p class="text-muted small mb-4">
+                                Update your login credentials regularly to maintain account integrity and security.
                             </p>
-
-                            <!-- Download Backup -->
-                            <a href="{% url 'database_backup' %}"
-                            class="btn btn-danger btn-sm w-100 rounded-3 mb-2"
-                            onclick="return confirm('Create and download database backup?')">
-                                <i class="bi bi-download me-1"></i>
-                                Download Backup
-                            </a>
-
-                            <!-- View History -->
-                            <a href="{% url 'backup_history' %}"
-                            class="btn btn-dark btn-sm w-100 rounded-3">
-                                <i class="bi bi-clock-history me-1"></i>
-                                View Backup History
+                            <a href="{% url 'password_change' %}" class="btn btn-outline-primary btn-sm w-100 rounded-pill py-2">
+                                <i class="bi bi-key-fill me-2"></i>Change Password
                             </a>
                         </div>
                     </div>
                 </div>
 
+                <!-- Database Backup -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 hover-lift">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="icon-wrapper bg-danger-subtle rounded-3 p-3 me-3">
+                                    <i class="bi bi-database-fill-down text-danger fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold mb-0">Database Backup</h6>
+                                    <small class="text-muted">Data Protection</small>
+                                </div>
+                            </div>
+                            <p class="text-muted small mb-4">
+                                Export a full snapshot of your financial records to a secure local file.
+                            </p>
+                            <div class="d-grid gap-2">
+                                <a href="{% url 'database_backup' %}"
+                                   class="btn btn-danger btn-sm rounded-pill py-2"
+                                   onclick="return confirm('Create and download database backup?')">
+                                    <i class="bi bi-download me-2"></i>Download Backup
+                                </a>
+                                <a href="{% url 'backup_history' %}"
+                                   class="btn btn-outline-secondary btn-sm rounded-pill py-2">
+                                    <i class="bi bi-clock-history me-2"></i>Backup History
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-                <div class="restore-container mt-4 p-4 rounded-4 border shadow-sm bg-white">
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="icon-box bg-warning bg-opacity-10 text-warning rounded-3 p-2 me-3">
-                            <i class="bi bi-cloud-arrow-up-fill fs-4"></i>
+                <!-- Theme Settings -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="card border-0 shadow-sm rounded-4 h-100 hover-lift position-relative overflow-hidden">
+                        <div class="coming-soon-badge">
+                            <span class="badge bg-warning text-dark px-2 py-1 rounded-pill small">Coming Soon</span>
+                        </div>
+                        <div class="card-body p-4 opacity-75">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="icon-wrapper bg-warning-subtle rounded-3 p-3 me-3">
+                                    <i class="bi bi-palette-fill text-warning fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold mb-0">Interface Theme</h6>
+                                    <small class="text-muted">Appearance</small>
+                                </div>
+                            </div>
+                            <p class="text-muted small mb-4">
+                                Custom themes and dark mode options will be available in the next update.
+                            </p>
+                            <button class="btn btn-outline-secondary btn-sm w-100 rounded-pill py-2" disabled>
+                                <i class="bi bi-moon-stars me-2"></i>Default Light
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Database Restore Section -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-warning-subtle border-0 rounded-top-4 p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-wrapper bg-warning rounded-3 p-3 me-3">
+                            <i class="bi bi-cloud-arrow-up-fill text-white fs-4"></i>
                         </div>
                         <div>
-                            <h6 class="mb-0 fw-bold text-dark">Restore Database</h6>
-                            <small class="text-muted">Upload a .zip backup file to restore system data</small>
+                            <h5 class="mb-1 fw-bold text-dark">Restore Database</h5>
+                            <p class="mb-0 text-muted small">Upload a .zip backup file to restore system data</p>
                         </div>
                     </div>
-
+                </div>
+                
+                <div class="card-body p-4">
                     <form method="POST"
-                        action="{% url 'restore_database' %}"
-                        enctype="multipart/form-data"
-                        id="restoreForm"
-                        class="needs-validation">
-
+                          action="{% url 'restore_database' %}"
+                          enctype="multipart/form-data"
+                          id="restoreForm"
+                          class="needs-validation">
+                        
                         {% csrf_token %}
 
-                        <div class="upload-zone mb-3" id="dropZone">
+                        <!-- Upload Zone -->
+                        <div class="upload-zone mb-4" id="dropZone">
                             <input type="file"
-                                name="backup_file"
-                                id="backupFile"
-                                accept=".zip"
-                                required
-                                class="file-input">
+                                   name="backup_file"
+                                   id="backupFile"
+                                   accept=".zip"
+                                   required
+                                   class="file-input">
                             
-                            <div class="upload-content text-center py-4 border-dashed rounded-4">
-                                <i class="bi bi-file-earmark-zip text-primary fs-1 mb-2"></i>
-                                <p class="mb-1 fw-semibold text-dark" id="fileName">Click to upload or drag & drop</p>
-                                <p class="text-muted small mb-0">ZIP files only (Max 50MB)</p>
+                            <div class="upload-content text-center py-5 px-4 border-dashed rounded-4 bg-light">
+                                <i class="bi bi-cloud-arrow-up text-primary mb-3" style="font-size: 3rem;"></i>
+                                <h6 class="fw-semibold text-dark mb-2" id="fileName">
+                                    Drop your backup file here or click to browse
+                                </h6>
+                                <p class="text-muted small mb-0">
+                                    <i class="bi bi-file-earmark-zip me-1"></i>
+                                    Supports .ZIP files only (Maximum size: 50MB)
+                                </p>
                             </div>
                         </div>
 
-                        <div class="alert alert-warning border-0 rounded-3 d-flex align-items-center mb-4 py-2 px-3">
-                            <i class="bi bi-exclamation-triangle-fill me-2 small"></i>
-                            <span style="font-size: 0.75rem;" class="fw-medium">Restoring will permanently overwrite current data.</span>
+                        <!-- Warning Alert -->
+                        <div class="alert alert-warning border-0 rounded-3 mb-4 shadow-sm">
+                            <div class="d-flex align-items-start">
+                                <i class="bi bi-exclamation-triangle-fill me-3 mt-1 fs-5"></i>
+                                <div>
+                                    <h6 class="fw-bold mb-1">Critical Action Warning</h6>
+                                    <p class="mb-0 small">
+                                        Restoring will permanently overwrite all current data. 
+                                        This action cannot be undone. Please ensure you have a recent backup before proceeding.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
 
+                        <!-- Submit Button -->
                         <button type="submit"
                                 id="restoreBtn"
-                                class="btn btn-primary w-100 py-2 rounded-3 fw-bold shadow-sm transition-all d-flex align-items-center justify-content-center gap-2">
-                            <i class="bi bi-arrow-clockwise fs-5" id="btnIcon"></i>
+                                class="btn btn-warning btn-lg w-100 py-3 rounded-pill fw-bold shadow-sm">
+                            <i class="bi bi-arrow-clockwise me-2 fs-5" id="btnIcon"></i>
                             <span id="btnText">Initiate System Restore</span>
                         </button>
                     </form>
                 </div>
+            </div>
 
-                <div class="col-md-12">
-                    <div class="card border-0 shadow-sm rounded-3">
-                        <div class="card-header bg-white border-0 fw-bold pt-3">
-                            <i class="bi bi-envelope-at text-success me-2"></i>System Notifications
+            <!-- System Notifications -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-success-subtle border-0 rounded-top-4 p-4">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-wrapper bg-success rounded-3 p-3 me-3">
+                            <i class="bi bi-envelope-at-fill text-white fs-4"></i>
                         </div>
-                        <div class="card-body">
-                            <form method="post" enctype="multipart/form-data">
-                                {% csrf_token %}
-
-                                <div class="row align-items-end">
-
-                                    <div class="col-md-6">
-                                        <label class="form-label small text-muted fw-bold">
-                                            Alert Email Address
-                                        </label>
-                                        <input type="email"
-                                            name="notification_email"
-                                            class="form-control bg-light border-0 shadow-none"
-                                            placeholder="example@email.com"
-                                            value="{{ settings_obj.notification_email }}">
-                                    </div>
-
-                                    <div class="col-md-4">
-                                        <label class="form-label small text-muted fw-bold">
-                                            Favicon
-                                        </label>
-                                        <input type="file"
-                                            name="favicon"
-                                            accept=".png,.ico"
-                                            class="form-control bg-light border-0 shadow-none">
-                                    </div>
-
-                                    <div class="col-md-2 mt-3 mt-md-0">
-                                        <button class="btn btn-success btn-sm w-100 rounded-3 py-2">
-                                            Update
-                                        </button>
-                                    </div>
-
-                                </div>
-
-                                {% if settings_obj.favicon %}
-                                    <div class="mt-3">
-                                        <small class="text-muted">Current Favicon:</small><br>
-                                        <img src="{{ settings_obj.favicon.url }}" width="32" height="32">
-                                    </div>
-                                {% endif %}
-                            </form>
+                        <div>
+                            <h5 class="mb-1 fw-bold text-dark">System Notifications</h5>
+                            <p class="mb-0 text-muted small">Configure email alerts and system branding</p>
                         </div>
                     </div>
                 </div>
+                
+                <div class="card-body p-4">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
 
-                <div class="col-md-12">
-                    <div class="card border-0 shadow-sm rounded-3">
-                        <div class="card-body d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="fw-bold mb-1"><i class="bi bi-palette text-warning me-2"></i>Interface Theme</h6>
-                                <p class="text-muted small mb-0">Custom themes and dark mode options are coming soon.</p>
+                        <div class="row g-3 align-items-end">
+                            <!-- Email Input -->
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-dark mb-2">
+                                    <i class="bi bi-envelope-fill text-success me-2"></i>
+                                    Alert Email Address
+                                </label>
+                                <input type="email"
+                                       name="notification_email"
+                                       class="form-control form-control-lg rounded-pill px-4 shadow-sm"
+                                       placeholder="example@email.com"
+                                       value="{{ settings_obj.notification_email }}">
+                                <small class="text-muted">Receive important system notifications</small>
                             </div>
-                            <span class="badge bg-light text-dark border-0 px-3 py-2">
-                                Default Light
-                            </span>
+
+                            <!-- Favicon Upload -->
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold text-dark mb-2">
+                                    <i class="bi bi-image-fill text-primary me-2"></i>
+                                    Favicon Icon
+                                </label>
+                                <input type="file"
+                                       name="favicon"
+                                       accept=".png,.ico"
+                                       class="form-control form-control-lg rounded-pill px-4 shadow-sm">
+                                <small class="text-muted">PNG or ICO format</small>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-success btn-lg w-100 rounded-pill py-3 fw-bold shadow-sm">
+                                    <i class="bi bi-check-circle-fill me-2"></i>Save
+                                </button>
+                            </div>
                         </div>
-                    </div>
+
+                        <!-- Current Favicon Preview -->
+                        {% if settings_obj.favicon %}
+                        <div class="mt-4 p-3 bg-light rounded-3 border">
+                            <div class="d-flex align-items-center">
+                                <small class="text-muted fw-semibold me-3">Current Favicon:</small>
+                                <div class="bg-white border rounded-2 p-2">
+                                    <img src="{{ settings_obj.favicon.url }}" width="32" height="32" alt="Current Favicon">
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </form>
                 </div>
+            </div>
+
+            <!-- Footer Info -->
+            <div class="text-center py-4">
+                <p class="text-muted small mb-0">
+                    <i class="bi bi-shield-check me-1"></i>
+                    All settings are encrypted and securely stored. 
+                    <a href="#" class="text-decoration-none">Privacy Policy</a>
+                </p>
             </div>
 
         </div>
@@ -193,15 +283,38 @@
 </div>
 
 <style>
-    /* 1. Upload Zone Styling */
-    .border-dashed {
-        border: 2px dashed #e2e8f0;
-        transition: all 0.3s ease;
-        background: #f8fafc;
-        cursor: pointer;
+    /* Enhanced Styling */
+    :root {
+        --primary-color: #4361ee;
+        --danger-color: #dc3545;
+        --success-color: #198754;
+        --warning-color: #ffc107;
     }
 
-    .upload-zone { position: relative; }
+    /* Card Hover Effect */
+    .hover-lift {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+    }
+
+    /* Icon Wrapper */
+    .icon-wrapper {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 60px;
+        height: 60px;
+    }
+
+    /* Upload Zone Enhanced */
+    .upload-zone {
+        position: relative;
+        cursor: pointer;
+    }
     
     .file-input {
         position: absolute;
@@ -210,52 +323,202 @@
         opacity: 0;
         cursor: pointer;
         z-index: 2;
+        top: 0;
+        left: 0;
+    }
+
+    .border-dashed {
+        border: 3px dashed #dee2e6;
+        transition: all 0.3s ease;
     }
 
     .upload-zone:hover .border-dashed {
-        border-color: #4361ee;
-        background: #f0f4ff;
+        border-color: var(--primary-color);
+        background: linear-gradient(135deg, #f8f9ff 0%, #e8ecff 100%) !important;
     }
 
-    /* 2. Transition Effects */
-    .transition-all { transition: all 0.2s ease-in-out; }
+    .upload-zone:hover .upload-content i {
+        transform: scale(1.1);
+        transition: transform 0.3s ease;
+    }
 
-    /* 3. Animation for Loading */
+    /* File Selected State */
+    .file-selected {
+        border-color: var(--success-color) !important;
+        background: linear-gradient(135deg, #f0fff4 0%, #dcfce7 100%) !important;
+    }
+
+    /* Coming Soon Badge */
+    .coming-soon-badge {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        z-index: 1;
+    }
+
+    /* Loading Animation */
     .spin {
         animation: spin 1s linear infinite;
     }
+
     @keyframes spin {
         from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }
     }
 
-    /* 4. Disable Click State */
     .btn-loading {
         opacity: 0.7;
         pointer-events: none;
     }
+
+    /* Smooth Transitions */
+    .btn, .card, .form-control {
+        transition: all 0.3s ease;
+    }
+
+    /* Form Control Focus */
+    .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(67, 97, 238, 0.15);
+    }
+
+    /* Alert Enhancements */
+    .alert {
+        border-left: 4px solid currentColor;
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 768px) {
+        .icon-wrapper {
+            width: 50px;
+            height: 50px;
+        }
+        
+        .upload-content {
+            padding: 2rem 1rem !important;
+        }
+
+        .upload-content i {
+            font-size: 2rem !important;
+        }
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+        width: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 5px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+
+    /* Badge Enhancements */
+    .badge {
+        font-weight: 600;
+        letter-spacing: 0.3px;
+    }
+
+    /* Success Animation */
+    @keyframes successPulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+
+    .success-animation {
+        animation: successPulse 0.5s ease;
+    }
 </style>
 
-
 <script>
-    const fileInput = document.querySelector('#backupFile');
-    const fileNameDisplay = document.querySelector('#fileName');
-    const restoreForm = document.querySelector('#restoreForm');
-    const restoreBtn = document.querySelector('#restoreBtn');
-    const btnIcon = document.querySelector('#btnIcon');
-    const btnText = document.querySelector('#btnText');
-
-    // Update file name on selection
+    // File Upload Handler
+    const fileInput = document.getElementById('backupFile');
+    const fileNameDisplay = document.getElementById('fileName');
+    const dropZone = document.getElementById('dropZone');
+    const uploadContent = dropZone.querySelector('.upload-content');
+    
+    // File selection change
     fileInput.addEventListener('change', (e) => {
         if (e.target.files.length > 0) {
-            fileNameDisplay.textContent = e.target.files[0].name;
-            fileNameDisplay.classList.add('text-primary');
+            const file = e.target.files[0];
+            const fileSize = (file.size / (1024 * 1024)).toFixed(2); // MB
+            
+            uploadContent.classList.add('file-selected');
+            fileNameDisplay.innerHTML = `
+                <i class="bi bi-file-earmark-zip-fill text-success me-2"></i>
+                ${file.name} 
+                <span class="badge bg-success ms-2">${fileSize} MB</span>
+            `;
         }
     });
 
-    // Handle Form Submission
+    // Drag and Drop functionality
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, unhighlight, false);
+    });
+
+    function highlight(e) {
+        uploadContent.classList.add('border-primary', 'bg-primary', 'bg-opacity-10');
+    }
+
+    function unhighlight(e) {
+        uploadContent.classList.remove('border-primary', 'bg-primary', 'bg-opacity-10');
+    }
+
+    dropZone.addEventListener('drop', handleDrop, false);
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        fileInput.files = files;
+        
+        // Trigger change event
+        const event = new Event('change', { bubbles: true });
+        fileInput.dispatchEvent(event);
+    }
+
+    // Form Submission Handler
+    const restoreForm = document.getElementById('restoreForm');
+    const restoreBtn = document.getElementById('restoreBtn');
+    const btnIcon = document.getElementById('btnIcon');
+    const btnText = document.getElementById('btnText');
+
     restoreForm.addEventListener('submit', function(e) {
-        const confirmed = confirm('⚠️ CRITICAL WARNING: This will overwrite your entire database with the backup file. This cannot be undone. \n\nAre you absolutely sure?');
+        if (!fileInput.files.length) {
+            e.preventDefault();
+            alert('Please select a backup file first.');
+            return false;
+        }
+
+        const confirmed = confirm(
+            '⚠️ CRITICAL WARNING\n\n' +
+            'This will permanently overwrite your entire database with the backup file.\n\n' +
+            '• All current data will be replaced\n' +
+            '• This action cannot be undone\n' +
+            '• Ensure the backup file is valid\n\n' +
+            'Are you absolutely sure you want to proceed?'
+        );
         
         if (!confirmed) {
             e.preventDefault();
@@ -264,10 +527,28 @@
 
         // Show loading state
         restoreBtn.classList.add('btn-loading');
+        restoreBtn.disabled = true;
         btnIcon.classList.add('spin');
-        btnText.textContent = "Restoring Database... Please wait.";
+        btnText.textContent = "Restoring Database... Please wait";
     });
-</script>
 
+    // Success message animation (if using Django messages)
+    document.addEventListener('DOMContentLoaded', function() {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+            alert.classList.add('success-animation');
+        });
+    });
+
+    // Auto-hide success messages after 5 seconds
+    setTimeout(() => {
+        const successAlerts = document.querySelectorAll('.alert-success');
+        successAlerts.forEach(alert => {
+            alert.style.transition = 'opacity 0.5s ease';
+            alert.style.opacity = '0';
+            setTimeout(() => alert.remove(), 500);
+        });
+    }, 5000);
+</script>
 
 {% endblock %}

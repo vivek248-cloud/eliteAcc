@@ -26,7 +26,9 @@ urlpatterns = [
     path('clients/<int:pk>/', client_info, name='client_info'),
     path('clients/<int:pk>/export/pdf/', client_info_pdf, name='client_info_pdf'),
     path('clients/all/', all_client_index, name='all_clients_statement'),
+    path('clients/excel/', all_client_info_excel, name='all_client_info_excel'),
     path('clients/pdf/', all_client_info_pdf, name='all_client_info_pdf'),
+    path('clients/<int:pk>/export/excel/',client_info_excel,name='client_info_excel'),
     path('clients/toggle/<int:pk>/', toggle_client_status, name='toggle_client_status'),
 
 
@@ -36,6 +38,7 @@ urlpatterns = [
     path('banks/delete/<int:pk>/', bank_delete, name='bank_delete'),
     path('banks/<int:pk>/log/', bank_log, name='bank_log'),
     path('banks/<int:pk>/log/pdf/', bank_log_pdf, name='bank_log_pdf'),
+    path('banks/<int:pk>/log/excel/', bank_log_excel, name='bank_log_excel'),
     path('banks/toggle/<int:pk>/', toggle_bank_status, name='toggle_bank_status'),
 
     path('transfers/', transfer_list, name='transfer_list'),
@@ -60,6 +63,7 @@ urlpatterns = [
     path('check-expense-duplicate/', check_expense_duplicate, name='check_expense_duplicate'),
     path('expenses/', expense_index, name='expense_index'),
     path('expenses/pdf/', expense_pdf_export, name='expense_pdf_export'),
+    path('expenses/excel/', expense_excel_export, name='expense_excel_export'),
     path('expenses/create/', expense_create, name='expense_create'),
     path('expenses/update/<int:pk>/', expense_update, name='expense_update'),
     path('expenses/delete/<int:pk>/', expense_delete, name='expense_delete'),
@@ -89,6 +93,8 @@ urlpatterns = [
 
     path('salary/', salary_index, name='salary_index'),
     path('salary/pdf/', salary_pdf, name='salary_pdf'),
+    path('salary/excel/',salary_excel_export,name='salary_excel_export'),
+
 
     path('activity/today/', today_activity, name='today_activity'),
     path('settings/', settings_view, name='settings'),

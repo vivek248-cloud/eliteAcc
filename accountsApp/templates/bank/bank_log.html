@@ -145,15 +145,22 @@
 </table>
 </div>
 
-<div class="d-flex justify-content-between">
-<a href="{% url 'bank_index' %}" class="btn btn-primary mt-3 mb-3" style="vertical-align: center;">
-    ← Back to Banks
-</a>
-
-<a href="{% url 'bank_log_pdf' bank.id %}?client={{ selected_client }}&start_date={{ start_date }}&end_date={{ end_date }}"
-   class="btn btn-danger mb-3 mt-3">
-   📄 Export PDF
-</a>
-
+<div class="d-flex justify-content-between align-items-center my-3 flex-wrap gap-2">
+    <a href="{% url 'bank_index' %}" class="btn btn-primary">
+        <i class="bi bi-arrow-left"></i> Back to Banks
+    </a>
+    
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{% url 'bank_log_pdf' bank.id %}?client={{ selected_client }}&start_date={{ start_date }}&end_date={{ end_date }}" 
+           class="btn btn-danger">
+            <i class="bi bi-file-pdf"></i> Export PDF
+        </a>
+        <a href="{% url 'bank_log_excel' bank.id %}?client={{ selected_client }}&start_date={{ start_date }}&end_date={{ end_date }}" 
+           class="btn btn-success">
+            <i class="bi bi-file-earmark-excel"></i> Export Excel
+        </a>
+    </div>
 </div>
+
+
 {% endblock %}

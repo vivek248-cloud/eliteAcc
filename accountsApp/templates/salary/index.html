@@ -3,19 +3,26 @@
 
 {% block content %}
 <div class="container-fluid py-4">
-    
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
         <div>
             <h3 class="fw-black text-dark mb-0" style="letter-spacing: -1px;">Salary Statement</h3>
             <p class="text-muted small mb-0">Worker compensation records & disbursement history</p>
         </div>
+        
         {% if selected_worker %}
-        <a href="{% url 'salary_pdf' %}?worker={{ selected_worker }}&start_date={{ start_date }}&end_date={{ end_date }}&spend_mode={{ selected_spend_mode }}"
-           class="btn btn-danger shadow-sm px-4 rounded-pill fw-bold">
-            <i class="bi bi-file-earmark-pdf-fill me-2"></i>Export PDF
-        </a>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'salary_pdf' %}?worker={{ selected_worker }}&start_date={{ start_date }}&end_date={{ end_date }}&spend_mode={{ selected_spend_mode }}"
+               class="btn btn-danger shadow-sm px-4 rounded-pill fw-bold">
+                <i class="bi bi-file-earmark-pdf-fill me-2"></i>Export PDF
+            </a>
+            <a href="{% url 'salary_excel_export' %}?{{ request.GET.urlencode }}"
+               class="btn btn-success shadow-sm px-4 rounded-pill fw-bold">
+                <i class="bi bi-file-earmark-excel-fill me-2"></i>Export Excel
+            </a>
+        </div>
         {% endif %}
     </div>
+</div>
 
     <div class="card border-0 shadow-sm rounded-4 mb-4">
         <div class="card-body p-4">

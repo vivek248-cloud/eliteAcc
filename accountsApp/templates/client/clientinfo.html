@@ -617,16 +617,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
 </table>
 
-<div class="d-flex justify-content-between">
-    <a href="{% url 'client_index' %}" class="btn btn-primary mt-3 mb-3">
-        ← Back to Clients
+<div class="d-flex justify-content-between align-items-center my-3 flex-wrap gap-2">
+    <a href="{% url 'client_index' %}" class="btn btn-primary">
+        <i class="bi bi-arrow-left"></i> Back to Clients
     </a>
-
-    <a href="{% url 'client_info_pdf' client.id %}?{{ request.GET.urlencode }}"
-    class="btn btn-danger mb-3 mt-3">
-    📄 Export PDF
-    </a>
-</div>
+    
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{% url 'client_info_pdf' client.id %}?{{ request.GET.urlencode }}" 
+           class="btn btn-danger">
+            <i class="bi bi-file-pdf"></i> Export PDF
+        </a>
+        <a href="{% url 'client_info_excel' client.id %}" 
+           class="btn btn-success">
+            <i class="bi bi-file-earmark-spreadsheet"></i> Export Excel
+        </a>
+    </div>
 
 </div>
 

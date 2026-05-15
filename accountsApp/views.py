@@ -1853,7 +1853,228 @@ def client_info_pdf(request, pk):
     return response
 
 
+#export as excel will be added here
 
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment
+from openpyxl.utils import get_column_letter
+from django.http import HttpResponse
+
+def client_info_excel(request, pk):
+
+    selected_company_id = request.session.get('selected_company_id')
+
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    client = get_object_or_404(
+        Client,
+        pk=pk,
+        company_id=selected_company_id
+    )
+
+    payments_qs = client.payments.select_related('bank')
+    expenses_qs = client.expenses.select_related(
+        'bank',
+        'salary_to',
+        'worker_name'
+    )
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Client Statement"
+
+    # =========================
+    # TITLE
+    # =========================
+
+    ws.merge_cells('A1:H1')
+
+    title_cell = ws['A1']
+    title_cell.value = "CLIENT FINANCIAL STATEMENT"
+
+    title_cell.font = Font(
+        bold=True,
+        size=18,
+        color="FFFFFF"
+    )
+
+    title_cell.fill = PatternFill(
+        start_color="1F4E79",
+        end_color="1F4E79",
+        fill_type="solid"
+    )
+
+    title_cell.alignment = Alignment(horizontal="center")
+
+    # =========================
+    # CLIENT INFO
+    # =========================
+
+    ws['A3'] = "Client Name"
+    ws['B3'] = client.name
+
+    ws['A4'] = "Project Value"
+    ws['B4'] = float(client.budget)
+
+    # =========================
+    # PAYMENTS HEADER
+    # =========================
+
+    payment_start = 7
+
+    headers = [
+        'Date',
+        'Before',
+        'Paid',
+        'Remaining',
+        'Mode',
+        'Bank'
+    ]
+
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(payment_start, col_num)
+        cell.value = header
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill(
+            start_color="4F81BD",
+            end_color="4F81BD",
+            fill_type="solid"
+        )
+
+    running_paid = 0
+
+    row = payment_start + 1
+
+    for p in payments_qs:
+
+        before = running_paid
+        running_paid += p.amount
+        remaining = client.budget - running_paid
+
+        ws.cell(row, 1, p.payment_date.strftime('%d-%m-%Y'))
+        ws.cell(row, 2, float(before))
+        ws.cell(row, 3, float(p.amount))
+        ws.cell(row, 4, float(remaining))
+        ws.cell(row, 5, p.payment_mode.capitalize())
+        ws.cell(row, 6, p.bank.name if p.bank else "Cash")
+
+        row += 1
+
+    total_paid = running_paid
+
+    # =========================
+    # EXPENSES
+    # =========================
+
+    row += 3
+
+    expense_header_row = row
+
+    expense_headers = [
+        'Date',
+        'Category',
+        'Description',
+        'Worker',
+        'Spent',
+        'Remaining',
+        'Mode',
+        'Bank'
+    ]
+
+    for col_num, header in enumerate(expense_headers, 1):
+        cell = ws.cell(expense_header_row, col_num)
+        cell.value = header
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill(
+            start_color="C0504D",
+            end_color="C0504D",
+            fill_type="solid"
+        )
+
+    running_spent = 0
+
+    row += 1
+
+    for e in expenses_qs:
+
+        before = running_spent
+        running_spent += e.amount
+        remaining = total_paid - running_spent
+
+        if e.salary_to:
+            team = e.salary_to.name
+            name = e.worker_name.name if e.worker_name else None
+            worker_display = f"{team} / {name}" if name else team
+        else:
+            worker_display = '—'
+
+        ws.cell(row, 1, e.expense_date.strftime('%d-%m-%Y'))
+        ws.cell(row, 2, e.category.name if e.category else '—')
+        ws.cell(row, 3, e.description)
+        ws.cell(row, 4, worker_display)
+        ws.cell(row, 5, float(e.amount))
+        ws.cell(row, 6, float(remaining))
+        ws.cell(row, 7, e.spend_mode.capitalize())
+        ws.cell(row, 8, e.bank.name if e.bank else "Cash")
+
+        row += 1
+
+    total_spent = running_spent
+    final_balance = total_paid - total_spent
+
+    # =========================
+    # SUMMARY
+    # =========================
+
+    row += 2
+
+    ws.cell(row, 1, "TOTAL PAID")
+    ws.cell(row, 2, float(total_paid))
+
+    row += 1
+
+    ws.cell(row, 1, "TOTAL SPENT")
+    ws.cell(row, 2, float(total_spent))
+
+    row += 1
+
+    ws.cell(row, 1, "FINAL BALANCE")
+    ws.cell(row, 2, float(final_balance))
+
+    # =========================
+    # COLUMN WIDTHS
+    # =========================
+
+    widths = {
+        1: 18,
+        2: 20,
+        3: 28,
+        4: 30,
+        5: 18,
+        6: 20,
+        7: 15,
+        8: 20,
+    }
+
+    for col, width in widths.items():
+        ws.column_dimensions[get_column_letter(col)].width = width
+
+    # =========================
+    # RESPONSE
+    # =========================
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+    response['Content-Disposition'] = (
+        f'attachment; filename="{client.name}_statement.xlsx"'
+    )
+
+    wb.save(response)
+
+    return response
 
 
 
@@ -2314,8 +2535,365 @@ def all_client_info_pdf(request):
 
 
 
+#export as excel for all clients will be added here
 
+from openpyxl import Workbook
+from openpyxl.styles import (
+    Font,
+    PatternFill,
+    Alignment,
+    Border,
+    Side
+)
+from openpyxl.utils import get_column_letter
 
+def all_client_info_excel(request):
+
+    selected_company_id = request.session.get('selected_company_id')
+
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    start_date = clean_date(request.GET.get('start_date'))
+    end_date = clean_date(request.GET.get('end_date'))
+    order = request.GET.get('order', 'new')
+    txn_type = request.GET.get('txn_type', 'all')
+
+    clients = Client.objects.filter(
+        company_id=selected_company_id
+    ).select_related('company')
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "All Clients Statement"
+
+    # =========================
+    # STYLES
+    # =========================
+
+    header_fill = PatternFill(
+        start_color="1F4E79",
+        end_color="1F4E79",
+        fill_type="solid"
+    )
+
+    total_fill = PatternFill(
+        start_color="D9D9D9",
+        end_color="D9D9D9",
+        fill_type="solid"
+    )
+
+    red_font = Font(
+        color="FF0000",
+        bold=True
+    )
+
+    white_bold = Font(
+        color="FFFFFF",
+        bold=True
+    )
+
+    bold_font = Font(bold=True)
+
+    thin = Side(style='thin', color='CCCCCC')
+
+    border = Border(
+        left=thin,
+        right=thin,
+        top=thin,
+        bottom=thin
+    )
+
+    center = Alignment(
+        horizontal="center",
+        vertical="center"
+    )
+
+    right = Alignment(
+        horizontal="right",
+        vertical="center"
+    )
+
+    # =========================
+    # TITLE
+    # =========================
+
+    ws.merge_cells('A1:J1')
+
+    title = ws['A1']
+
+    title.value = "ALL CLIENTS FINANCIAL STATEMENT"
+
+    title.font = Font(
+        bold=True,
+        size=18,
+        color="FFFFFF"
+    )
+
+    title.fill = header_fill
+    title.alignment = center
+
+    # =========================
+    # HEADERS
+    # =========================
+
+    headers = [
+        'Date',
+        'Client',
+        'Location',
+        'Company',
+        'Prev Paid',
+        'Paid Now',
+        'Yet To Pay',
+        'Spend Detail',
+        'Spend Amount',
+        'Balance',
+    ]
+
+    row = 3
+
+    for col_num, header in enumerate(headers, 1):
+
+        cell = ws.cell(row, col_num)
+
+        cell.value = header
+        cell.font = white_bold
+        cell.fill = header_fill
+        cell.alignment = center
+        cell.border = border
+
+    row += 1
+
+    grand_paid = Decimal('0.00')
+    grand_spent = Decimal('0.00')
+
+    # =========================
+    # DATA
+    # =========================
+
+    for client in clients:
+
+        payments = client.payments.all()
+        expenses = client.expenses.all()
+
+        if start_date:
+            payments = payments.filter(payment_date__gte=start_date)
+            expenses = expenses.filter(expense_date__gte=start_date)
+
+        if end_date:
+            payments = payments.filter(payment_date__lte=end_date)
+            expenses = expenses.filter(expense_date__lte=end_date)
+
+        ledger = []
+
+        for p in payments:
+            ledger.append({
+                'type': 'payment',
+                'date': p.payment_date,
+                'amount': p.amount,
+                'obj': p
+            })
+
+        for e in expenses:
+            ledger.append({
+                'type': 'expense',
+                'date': e.expense_date,
+                'amount': e.amount,
+                'obj': e
+            })
+
+        ledger = sorted(
+            ledger,
+            key=lambda x: x['date'],
+            reverse=(order == 'new')
+        )
+
+        running_paid = Decimal('0.00')
+        running_spent = Decimal('0.00')
+
+        for entry in ledger:
+
+            if txn_type != 'all' and entry['type'] != txn_type:
+                continue
+
+            prev_paid = running_paid
+
+            if entry['type'] == 'payment':
+
+                running_paid += entry['amount']
+                grand_paid += entry['amount']
+
+                yet_to_pay = client.budget - running_paid
+                balance = running_paid - running_spent
+
+                data = [
+                    entry['date'].strftime('%d-%m-%Y'),
+                    client.name,
+                    client.location or '—',
+                    client.company.name,
+                    float(prev_paid),
+                    float(entry['amount']),
+                    float(yet_to_pay),
+                    '—',
+                    '—',
+                    float(balance)
+                ]
+
+            else:
+
+                running_spent += entry['amount']
+                grand_spent += entry['amount']
+
+                yet_to_pay = client.budget - running_paid
+                balance = running_paid - running_spent
+
+                data = [
+                    entry['date'].strftime('%d-%m-%Y'),
+                    client.name,
+                    client.location or '—',
+                    client.company.name,
+                    float(prev_paid),
+                    '—',
+                    float(yet_to_pay),
+                    entry['obj'].description or '—',
+                    float(entry['amount']),
+                    float(balance)
+                ]
+
+            for col_num, value in enumerate(data, 1):
+
+                cell = ws.cell(row, col_num)
+
+                cell.value = value
+                cell.border = border
+
+                if col_num >= 5:
+                    cell.alignment = right
+
+            # Negative values
+            if yet_to_pay < 0:
+                ws.cell(row, 7).font = red_font
+
+            if balance < 0:
+                ws.cell(row, 10).font = red_font
+
+            row += 1
+
+        # =========================
+        # CLIENT TOTAL ROW
+        # =========================
+
+        client_balance = running_paid - running_spent
+
+        totals = [
+            f"{client.name} TOTAL",
+            '',
+            '',
+            '',
+            float(running_paid),
+            '',
+            '',
+            '',
+            float(running_spent),
+            float(client_balance)
+        ]
+
+        for col_num, value in enumerate(totals, 1):
+
+            cell = ws.cell(row, col_num)
+
+            cell.value = value
+            cell.font = bold_font
+            cell.fill = total_fill
+            cell.border = border
+
+            if col_num >= 5:
+                cell.alignment = right
+
+        if client_balance < 0:
+            ws.cell(row, 10).font = red_font
+
+        row += 1
+
+    # =========================
+    # GRAND TOTAL ROW
+    # =========================
+
+    grand_balance = grand_paid - grand_spent
+
+    grand = [
+        'GRAND TOTAL',
+        '',
+        '',
+        '',
+        float(grand_paid),
+        '',
+        '',
+        '',
+        float(grand_spent),
+        float(grand_balance)
+    ]
+
+    for col_num, value in enumerate(grand, 1):
+
+        cell = ws.cell(row, col_num)
+
+        cell.value = value
+
+        cell.font = Font(
+            bold=True,
+            color="FFFFFF"
+        )
+
+        cell.fill = header_fill
+        cell.border = border
+
+        if col_num >= 5:
+            cell.alignment = right
+
+    if grand_balance < 0:
+        ws.cell(row, 10).font = Font(
+            bold=True,
+            color="FF0000"
+        )
+
+    # =========================
+    # COLUMN WIDTHS
+    # =========================
+
+    widths = {
+        1: 15,   # Date
+        2: 28,   # Client
+        3: 28,   # Location
+        4: 32,   # Company
+        5: 18,   # Prev Paid
+        6: 18,   # Paid Now
+        7: 18,   # Yet To Pay
+        8: 40,   # Spend Detail
+        9: 18,   # Spend Amount
+        10: 18,  # Balance
+    }
+
+    for col, width in widths.items():
+        ws.column_dimensions[
+            get_column_letter(col)
+        ].width = width
+
+    # =========================
+    # RESPONSE
+    # =========================
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+    response['Content-Disposition'] = (
+        'attachment; filename="all_clients_statement.xlsx"'
+    )
+
+    wb.save(response)
+
+    return response
 
 
 
@@ -2903,6 +3481,322 @@ def bank_log_pdf(request, pk):
 
     doc.build(elements)
     return response
+
+
+
+
+#export bank log as excel will be added here
+
+def bank_log_excel(request, pk):
+
+    # =========================
+    # COMPANY SESSION
+    # =========================
+
+    selected_company_id = request.session.get('selected_company_id')
+
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    bank = get_object_or_404(Bank, pk=pk)
+
+    client_id = clean_param(request.GET.get('client'))
+    start_date = clean_param(request.GET.get('start_date'))
+    end_date = clean_param(request.GET.get('end_date'))
+
+    # =========================
+    # QUERYSETS
+    # =========================
+
+    payments = Payment.objects.filter(
+        bank=bank,
+        client__company_id=selected_company_id
+    ).select_related('client')
+
+    expenses = Expense.objects.filter(
+        bank=bank,
+        client__company_id=selected_company_id
+    ).select_related('client', 'category')
+
+    if client_id:
+        payments = payments.filter(client_id=int(client_id))
+        expenses = expenses.filter(client_id=int(client_id))
+
+    if start_date:
+        sd = parse_date(start_date)
+        payments = payments.filter(payment_date__gte=sd)
+        expenses = expenses.filter(expense_date__gte=sd)
+
+    if end_date:
+        ed = parse_date(end_date)
+        payments = payments.filter(payment_date__lte=ed)
+        expenses = expenses.filter(expense_date__lte=ed)
+
+    # =========================
+    # NORMALIZE DATA
+    # =========================
+
+    rows = []
+
+    for p in payments.order_by('payment_date', 'id'):
+        rows.append({
+            'date': p.payment_date,
+            'client': p.client.name,
+            'type': 'Payment',
+            'desc': 'Client Payment',
+            'credit': p.amount,
+            'debit': Decimal('0.00'),
+        })
+
+    for e in expenses.order_by('expense_date', 'id'):
+        rows.append({
+            'date': e.expense_date,
+            'client': e.client.name,
+            'type': 'Spend',
+            'desc': e.description or '—',
+            'credit': Decimal('0.00'),
+            'debit': e.amount,
+        })
+
+    rows = sorted(rows, key=lambda x: x['date'])
+
+    # =========================
+    # RUNNING BALANCE
+    # =========================
+
+    balance = bank.opening_balance
+
+    for r in rows:
+        balance += r['credit']
+        balance -= r['debit']
+        r['balance'] = balance
+
+    # =========================
+    # EXCEL
+    # =========================
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Bank Statement"
+
+    # =========================
+    # STYLES
+    # =========================
+
+    header_fill = PatternFill(
+        start_color="1F4E79",
+        end_color="1F4E79",
+        fill_type="solid"
+    )
+
+    total_fill = PatternFill(
+        start_color="D9D9D9",
+        end_color="D9D9D9",
+        fill_type="solid"
+    )
+
+    white_font = Font(
+        color="FFFFFF",
+        bold=True
+    )
+
+    bold_font = Font(bold=True)
+
+    red_font = Font(
+        color="FF0000",
+        bold=True
+    )
+
+    center = Alignment(
+        horizontal="center",
+        vertical="center"
+    )
+
+    right = Alignment(
+        horizontal="right",
+        vertical="center"
+    )
+
+    thin = Side(style='thin', color='CCCCCC')
+
+    border = Border(
+        left=thin,
+        right=thin,
+        top=thin,
+        bottom=thin
+    )
+
+    # =========================
+    # TITLE
+    # =========================
+
+    ws.merge_cells('A1:G1')
+
+    title = ws['A1']
+
+    title.value = f"BANK STATEMENT - {bank.name}"
+
+    title.font = Font(
+        bold=True,
+        size=18,
+        color="FFFFFF"
+    )
+
+    title.fill = header_fill
+    title.alignment = center
+
+    # =========================
+    # INFO
+    # =========================
+
+    ws['A3'] = "Opening Balance"
+    ws['B3'] = float(bank.opening_balance)
+
+    ws['A4'] = "Period"
+
+    if start_date or end_date:
+        ws['B4'] = f"{start_date or '—'} to {end_date or '—'}"
+    else:
+        ws['B4'] = "All"
+
+    ws['A3'].font = bold_font
+    ws['A4'].font = bold_font
+
+    # =========================
+    # HEADERS
+    # =========================
+
+    headers = [
+        'Date',
+        'Client',
+        'Type',
+        'Description',
+        'Credit',
+        'Debit',
+        'Balance'
+    ]
+
+    row = 6
+
+    for col_num, header in enumerate(headers, 1):
+
+        cell = ws.cell(row, col_num)
+
+        cell.value = header
+        cell.font = white_font
+        cell.fill = header_fill
+        cell.alignment = center
+        cell.border = border
+
+    row += 1
+
+    total_credit = Decimal('0.00')
+    total_debit = Decimal('0.00')
+
+    # =========================
+    # DATA ROWS
+    # =========================
+
+    for r in rows:
+
+        total_credit += r['credit']
+        total_debit += r['debit']
+
+        data = [
+            r['date'].strftime('%d-%m-%Y'),
+            r['client'],
+            r['type'],
+            r['desc'],
+            float(r['credit']) if r['credit'] else '—',
+            float(r['debit']) if r['debit'] else '—',
+            float(r['balance']),
+        ]
+
+        for col_num, value in enumerate(data, 1):
+
+            cell = ws.cell(row, col_num)
+
+            cell.value = value
+            cell.border = border
+
+            if col_num >= 5:
+                cell.alignment = right
+
+        # Negative balance
+        if r['balance'] < 0:
+            ws.cell(row, 7).font = red_font
+
+        row += 1
+
+    # =========================
+    # TOTAL ROW
+    # =========================
+
+    final_balance = balance
+
+    totals = [
+        'GRAND TOTAL',
+        '',
+        '',
+        '',
+        float(total_credit),
+        float(total_debit),
+        float(final_balance)
+    ]
+
+    for col_num, value in enumerate(totals, 1):
+
+        cell = ws.cell(row, col_num)
+
+        cell.value = value
+
+        cell.font = white_font
+        cell.fill = header_fill
+        cell.border = border
+
+        if col_num >= 5:
+            cell.alignment = right
+
+    if final_balance < 0:
+        ws.cell(row, 7).font = red_font
+
+    # =========================
+    # COLUMN WIDTHS
+    # =========================
+
+    widths = {
+        1: 15,
+        2: 28,
+        3: 16,
+        4: 40,
+        5: 18,
+        6: 18,
+        7: 18,
+    }
+
+    for col, width in widths.items():
+        ws.column_dimensions[
+            get_column_letter(col)
+        ].width = width
+
+    # =========================
+    # RESPONSE
+    # =========================
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+    response['Content-Disposition'] = (
+        f'attachment; filename="{bank.name}_bank_statement.xlsx"'
+    )
+
+    wb.save(response)
+
+    return response
+
+
+
 
 
 
@@ -4675,6 +5569,307 @@ def expense_pdf_export(request):
 
 
 
+#export as excel will be added here
+
+
+def expense_excel_export(request):
+
+    selected_company_id = request.session.get('selected_company_id')
+
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    expenses = Expense.objects.select_related(
+        'client',
+        'bank',
+        'category',
+        'subcategory',
+        'salary_to',
+        'worker_name'
+    ).filter(
+        client__company_id=selected_company_id
+    )
+
+    # =============================
+    # FILTERS
+    # =============================
+
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    client_id = request.GET.get('client')
+    category_id = request.GET.get('category')
+    spend_mode = request.GET.get('spend_mode')
+    bank_id = request.GET.get('bank')
+    worker_id = request.GET.get('worker')
+
+    if start_date:
+        expenses = expenses.filter(
+            expense_date__gte=parse_date(start_date)
+        )
+
+    if end_date:
+        expenses = expenses.filter(
+            expense_date__lte=parse_date(end_date)
+        )
+
+    if client_id:
+        expenses = expenses.filter(client_id=client_id)
+
+    if category_id:
+        expenses = expenses.filter(category_id=category_id)
+
+    if spend_mode in ['cash', 'cheque']:
+        expenses = expenses.filter(spend_mode=spend_mode)
+
+    if bank_id:
+        expenses = expenses.filter(bank_id=bank_id)
+
+    if worker_id:
+        expenses = expenses.filter(salary_to_id=worker_id)
+
+    expenses = expenses.order_by('expense_date')
+
+    # =============================
+    # WORKBOOK
+    # =============================
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Expense Report"
+
+    # =============================
+    # STYLES
+    # =============================
+
+    header_fill = PatternFill(
+        start_color="1F4E79",
+        end_color="1F4E79",
+        fill_type="solid"
+    )
+
+    total_fill = PatternFill(
+        start_color="D9D9D9",
+        end_color="D9D9D9",
+        fill_type="solid"
+    )
+
+    white_font = Font(
+        color="FFFFFF",
+        bold=True
+    )
+
+    bold_font = Font(
+        bold=True
+    )
+
+    center = Alignment(
+        horizontal="center",
+        vertical="center",
+        wrap_text=True
+    )
+
+    right = Alignment(
+        horizontal="right",
+        vertical="center"
+    )
+
+    thin = Side(style='thin', color='CCCCCC')
+
+    border = Border(
+        left=thin,
+        right=thin,
+        top=thin,
+        bottom=thin
+    )
+
+    # =============================
+    # COMPANY
+    # =============================
+
+    company = Company.objects.get(id=selected_company_id)
+
+    # =============================
+    # TITLE
+    # =============================
+
+    ws.merge_cells('A1:K1')
+
+    title = ws['A1']
+
+    title.value = f"EXPENSE REPORT – {company.name}"
+
+    title.font = Font(
+        bold=True,
+        size=18,
+        color="FFFFFF"
+    )
+
+    title.fill = header_fill
+    title.alignment = center
+
+    # =============================
+    # PERIOD
+    # =============================
+
+    if start_date or end_date:
+
+        ws.merge_cells('A2:K2')
+
+        period = ws['A2']
+
+        period.value = (
+            f"Period: {start_date or '—'} to {end_date or '—'}"
+        )
+
+        period.font = Font(
+            italic=True
+        )
+
+    # =============================
+    # HEADERS
+    # =============================
+
+    headers = [
+        'Date',
+        'Client',
+        'Location',
+        'Category',
+        'Sub-Category',
+        'Description',
+        'Worker Team',
+        'Worker Name',
+        'Mode',
+        'Bank',
+        'Amount',
+    ]
+
+    row = 4
+
+    for col_num, header in enumerate(headers, 1):
+
+        cell = ws.cell(row, col_num)
+
+        cell.value = header
+        cell.font = white_font
+        cell.fill = header_fill
+        cell.alignment = center
+        cell.border = border
+
+    row += 1
+
+    # =============================
+    # DATA
+    # =============================
+
+    total_amount = Decimal('0.00')
+
+    for e in expenses:
+
+        total_amount += e.amount
+
+        data = [
+            e.expense_date.strftime('%d-%m-%Y'),
+            e.client.name,
+            e.client.location if e.client.location else '—',
+            e.category.name if e.category else '—',
+            e.subcategory.name if e.subcategory else '—',
+            e.description if e.description else '—',
+            e.salary_to.name if e.salary_to else '—',
+            e.worker_name.name if e.worker_name else '—',
+            e.spend_mode.capitalize(),
+            e.bank.name if e.bank else 'Cash',
+            float(e.amount),
+        ]
+
+        for col_num, value in enumerate(data, 1):
+
+            cell = ws.cell(row, col_num)
+
+            cell.value = value
+            cell.border = border
+
+            if col_num == 11:
+                cell.alignment = right
+            else:
+                cell.alignment = Alignment(
+                    vertical="top",
+                    wrap_text=True
+                )
+
+        row += 1
+
+    # =============================
+    # TOTAL ROW
+    # =============================
+
+    totals = [
+        'TOTAL EXPENSE',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        float(total_amount)
+    ]
+
+    for col_num, value in enumerate(totals, 1):
+
+        cell = ws.cell(row, col_num)
+
+        cell.value = value
+        cell.font = bold_font
+        cell.fill = total_fill
+        cell.border = border
+
+        if col_num == 11:
+            cell.alignment = right
+
+    # =============================
+    # COLUMN WIDTHS
+    # =============================
+
+    widths = {
+        1: 15,   # Date
+        2: 25,   # Client
+        3: 25,   # Location
+        4: 20,   # Category
+        5: 22,   # Sub Category
+        6: 40,   # Description
+        7: 22,   # Worker Team
+        8: 22,   # Worker Name
+        9: 14,   # Mode
+        10: 20,  # Bank
+        11: 18,  # Amount
+    }
+
+    for col, width in widths.items():
+
+        ws.column_dimensions[
+            get_column_letter(col)
+        ].width = width
+
+    # =============================
+    # RESPONSE
+    # =============================
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+    response['Content-Disposition'] = (
+        'attachment; filename="expenses_report.xlsx"'
+    )
+
+    wb.save(response)
+
+    return response
+
+
+
 from django.http import JsonResponse
 from decimal import Decimal
 
@@ -5458,7 +6653,305 @@ def salary_pdf(request):
 
 
 
+#export as excel will be added here
 
+def salary_excel_export(request):
+
+    # =========================
+    # COMPANY CHECK
+    # =========================
+
+    selected_company_id = request.session.get('selected_company_id')
+
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    worker_id = request.GET.get('worker')
+    worker_name_id = request.GET.get('worker_name')
+    client_id = request.GET.get('client')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    spend_mode = request.GET.get('spend_mode')
+
+    # =========================
+    # BASE QUERYSET
+    # =========================
+
+    expenses = Expense.objects.select_related(
+        'client',
+        'bank',
+        'salary_to',
+        'worker_name',
+        'category'
+    ).filter(
+        client__company_id=selected_company_id,
+        category__name__iexact='salary'
+    )
+
+    # Worker Team Filter
+    if worker_id:
+        expenses = expenses.filter(salary_to_id=worker_id)
+
+    # Worker Name Filter
+    if worker_name_id:
+        expenses = expenses.filter(worker_name_id=worker_name_id)
+
+    # Client Filter
+    if client_id:
+        expenses = expenses.filter(client_id=client_id)
+
+    # Spend Mode
+    if spend_mode in ['cash', 'cheque']:
+        expenses = expenses.filter(spend_mode=spend_mode)
+
+    # Date Filters
+    if start_date:
+        expenses = expenses.filter(
+            expense_date__gte=parse_date(start_date)
+        )
+
+    if end_date:
+        expenses = expenses.filter(
+            expense_date__lte=parse_date(end_date)
+        )
+
+    expenses = expenses.order_by('expense_date')
+
+    total_salary = expenses.aggregate(
+        total=Sum('amount')
+    )['total'] or Decimal('0.00')
+
+    # =========================
+    # WORKBOOK
+    # =========================
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Salary Statement"
+
+    # =========================
+    # STYLES
+    # =========================
+
+    header_fill = PatternFill(
+        start_color="1F4E79",
+        end_color="1F4E79",
+        fill_type="solid"
+    )
+
+    total_fill = PatternFill(
+        start_color="D9D9D9",
+        end_color="D9D9D9",
+        fill_type="solid"
+    )
+
+    white_font = Font(
+        color="FFFFFF",
+        bold=True
+    )
+
+    bold_font = Font(
+        bold=True
+    )
+
+    center = Alignment(
+        horizontal="center",
+        vertical="center",
+        wrap_text=True
+    )
+
+    right = Alignment(
+        horizontal="right",
+        vertical="center"
+    )
+
+    thin = Side(style='thin', color='CCCCCC')
+
+    border = Border(
+        left=thin,
+        right=thin,
+        top=thin,
+        bottom=thin
+    )
+
+    # =========================
+    # TITLE
+    # =========================
+
+    ws.merge_cells('A1:J1')
+
+    title = ws['A1']
+
+    title.value = "SALARY STATEMENT REPORT"
+
+    title.font = Font(
+        bold=True,
+        size=18,
+        color="FFFFFF"
+    )
+
+    title.fill = header_fill
+    title.alignment = center
+
+    # =========================
+    # FILTER INFO
+    # =========================
+
+    ws['A3'] = "Worker Team"
+    ws['B3'] = (
+        expenses.first().salary_to.name
+        if expenses and worker_id else 'All'
+    )
+
+    ws['A4'] = "Worker Name"
+    ws['B4'] = (
+        expenses.first().worker_name.name
+        if expenses and worker_name_id else 'All'
+    )
+
+    ws['A5'] = "Period"
+    ws['B5'] = f"{start_date or '—'} to {end_date or '—'}"
+
+    ws['A3'].font = bold_font
+    ws['A4'].font = bold_font
+    ws['A5'].font = bold_font
+
+    # =========================
+    # HEADERS
+    # =========================
+
+    headers = [
+        '#',
+        'Date',
+        'Client',
+        'Location',
+        'Team',
+        'Worker',
+        'Mode',
+        'Description',
+        'Bank',
+        'Amount (Rs)'
+    ]
+
+    row = 7
+
+    for col_num, header in enumerate(headers, 1):
+
+        cell = ws.cell(row, col_num)
+
+        cell.value = header
+        cell.font = white_font
+        cell.fill = header_fill
+        cell.alignment = center
+        cell.border = border
+
+    row += 1
+
+    # =========================
+    # DATA
+    # =========================
+
+    for idx, e in enumerate(expenses, start=1):
+
+        data = [
+            idx,
+            e.expense_date.strftime('%d-%m-%Y'),
+            e.client.name if e.client else '—',
+            e.client.location if e.client and e.client.location else '—',
+            e.salary_to.name if e.salary_to else '—',
+            e.worker_name.name if e.worker_name else '—',
+            e.spend_mode.capitalize(),
+            e.description if e.description else '—',
+            e.bank.name if e.bank else 'Cash',
+            float(e.amount)
+        ]
+
+        for col_num, value in enumerate(data, 1):
+
+            cell = ws.cell(row, col_num)
+
+            cell.value = value
+            cell.border = border
+
+            if col_num == 10:
+                cell.alignment = right
+            else:
+                cell.alignment = Alignment(
+                    vertical="top",
+                    wrap_text=True
+                )
+
+        row += 1
+
+    # =========================
+    # TOTAL ROW
+    # =========================
+
+    totals = [
+        'TOTAL SALARY',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        float(total_salary)
+    ]
+
+    for col_num, value in enumerate(totals, 1):
+
+        cell = ws.cell(row, col_num)
+
+        cell.value = value
+        cell.font = bold_font
+        cell.fill = total_fill
+        cell.border = border
+
+        if col_num == 10:
+            cell.alignment = right
+
+    # =========================
+    # COLUMN WIDTHS
+    # =========================
+
+    widths = {
+        1: 8,    # #
+        2: 15,   # Date
+        3: 25,   # Client
+        4: 25,   # Location
+        5: 22,   # Team
+        6: 22,   # Worker
+        7: 14,   # Mode
+        8: 40,   # Description
+        9: 20,   # Bank
+        10: 18,  # Amount
+    }
+
+    for col, width in widths.items():
+
+        ws.column_dimensions[
+            get_column_letter(col)
+        ].width = width
+
+    # =========================
+    # RESPONSE
+    # =========================
+
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+    response['Content-Disposition'] = (
+        'attachment; filename="salary_statement.xlsx"'
+    )
+
+    wb.save(response)
+
+    return response
+
+    
 
 
 
