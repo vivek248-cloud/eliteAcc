@@ -727,195 +727,838 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 
-<div id="calculator" class="card shadow-lg p-3"
-     style="width:280px; position:fixed; bottom:80px; right:20px; display:none; z-index:9999; border-radius:16px;">
+<!-- ═══════════════ CALCULATOR ═══════════════ -->
+<div id="calculator"
+     style="width: 320px; position: fixed; bottom: 80px; right: 20px; display: none; z-index: 9999;">
 
-  <!-- Drag handle -->
-  <div id="calcDragHandle" style="text-align:center; font-size:11px; color:#888; margin-bottom:10px; cursor:grab; letter-spacing:0.02em;">
-    ⠿ drag to move
-  </div>
+  <!-- Glass card -->
+  <div id="calcCard" style="
+    background: rgba(15, 15, 25, 0.92);
+    backdrop-filter: blur(20px) saturate(1.8);
+    -webkit-backdrop-filter: blur(20px) saturate(1.8);
+    border-radius: 24px;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow:
+      0 24px 80px rgba(0,0,0,0.45),
+      0 0 0 1px rgba(255,255,255,0.05) inset,
+      0 1px 0 rgba(255,255,255,0.06) inset;
+    padding: 16px;
+    overflow: hidden;
+    position: relative;
+  ">
 
-  <!-- Display -->
-  <div style="background:#f5f5f5; border:1px solid #e0e0e0; border-radius:10px; padding:10px 14px; margin-bottom:14px; text-align:right;">
-    <div id="calcExpr" style="font-size:12px; color:#aaa; min-height:16px; margin-bottom:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></div>
-    <div id="calcVal" style="font-size:28px; font-weight:500; color:#111; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">0</div>
-  </div>
+    <!-- Ambient glow -->
+    <div id="calcGlow" style="
+      position: absolute;
+      top: -60px; left: 50%;
+      transform: translateX(-50%);
+      width: 200px; height: 200px;
+      background: radial-gradient(circle, rgba(99,102,241,0.15), transparent 70%);
+      pointer-events: none;
+      transition: all 0.6s ease;
+      z-index: 0;
+    "></div>
 
-  <!-- Buttons -->
-  <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px;">
-    <button class="btn btn-danger btn-sm"   onclick="cc()">C</button>
-    <button class="btn btn-secondary btn-sm" onclick="toggleSign()">+/−</button>
-    <button class="btn btn-secondary btn-sm" onclick="percent()">%</button>
-    <button class="btn btn-warning btn-sm"   onclick="press('/')">÷</button>
+    <!-- Header -->
+    <div id="calcDragHandle" style="
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 2px 4px 10px;
+      cursor: grab;
+      position: relative;
+      z-index: 1;
+    ">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <div style="display:flex; gap:5px;">
+          <span onclick="document.getElementById('calculator').style.display='none'" style="
+            width:12px; height:12px; border-radius:50%;
+            background:#ff5f57; cursor:pointer;
+            display:flex; align-items:center; justify-content:center;
+            transition: all 0.2s; box-shadow: 0 0 4px rgba(255,95,87,0.4);
+          " onmouseenter="this.style.transform='scale(1.2)'" onmouseleave="this.style.transform='scale(1)'">
+            <span style="font-size:7px; color:rgba(0,0,0,0.5); opacity:0; transition:opacity 0.2s;" 
+                  onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0'">✕</span>
+          </span>
+          <span style="width:12px; height:12px; border-radius:50%; background:#febc2e; box-shadow: 0 0 4px rgba(254,188,46,0.4);"></span>
+          <span style="width:12px; height:12px; border-radius:50%; background:#28c840; box-shadow: 0 0 4px rgba(40,200,64,0.4);"></span>
+        </div>
+        <span style="font-size:11px; color:rgba(255,255,255,0.35); font-weight:500; letter-spacing:0.04em;">Calculator</span>
+      </div>
 
-    <button class="btn btn-light btn-sm" onclick="press('7')">7</button>
-    <button class="btn btn-light btn-sm" onclick="press('8')">8</button>
-    <button class="btn btn-light btn-sm" onclick="press('9')">9</button>
-    <button class="btn btn-warning btn-sm" onclick="press('*')">×</button>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <!-- History toggle -->
+        <button onclick="toggleHistory()" id="historyToggle" style="
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 8px;
+          color: rgba(255,255,255,0.4);
+          font-size: 13px;
+          width: 28px; height: 28px;
+          display: flex; align-items: center; justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s;
+        " onmouseenter="this.style.background='rgba(255,255,255,0.1)';this.style.color='rgba(255,255,255,0.7)'"
+           onmouseleave="this.style.background='rgba(255,255,255,0.06)';this.style.color='rgba(255,255,255,0.4)'">
+          <i class="bi bi-clock-history"></i>
+        </button>
+        <div style="
+          font-size:10px; color:rgba(255,255,255,0.2);
+          display:flex; gap:2px;
+        ">⠿⠿</div>
+      </div>
+    </div>
 
-    <button class="btn btn-light btn-sm" onclick="press('4')">4</button>
-    <button class="btn btn-light btn-sm" onclick="press('5')">5</button>
-    <button class="btn btn-light btn-sm" onclick="press('6')">6</button>
-    <button class="btn btn-warning btn-sm" onclick="press('-')">−</button>
+    <!-- History Panel (hidden by default) -->
+    <div id="calcHistory" style="
+      display: none;
+      max-height: 140px;
+      overflow-y: auto;
+      margin-bottom: 10px;
+      padding: 8px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.05);
+      position: relative;
+      z-index: 1;
+    ">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <span style="font-size:10px; color:rgba(255,255,255,0.3); font-weight:600; text-transform:uppercase; letter-spacing:0.08em;">History</span>
+        <button onclick="clearHistory()" style="
+          font-size:9px; color:rgba(255,255,255,0.25);
+          background:none; border:none; cursor:pointer;
+          transition: color 0.2s;
+        " onmouseenter="this.style.color='#ff5f57'" onmouseleave="this.style.color='rgba(255,255,255,0.25)'">Clear All</button>
+      </div>
+      <div id="historyList" style="display:flex; flex-direction:column; gap:3px;"></div>
+      <div id="historyEmpty" style="
+        text-align:center; padding:12px;
+        font-size:11px; color:rgba(255,255,255,0.15);
+      ">No history yet</div>
+    </div>
 
-    <button class="btn btn-light btn-sm" onclick="press('1')">1</button>
-    <button class="btn btn-light btn-sm" onclick="press('2')">2</button>
-    <button class="btn btn-light btn-sm" onclick="press('3')">3</button>
-    <button class="btn btn-warning btn-sm" onclick="press('+')">+</button>
+    <!-- Display -->
+    <div id="calcDisplay" style="
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 16px 18px;
+      margin-bottom: 14px;
+      text-align: right;
+      position: relative;
+      z-index: 1;
+      min-height: 88px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      transition: border-color 0.3s ease;
+    ">
+      <div id="calcExpr" style="
+        font-size: 13px;
+        color: rgba(255,255,255,0.3);
+        min-height: 18px;
+        margin-bottom: 4px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-family: 'SF Mono', 'Fira Code', monospace;
+        transition: color 0.3s;
+      "></div>
+      <div id="calcVal" style="
+        font-size: 36px;
+        font-weight: 300;
+        color: rgba(255,255,255,0.95);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-family: -apple-system, 'SF Pro Display', 'Inter', sans-serif;
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+        transition: all 0.15s ease;
+      ">0</div>
+    </div>
 
-    <button class="btn btn-light btn-sm" onclick="press('0')" style="grid-column:span 2;">0</button>
-    <button class="btn btn-light btn-sm" onclick="pressDot()">.</button>
-    <button class="btn btn-success btn-sm" onclick="calculate()">=</button>
+    <!-- Button Grid -->
+    <div style="
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      position: relative;
+      z-index: 1;
+    ">
+
+      <!-- Row 1: AC, +/-, %, ÷ -->
+      <button class="calc-btn func"  onclick="cc()">AC</button>
+      <button class="calc-btn func"  onclick="toggleSign()">+/−</button>
+      <button class="calc-btn func"  onclick="percent()">%</button>
+      <button class="calc-btn op"    onclick="press('/')" data-op="/">÷</button>
+
+      <!-- Row 2: 7 8 9 × -->
+      <button class="calc-btn num"   onclick="press('7')">7</button>
+      <button class="calc-btn num"   onclick="press('8')">8</button>
+      <button class="calc-btn num"   onclick="press('9')">9</button>
+      <button class="calc-btn op"    onclick="press('*')" data-op="*">×</button>
+
+      <!-- Row 3: 4 5 6 − -->
+      <button class="calc-btn num"   onclick="press('4')">4</button>
+      <button class="calc-btn num"   onclick="press('5')">5</button>
+      <button class="calc-btn num"   onclick="press('6')">6</button>
+      <button class="calc-btn op"    onclick="press('-')" data-op="-">−</button>
+
+      <!-- Row 4: 1 2 3 + -->
+      <button class="calc-btn num"   onclick="press('1')">1</button>
+      <button class="calc-btn num"   onclick="press('2')">2</button>
+      <button class="calc-btn num"   onclick="press('3')">3</button>
+      <button class="calc-btn op"    onclick="press('+')" data-op="+">+</button>
+
+      <!-- Row 5: 0, ., = -->
+      <button class="calc-btn num zero" onclick="press('0')" style="grid-column:span 2;">0</button>
+      <button class="calc-btn num"   onclick="pressDot()">.</button>
+      <button class="calc-btn equal" onclick="calculate()">=</button>
+    </div>
+
+    <!-- Keyboard hint -->
+    <div style="
+      text-align: center;
+      margin-top: 10px;
+      font-size: 10px;
+      color: rgba(255,255,255,0.12);
+      letter-spacing: 0.03em;
+      position: relative;
+      z-index: 1;
+    ">
+      <span style="display:inline-flex; align-items:center; gap:4px;color:rgba(255, 255, 255, 0.8);">
+        <span style="
+          background:rgba(255,255,255,0.06);
+          padding:1px 5px;
+          border-radius:3px;
+          color:rgb(255, 255, 255);
+          border:1px solid rgba(255,255,255,0.08);
+          font-size:9px;
+        ">⌨</span>
+        Keyboard supported
+      </span>
+    </div>
+
   </div>
 </div>
 
+<!-- ═══════════════ CALCULATOR STYLES ═══════════════ -->
+<style>
+/* Base button */
+.calc-btn {
+    height: 52px;
+    border: none;
+    border-radius: 14px;
+    font-size: 18px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+    overflow: hidden;
+    outline: none;
+    font-family: -apple-system, 'SF Pro Display', 'Inter', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
+.calc-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.calc-btn:active {
+    transform: scale(0.92);
+}
+
+/* Number buttons */
+.calc-btn.num {
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.9);
+    border: 1px solid rgba(255,255,255,0.04);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.calc-btn.num:hover {
+    background: rgba(255,255,255,0.14);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.calc-btn.num:active {
+    background: rgba(255,255,255,0.18);
+}
+
+.calc-btn.num::before {
+    background: radial-gradient(circle at center, rgba(255,255,255,0.15), transparent);
+}
+
+.calc-btn.num:active::before { opacity: 1; }
+
+/* Zero button */
+.calc-btn.zero {
+    text-align: left;
+    padding-left: 24px;
+}
+
+/* Function buttons (AC, +/-, %) */
+.calc-btn.func {
+    background: rgba(255,255,255,0.04);
+    color: rgba(255,255,255,0.6);
+    border: 1px solid rgba(255,255,255,0.06);
+    font-size: 15px;
+    font-weight: 500;
+}
+
+.calc-btn.func:hover {
+    background: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.8);
+}
+
+.calc-btn.func:active {
+    background: rgba(255,255,255,0.12);
+}
+
+/* Operator buttons */
+.calc-btn.op {
+    background: linear-gradient(135deg, rgba(99,102,241,0.5), rgba(139,92,246,0.5));
+    color: white;
+    border: 1px solid rgba(139,92,246,0.2);
+    font-size: 20px;
+    font-weight: 300;
+    box-shadow: 0 2px 12px rgba(99,102,241,0.2);
+}
+
+.calc-btn.op:hover {
+    background: linear-gradient(135deg, rgba(99,102,241,0.65), rgba(139,92,246,0.65));
+    box-shadow: 0 4px 18px rgba(99,102,241,0.3);
+}
+
+.calc-btn.op:active {
+    background: linear-gradient(135deg, rgba(99,102,241,0.8), rgba(139,92,246,0.8));
+}
+
+.calc-btn.op.active-op {
+    background: linear-gradient(135deg, rgba(99,102,241,0.9), rgba(139,92,246,0.9));
+    box-shadow: 0 0 20px rgba(99,102,241,0.4), 0 4px 18px rgba(99,102,241,0.3);
+    color: white;
+}
+
+/* Equals button */
+.calc-btn.equal {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    font-size: 22px;
+    font-weight: 400;
+    border: none;
+    box-shadow: 0 4px 16px rgba(99,102,241,0.35);
+}
+
+.calc-btn.equal:hover {
+    background: linear-gradient(135deg, #7577f5, #9d7ef8);
+    box-shadow: 0 6px 24px rgba(99,102,241,0.45);
+    transform: scale(1.02);
+}
+
+.calc-btn.equal:active {
+    transform: scale(0.95);
+    box-shadow: 0 2px 8px rgba(99,102,241,0.3);
+}
+
+/* Ripple effect */
+.calc-ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.25);
+    transform: scale(0);
+    animation: calcRipple 0.5s ease-out;
+    pointer-events: none;
+}
+
+@keyframes calcRipple {
+    to { transform: scale(3); opacity: 0; }
+}
+
+/* Value animation */
+.calc-val-pop {
+    animation: valPop 0.15s ease;
+}
+
+@keyframes valPop {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.03); }
+    100% { transform: scale(1); }
+}
+
+/* Error shake */
+.calc-error-shake {
+    animation: calcShake 0.4s ease;
+}
+
+@keyframes calcShake {
+    0%, 100% { transform: translateX(0); }
+    25%      { transform: translateX(-5px); }
+    75%      { transform: translateX(5px); }
+}
+
+/* History items */
+.history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    gap: 8px;
+}
+
+.history-item:hover {
+    background: rgba(255,255,255,0.06);
+}
+
+.history-expr {
+    font-size: 11px;
+    color: rgba(255,255,255,0.25);
+    font-family: 'SF Mono', monospace;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+}
+
+.history-result {
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.6);
+    white-space: nowrap;
+}
+
+/* History scrollbar */
+#calcHistory::-webkit-scrollbar {
+    width: 4px;
+}
+
+#calcHistory::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#calcHistory::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.1);
+    border-radius: 999px;
+}
+
+/* Display focus border */
+#calcDisplay.focused {
+    border-color: rgba(99,102,241,0.3);
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    #calculator {
+        width: calc(100vw - 20px) !important;
+        right: 10px !important;
+        bottom: 70px !important;
+    }
+
+    .calc-btn {
+        height: 48px;
+        border-radius: 12px;
+    }
+
+    #calcVal {
+        font-size: 30px !important;
+    }
+}
+</style>
 
 
-
-
-
-
+<!-- ═══════════════ CALCULATOR SCRIPT ═══════════════ -->
 <script>
 (function () {
-  let expr = '';
-  let justCalc = false;
-  const valEl  = document.getElementById('calcVal');
-  const exprEl = document.getElementById('calcExpr');
-  const calcEl = document.getElementById('calculator');
-  const handle = document.getElementById('calcDragHandle');
+    let expr = '';
+    let justCalc = false;
+    let currentOp = null;
+    let history = [];
+    const MAX_HISTORY = 100;
 
-  /* ---------- toggle visibility ---------- */
-  document.getElementById('calcToggle').onclick = () => {
-    calcEl.style.display = calcEl.style.display === 'none' ? 'block' : 'none';
-  };
+    const valEl     = document.getElementById('calcVal');
+    const exprEl    = document.getElementById('calcExpr');
+    const calcEl    = document.getElementById('calculator');
+    const handle    = document.getElementById('calcDragHandle');
+    const display   = document.getElementById('calcDisplay');
+    const glowEl    = document.getElementById('calcGlow');
+    const histPanel = document.getElementById('calcHistory');
+    const histList  = document.getElementById('historyList');
+    const histEmpty = document.getElementById('historyEmpty');
 
-  /* ---------- display helper ---------- */
-  function updateDisplay(v, e) {
-    valEl.textContent  = v;
-    exprEl.textContent = e || '';
-  }
+    // Load history from localStorage
+    try {
+        const saved = localStorage.getItem('calcHistory');
+        if (saved) history = JSON.parse(saved);
+        renderHistory();
+    } catch (e) {}
 
-  /* ---------- button handlers ---------- */
-  window.press = function (ch) {
-    const ops = ['+', '-', '*', '/'];
-    if (justCalc) {
-      if (ops.includes(ch)) {
-        expr = valEl.textContent + ch;
+    /* ---------- toggle visibility ---------- */
+    const toggleBtn = document.getElementById('calcToggle');
+    if (toggleBtn) {
+        toggleBtn.onclick = () => {
+            const isHidden = calcEl.style.display === 'none';
+            calcEl.style.display = isHidden ? 'block' : 'none';
+            if (isHidden) {
+                calcEl.style.animation = 'calcSlideIn 0.35s cubic-bezier(0.34,1.56,0.64,1)';
+                display.classList.add('focused');
+                setTimeout(() => display.classList.remove('focused'), 2000);
+            }
+        };
+    }
+
+    // Add slide-in animation
+    const animStyle = document.createElement('style');
+    animStyle.textContent = `
+        @keyframes calcSlideIn {
+            from { opacity: 0; transform: translateY(20px) scale(0.95); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes calcSlideOut {
+            from { opacity: 1; transform: translateY(0) scale(1); }
+            to   { opacity: 0; transform: translateY(20px) scale(0.95); }
+        }
+    `;
+    document.head.appendChild(animStyle);
+
+    /* ---------- display helpers ---------- */
+    function formatNumber(num) {
+        if (typeof num === 'string' && num === 'Error') return 'Error';
+        const n = parseFloat(num);
+        if (isNaN(n)) return '0';
+        if (Math.abs(n) >= 1e12) return n.toExponential(4);
+        // Add commas for readability but preserve decimal
+        const str = String(num);
+        if (str.includes('.')) {
+            const [int, dec] = str.split('.');
+            const neg = int.startsWith('-');
+            const absInt = neg ? int.slice(1) : int;
+            const formatted = absInt.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            return (neg ? '-' : '') + formatted + '.' + dec;
+        }
+        const neg = str.startsWith('-');
+        const absStr = neg ? str.slice(1) : str;
+        const formatted = absStr.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return (neg ? '-' : '') + formatted;
+    }
+
+    function formatExpr(e) {
+        return e.replace(/\*/g, ' × ').replace(/\//g, ' ÷ ').replace(/\+/g, ' + ').replace(/-/g, ' − ');
+    }
+
+    function updateDisplay(v, e) {
+        const displayVal = formatNumber(v);
+        valEl.textContent = displayVal;
+        exprEl.textContent = e ? formatExpr(e) : '';
+
+        // Auto-size font
+        const len = displayVal.length;
+        if (len > 14) valEl.style.fontSize = '22px';
+        else if (len > 10) valEl.style.fontSize = '28px';
+        else valEl.style.fontSize = '36px';
+
+        // Pop animation
+        valEl.classList.remove('calc-val-pop');
+        void valEl.offsetWidth;
+        valEl.classList.add('calc-val-pop');
+
+        // Update glow color
+        updateGlow(v);
+    }
+
+    function updateGlow(val) {
+        if (val === 'Error') {
+            glowEl.style.background = 'radial-gradient(circle, rgba(239,68,68,0.2), transparent 70%)';
+        } else {
+            glowEl.style.background = 'radial-gradient(circle, rgba(99,102,241,0.15), transparent 70%)';
+        }
+    }
+
+    function highlightOp(op) {
+        document.querySelectorAll('.calc-btn.op').forEach(btn => {
+            btn.classList.remove('active-op');
+            if (btn.dataset.op === op) btn.classList.add('active-op');
+        });
+    }
+
+    /* ---------- ripple effect ---------- */
+    document.querySelectorAll('.calc-btn').forEach(btn => {
+        btn.addEventListener('click', function (e) {
+            const ripple = document.createElement('span');
+            ripple.className = 'calc-ripple';
+            const rect = this.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            ripple.style.width = ripple.style.height = size + 'px';
+            ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+            ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
+            this.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 500);
+        });
+    });
+
+    /* ---------- button handlers ---------- */
+    window.press = function (ch) {
+        const ops = ['+', '-', '*', '/'];
+        if (justCalc) {
+            if (ops.includes(ch)) {
+                expr = valEl.textContent.replace(/,/g, '') + ch;
+                justCalc = false;
+                highlightOp(ch);
+                updateDisplay(valEl.textContent.replace(/,/g, ''), expr);
+                return;
+            }
+            expr = '';
+            justCalc = false;
+        }
+        const lastChar = expr.slice(-1);
+        if (ops.includes(ch)) {
+            if (expr === '' && ch !== '-') return;
+            if (ops.includes(lastChar)) expr = expr.slice(0, -1);
+            highlightOp(ch);
+        } else {
+            highlightOp(null);
+        }
+        expr += ch;
+        const parts = expr.split(/([+\-*/])/);
+        const lastPart = parts.filter(p => !(['+','-','*','/'].includes(p))).pop() || '0';
+        updateDisplay(lastPart, expr);
+    };
+
+    window.pressDot = function () {
+        if (justCalc) { expr = '0'; justCalc = false; }
+        const parts = expr.split(/[+\-*/]/);
+        const cur = parts[parts.length - 1];
+        if (cur.includes('.')) return;
+        if (!cur) expr += '0';
+        expr += '.';
+        updateDisplay(expr.split(/[+\-*/]/).pop() || '0', expr);
+    };
+
+    window.cc = function () {
+        expr = '';
         justCalc = false;
-        updateDisplay(valEl.textContent, expr);
-        return;
-      }
-      expr = '';
-      justCalc = false;
+        currentOp = null;
+        highlightOp(null);
+        updateDisplay('0', '');
+
+        // Flash the display
+        display.style.borderColor = 'rgba(255,95,87,0.4)';
+        setTimeout(() => { display.style.borderColor = 'rgba(255,255,255,0.06)'; }, 300);
+    };
+
+    window.toggleSign = function () {
+        if (justCalc) {
+            const current = valEl.textContent.replace(/,/g, '');
+            const toggled = current.startsWith('-') ? current.slice(1) : '-' + current;
+            expr = toggled;
+            updateDisplay(toggled, '');
+            return;
+        }
+        const match = expr.match(/^(.*[+\-*/])?(-?)(\d*\.?\d+)$/);
+        if (!match) return;
+        const pre = match[1] || '', neg = match[2], num = match[3];
+        expr = pre + (neg ? '' : '-') + num;
+        updateDisplay((neg ? '' : '-') + num, expr);
+    };
+
+    window.percent = function () {
+        try {
+            const v = Function('"use strict"; return (' + expr + ')')();
+            const r = parseFloat((v / 100).toPrecision(12));
+            updateDisplay(r, expr + ' %');
+            expr = String(r);
+            justCalc = true;
+            highlightOp(null);
+        } catch (e) {
+            showError();
+        }
+    };
+
+    window.calculate = function () {
+        if (!expr) return;
+        try {
+            const safe = expr.replace(/[^0-9+\-*/.()]/g, '');
+            const result = Function('"use strict"; return (' + safe + ')')();
+            if (!isFinite(result)) {
+                showError();
+                return;
+            }
+            const rounded = parseFloat(result.toPrecision(12));
+            const exprDisplay = expr;
+            updateDisplay(rounded, expr + ' =');
+            
+            // Add to history
+            addHistory(exprDisplay, rounded);
+            
+            expr = String(rounded);
+            justCalc = true;
+            highlightOp(null);
+
+            // Flash display green briefly
+            display.style.borderColor = 'rgba(16,185,129,0.4)';
+            setTimeout(() => { display.style.borderColor = 'rgba(255,255,255,0.06)'; }, 400);
+
+            // Glow pulse
+            glowEl.style.background = 'radial-gradient(circle, rgba(16,185,129,0.2), transparent 70%)';
+            setTimeout(() => {
+                glowEl.style.background = 'radial-gradient(circle, rgba(99,102,241,0.15), transparent 70%)';
+            }, 600);
+
+        } catch (e) {
+            showError();
+        }
+    };
+
+    function showError() {
+        updateDisplay('Error', '');
+        expr = '';
+        justCalc = false;
+        highlightOp(null);
+
+        // Shake + red glow
+        display.classList.add('calc-error-shake');
+        display.style.borderColor = 'rgba(239,68,68,0.5)';
+        setTimeout(() => {
+            display.classList.remove('calc-error-shake');
+            display.style.borderColor = 'rgba(255,255,255,0.06)';
+        }, 500);
     }
-    const lastChar = expr.slice(-1);
-    if (ops.includes(ch)) {
-      if (expr === '' && ch !== '-') return;
-      if (ops.includes(lastChar)) expr = expr.slice(0, -1);
+
+    /* ---------- History ---------- */
+    function addHistory(expression, result) {
+        history.unshift({ expr: expression, result: result, time: Date.now() });
+        if (history.length > MAX_HISTORY) history.pop();
+        saveHistory();
+        renderHistory();
     }
-    expr += ch;
-    const parts = expr.split(/[+\-*/]/);
-    updateDisplay(parts[parts.length - 1] || '0', expr);
-  };
 
-  window.pressDot = function () {
-    if (justCalc) { expr = '0'; justCalc = false; }
-    const parts = expr.split(/[+\-*/]/);
-    const cur   = parts[parts.length - 1];
-    if (cur.includes('.')) return;
-    if (!cur) expr += '0';
-    expr += '.';
-    updateDisplay(expr.split(/[+\-*/]/).pop() || '0', expr);
-  };
-
-  window.cc = function () {
-    expr = ''; justCalc = false; updateDisplay('0', '');
-  };
-
-  window.toggleSign = function () {
-    const match = expr.match(/^(.*[+\-*/])?(-?)(\d*\.?\d+)$/);
-    if (!match) return;
-    const pre = match[1] || '', neg = match[2], num = match[3];
-    expr = pre + (neg ? '' : '-') + num;
-    updateDisplay((neg ? '' : '-') + num, expr);
-  };
-
-  window.percent = function () {
-    try {
-      const v = Function('"use strict"; return (' + expr + ')')();
-      const r = parseFloat((v / 100).toPrecision(12));
-      updateDisplay(r, expr + '%');
-      expr = String(r);
-      justCalc = true;
-    } catch (e) { updateDisplay('Error', ''); expr = ''; }
-  };
-
-  window.calculate = function () {
-    if (!expr) return;
-    try {
-      const safe   = expr.replace(/[^0-9+\-*/.()]/g, '');
-      const result = Function('"use strict"; return (' + safe + ')')();
-      if (!isFinite(result)) { updateDisplay('Error', expr + '='); expr = ''; return; }
-      const rounded = parseFloat(result.toPrecision(12));
-      updateDisplay(rounded, expr + '=');
-      expr      = String(rounded);
-      justCalc  = true;
-    } catch (e) { updateDisplay('Error', expr + '='); expr = ''; }
-  };
-
-  /* ---------- keyboard support ---------- */
-  document.addEventListener('keydown', e => {
-    if (calcEl.style.display === 'none') return;
-    if ('0123456789'.includes(e.key))        press(e.key);
-    else if (['+','-','*','/'].includes(e.key)) press(e.key);
-    else if (e.key === 'Enter' || e.key === '=') calculate();
-    else if (e.key === 'Backspace') {
-      if (justCalc) { cc(); return; }
-      expr = expr.slice(0, -1);
-      const parts = expr.split(/[+\-*/]/);
-      updateDisplay(parts[parts.length - 1] || '0', expr);
+    function saveHistory() {
+        try { localStorage.setItem('calcHistory', JSON.stringify(history)); } catch (e) {}
     }
-    else if (e.key === 'Escape') cc();
-    else if (e.key === '.') pressDot();
-  });
 
-  /* ---------- drag support ---------- */
-  let dragging = false, ox = 0, oy = 0;
+    function renderHistory() {
+        histList.innerHTML = '';
+        if (history.length === 0) {
+            histEmpty.style.display = 'block';
+            return;
+        }
+        histEmpty.style.display = 'none';
+        history.forEach((item, idx) => {
+            const div = document.createElement('div');
+            div.className = 'history-item';
+            div.innerHTML = `
+                <span class="history-expr">${formatExpr(item.expr)}</span>
+                <span class="history-result">= ${formatNumber(item.result)}</span>
+            `;
+            div.onclick = () => {
+                expr = String(item.result);
+                justCalc = true;
+                updateDisplay(item.result, item.expr + ' =');
+                highlightOp(null);
+            };
+            histList.appendChild(div);
+        });
+    }
 
-  function startDrag(clientX, clientY) {
-    dragging = true;
-    const r = calcEl.getBoundingClientRect();
-    ox = clientX - r.left;
-    oy = clientY - r.top;
-    calcEl.style.position = 'fixed';
-    calcEl.style.bottom   = 'auto';
-    calcEl.style.right    = 'auto';
-    calcEl.style.left     = r.left + 'px';
-    calcEl.style.top      = r.top  + 'px';
-    handle.style.cursor   = 'grabbing';
-  }
+    window.toggleHistory = function () {
+        const isVisible = histPanel.style.display !== 'none';
+        histPanel.style.display = isVisible ? 'none' : 'block';
+        const btn = document.getElementById('historyToggle');
+        if (isVisible) {
+            btn.style.background = 'rgba(255,255,255,0.06)';
+            btn.style.color = 'rgba(255,255,255,0.4)';
+        } else {
+            btn.style.background = 'rgba(99,102,241,0.2)';
+            btn.style.color = 'rgba(99,102,241,0.8)';
+        }
+    };
 
-  function moveDrag(clientX, clientY) {
-    if (!dragging) return;
-    calcEl.style.left = (clientX - ox) + 'px';
-    calcEl.style.top  = (clientY - oy) + 'px';
-  }
+    window.clearHistory = function () {
+        history = [];
+        saveHistory();
+        renderHistory();
+    };
 
-  function endDrag() { dragging = false; handle.style.cursor = 'grab'; }
+    /* ---------- keyboard support ---------- */
+    document.addEventListener('keydown', e => {
+        if (calcEl.style.display === 'none') return;
 
-  handle.addEventListener('mousedown',  e => { startDrag(e.clientX, e.clientY); e.preventDefault(); });
-  document.addEventListener('mousemove', e => moveDrag(e.clientX, e.clientY));
-  document.addEventListener('mouseup',   endDrag);
+        // Prevent form submission when using calculator
+        const active = document.activeElement;
+        const isInput = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT');
+        if (isInput) return;
 
-  handle.addEventListener('touchstart', e => {
-    startDrag(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault();
-  }, { passive: false });
-  document.addEventListener('touchmove', e => {
-    if (dragging) { moveDrag(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); }
-  }, { passive: false });
-  document.addEventListener('touchend', endDrag);
+        if ('0123456789'.includes(e.key)) { press(e.key); e.preventDefault(); }
+        else if (['+', '-', '*', '/'].includes(e.key)) { press(e.key); e.preventDefault(); }
+        else if (e.key === 'Enter' || e.key === '=') { calculate(); e.preventDefault(); }
+        else if (e.key === 'Backspace') {
+            e.preventDefault();
+            if (justCalc) { cc(); return; }
+            expr = expr.slice(0, -1);
+            const parts = expr.split(/[+\-*/]/);
+            updateDisplay(parts[parts.length - 1] || '0', expr);
+            if (!expr) highlightOp(null);
+        }
+        else if (e.key === 'Escape') { cc(); e.preventDefault(); }
+        else if (e.key === '.') { pressDot(); e.preventDefault(); }
+        else if (e.key === '%') { percent(); e.preventDefault(); }
+    });
 
-  handle.style.cursor = 'grab';
+    /* ---------- drag support ---------- */
+    let dragging = false, ox = 0, oy = 0;
+
+    function startDrag(clientX, clientY) {
+        dragging = true;
+        const r = calcEl.getBoundingClientRect();
+        ox = clientX - r.left;
+        oy = clientY - r.top;
+        calcEl.style.position = 'fixed';
+        calcEl.style.bottom = 'auto';
+        calcEl.style.right = 'auto';
+        calcEl.style.left = r.left + 'px';
+        calcEl.style.top = r.top + 'px';
+        calcEl.style.transition = 'none';
+        handle.style.cursor = 'grabbing';
+    }
+
+    function moveDrag(clientX, clientY) {
+        if (!dragging) return;
+        const x = Math.max(0, Math.min(clientX - ox, window.innerWidth - calcEl.offsetWidth));
+        const y = Math.max(0, Math.min(clientY - oy, window.innerHeight - calcEl.offsetHeight));
+        calcEl.style.left = x + 'px';
+        calcEl.style.top = y + 'px';
+    }
+
+    function endDrag() {
+        if (!dragging) return;
+        dragging = false;
+        handle.style.cursor = 'grab';
+        calcEl.style.transition = '';
+    }
+
+    handle.addEventListener('mousedown', e => { startDrag(e.clientX, e.clientY); e.preventDefault(); });
+    document.addEventListener('mousemove', e => moveDrag(e.clientX, e.clientY));
+    document.addEventListener('mouseup', endDrag);
+
+    handle.addEventListener('touchstart', e => {
+        startDrag(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault();
+    }, { passive: false });
+    document.addEventListener('touchmove', e => {
+        if (dragging) { moveDrag(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); }
+    }, { passive: false });
+    document.addEventListener('touchend', endDrag);
+
+    handle.style.cursor = 'grab';
+
 })();
 </script>
 

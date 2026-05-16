@@ -2,176 +2,850 @@
 
 {% block title %}Admin Login | Elite Accounts{% endblock %}
 
-
 {% block content %}
 <style>
-    /* 1. Universal Layout Fix */
-    body, html {
-        height: 100%;
-        margin: 0;
-        overflow-x: hidden;
-    }
+/* ═══════════════════════════════════════════
+   Import Fonts
+═══════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-    body {
-        background: linear-gradient(rgba(17, 24, 39, 0.62), rgba(17, 24, 39, 0.51)), 
-                    url('https://pub-93d5c5dc4e13444fa908bc96f7d0ec8e.r2.dev/Elevation%20-%2001_5%20-%20Photo.jpg');
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    }
+/* ═══════════════════════════════════════════
+   CSS Variables
+═══════════════════════════════════════════ */
+:root {
+    --brand-primary: #6366f1;
+    --brand-secondary: #8b5cf6;
+    --brand-accent: #06b6d4;
+    --brand-glow: rgba(99, 102, 241, 0.35);
 
-    .login-wrapper {
-        width: 100%;
-        max-width: 420px; /* Ensures the card isn't too wide or too narrow */
-        padding: 20px;
-        z-index: 10;
-    }
+    --surface: rgba(255, 255, 255, 0.97);
+    --surface-subtle: rgba(248, 250, 252, 0.8);
 
-    /* 2. Fixed Glassmorphism Card */
-    .login-card {
-        background: rgba(255, 255, 255, 1); /* Solid white for better readability on mobile */
-        border-radius: 24px;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        overflow: hidden;
-        animation: fadeInUp 0.6s ease-out forwards;
-    }
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-tertiary: #94a3b8;
 
-    @supports (backdrop-filter: blur(10px)) {
-        .login-card {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
-        }
-    }
+    --border: rgba(226, 232, 240, 0.8);
+    --border-focus: var(--brand-primary);
 
-    /* 3. Elements Fix */
-    .brand-logo {
-        width: 64px;
-        height: 64px;
-        background: linear-gradient(135deg, #4361ee, #4cc9f0);
-        color: white;
-        border-radius: 18px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.8rem;
-        margin: 0 auto 1.2rem;
-        box-shadow: 0 8px 16px rgba(67, 97, 238, 0.3);
-    }
+    --success: #10b981;
+    --danger: #ef4444;
+    --danger-light: rgba(239, 68, 68, 0.08);
 
-    .form-floating > .form-control {
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        height: 58px;
-    }
+    --radius-sm: 8px;
+    --radius: 14px;
+    --radius-lg: 20px;
+    --radius-xl: 28px;
 
-    .form-floating > label {
-        padding-left: 1.2rem;
-    }
+    --shadow-brand: 0 8px 32px rgba(99, 102, 241, 0.28);
+    --shadow-card: 0 32px 64px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255,255,255,0.08);
 
-    .btn-login {
-        background: linear-gradient(90deg, #4361ee, #4cc9f0);
-        border: none;
-        border-radius: 12px;
-        padding: 14px;
-        font-weight: 700;
-        color: white;
-        transition: all 0.3s ease;
-    }
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
 
-    .btn-login:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 15px -3px rgba(67, 97, 238, 0.4);
-        color: white;
-    }
+/* ═══════════════════════════════════════════
+   Reset & Base
+═══════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; }
 
-    .password-toggle {
-        position: absolute;
-        right: 15px;
-        top: 50%;
-        transform: translateY(-50%);
-        cursor: pointer;
-        color: #94a3b8;
-        z-index: 5;
-        font-size: 1.2rem;
-    }
+body, html {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
 
-    /* Animations */
-    @keyframes fadeInUp {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
+/* ═══════════════════════════════════════════
+   Background Scene
+═══════════════════════════════════════════ */
+.login-scene {
+    min-height: 100vh;
+    width: 100%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    overflow: hidden;
+}
+
+/* Hero background image */
+.scene-bg {
+    position: fixed;
+    inset: 0;
+    background:
+        url('https://pub-93d5c5dc4e13444fa908bc96f7d0ec8e.r2.dev/Elevation%20-%2001_5%20-%20Photo.jpg')
+        center / cover no-repeat fixed;
+    z-index: 0;
+}
+
+/* Multi-layer overlay */
+.scene-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(180deg,
+            rgba(2, 6, 23, 0.7) 0%,
+            rgba(15, 23, 42, 0.55) 40%,
+            rgba(2, 6, 23, 0.75) 100%
+        );
+}
+
+.scene-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 50% at 50% 0%,
+        rgba(99, 102, 241, 0.12), transparent 60%);
+}
+
+/* Floating particles */
+.particle {
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 1;
+    animation: particleDrift linear infinite;
+    opacity: 0;
+}
+
+@keyframes particleDrift {
+    0%   { transform: translateY(100vh) translateX(0) scale(0); opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 0.6; }
+    100% { transform: translateY(-100px) translateX(60px) scale(1.2); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════
+   Layout
+═══════════════════════════════════════════ */
+.login-container {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    max-width: 440px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    animation: containerEnter 0.8s var(--ease-spring) both;
+}
+
+@keyframes containerEnter {
+    from { opacity: 0; transform: translateY(40px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ═══════════════════════════════════════════
+   Brand Header
+═══════════════════════════════════════════ */
+.brand-header {
+    text-align: center;
+    margin-bottom: 28px;
+    animation: fadeDown 0.7s 0.2s var(--ease) both;
+}
+
+@keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.brand-icon {
+    position: relative;
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 16px;
+}
+
+.brand-icon-inner {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+    border-radius: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.9rem;
+    color: white;
+    box-shadow: var(--shadow-brand);
+    position: relative;
+    z-index: 1;
+    transition: transform 0.3s var(--ease-spring);
+}
+
+.brand-icon-inner:hover {
+    transform: scale(1.05) rotate(-3deg);
+}
+
+.brand-icon-ring {
+    position: absolute;
+    inset: -8px;
+    border: 2px solid rgba(99, 102, 241, 0.3);
+    border-radius: 30px;
+    animation: ringPulse 3s ease-in-out infinite;
+}
+
+.brand-icon-ring-2 {
+    position: absolute;
+    inset: -16px;
+    border: 1px solid rgba(99, 102, 241, 0.12);
+    border-radius: 38px;
+    animation: ringPulse 3s 0.5s ease-in-out infinite;
+}
+
+@keyframes ringPulse {
+    0%, 100% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.08); opacity: 0.3; }
+}
+
+.brand-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: white;
+    letter-spacing: -0.03em;
+    margin: 0 0 6px;
+    text-shadow: 0 2px 16px rgba(0,0,0,0.3);
+}
+
+.brand-subtitle {
+    font-size: 0.8125rem;
+    color: rgba(255, 255, 255, 0.55);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.brand-subtitle::before,
+.brand-subtitle::after {
+    content: '';
+    width: 24px;
+    height: 1px;
+    background: rgba(255,255,255,0.2);
+}
+
+/* ═══════════════════════════════════════════
+   Login Card
+═══════════════════════════════════════════ */
+.login-card {
+    width: 100%;
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-card);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    overflow: hidden;
+    position: relative;
+    animation: cardEnter 0.7s 0.15s var(--ease-spring) both;
+}
+
+@keyframes cardEnter {
+    from { opacity: 0; transform: translateY(24px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Gradient top border */
+.login-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--brand-primary), var(--brand-secondary), var(--brand-accent));
+    z-index: 1;
+}
+
+.card-inner {
+    padding: 36px 40px 32px;
+}
+
+/* ─── Card Title ─── */
+.card-title-row {
+    margin-bottom: 28px;
+    text-align: center;
+}
+
+.card-title-row h3 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+    margin: 0 0 4px;
+}
+
+.card-title-row p {
+    font-size: 0.8125rem;
+    color: var(--text-tertiary);
+    margin: 0;
+}
+
+/* ─── Alert ─── */
+.alert-modern {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 16px;
+    background: var(--danger-light);
+    border: 1px solid rgba(239, 68, 68, 0.15);
+    border-radius: var(--radius);
+    color: #b91c1c;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    margin-bottom: 24px;
+    animation: alertShake 0.4s var(--ease);
+}
+
+@keyframes alertShake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+}
+
+.alert-modern i {
+    font-size: 1rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+    color: var(--danger);
+}
+
+/* ─── Form Fields ─── */
+.field-wrap {
+    margin-bottom: 16px;
+}
+
+.field-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-tertiary);
+    margin-bottom: 8px;
+}
+
+.field-body {
+    position: relative;
+}
+
+.field-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-tertiary);
+    font-size: 1rem;
+    pointer-events: none;
+    transition: color 0.2s var(--ease);
+    z-index: 2;
+}
+
+.field-input {
+    width: 100%;
+    height: 52px;
+    padding: 0 44px;
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface-subtle);
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    transition: all 0.2s var(--ease);
+    outline: none;
+    font-family: inherit;
+}
+
+.field-input::placeholder {
+    color: var(--text-tertiary);
+    font-weight: 400;
+}
+
+.field-input:hover {
+    border-color: rgba(148, 163, 184, 0.6);
+    background: white;
+}
+
+.field-input:focus {
+    border-color: var(--brand-primary);
+    background: white;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+}
+
+.field-input:focus + .field-icon-left ~ .field-icon,
+.field-body:focus-within .field-icon {
+    color: var(--brand-primary);
+}
+
+.field-eye {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-tertiary);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: color 0.2s var(--ease);
+    z-index: 2;
+    background: none;
+    border: none;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+}
+
+.field-eye:hover {
+    color: var(--text-primary);
+    background: var(--border);
+}
+
+/* ─── Options Row ─── */
+.options-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    margin-top: 4px;
+}
+
+.check-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.check-box {
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    border: 2px solid var(--border);
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s var(--ease);
+    flex-shrink: 0;
+    cursor: pointer;
+    position: relative;
+}
+
+.check-real {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    margin: 0;
+}
+
+.check-real:checked ~ .check-icon {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.check-real:checked + .check-box-outer {
+    background: var(--brand-primary);
+    border-color: var(--brand-primary);
+}
+
+/* custom check */
+.custom-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.custom-check input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--brand-primary);
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.check-label {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+}
+
+.forgot-link {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--brand-primary);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.forgot-link:hover {
+    color: var(--brand-secondary);
+    text-decoration: underline;
+}
+
+/* ─── Submit Button ─── */
+.btn-submit {
+    width: 100%;
+    height: 52px;
+    background: linear-gradient(135deg, var(--brand-primary), var(--brand-secondary));
+    border: none;
+    border-radius: var(--radius);
+    color: white;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.25s var(--ease);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 18px var(--brand-glow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    letter-spacing: 0.01em;
+}
+
+.btn-submit::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    transition: left 0.6s var(--ease);
+}
+
+.btn-submit:hover::before {
+    left: 100%;
+}
+
+.btn-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px var(--brand-glow);
+}
+
+.btn-submit:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px var(--brand-glow);
+}
+
+.btn-submit.loading {
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+.btn-submit .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+}
+
+.btn-submit.loading .btn-label { display: none; }
+.btn-submit.loading .btn-icon  { display: none; }
+.btn-submit.loading .spinner   { display: block; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── Divider ─── */
+.card-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+    margin: 28px -40px;
+}
+
+/* ─── Security Info ─── */
+.security-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.security-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.7rem;
+    color: var(--text-tertiary);
+    font-weight: 500;
+}
+
+.security-item i {
+    font-size: 0.8rem;
+    color: var(--success);
+}
+
+/* ═══════════════════════════════════════════
+   Footer Strip
+═══════════════════════════════════════════ */
+.login-footer {
+    text-align: center;
+    margin-top: 24px;
+    animation: fadeIn 0.7s 0.5s var(--ease) both;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.footer-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 18px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 999px;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    backdrop-filter: blur(8px);
+}
+
+.footer-chip i {
+    color: var(--brand-accent);
+}
+
+.footer-sep {
+    width: 3px; height: 3px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+}
+
+/* ═══════════════════════════════════════════
+   Responsive
+═══════════════════════════════════════════ */
+@media (max-width: 480px) {
+    .login-scene { padding: 16px; }
+    .card-inner { padding: 28px 24px 24px; }
+    .card-divider { margin: 24px -24px; }
+    .brand-title { font-size: 1.5rem; }
+    .brand-icon { width: 64px; height: 64px; }
+    .brand-icon-inner { font-size: 1.6rem; border-radius: 18px; }
+    .options-row { flex-direction: column; align-items: flex-start; gap: 10px; }
+}
+
+@media (max-width: 360px) {
+    .security-row { gap: 12px; }
+}
 </style>
 
-<div class="login-wrapper">
-    <div class="text-center mb-4">
-        <div class="brand-logo">
-            <i class="bi bi-shield-lock-fill"></i>
-        </div>
-        <h2 class="fw-bold mb-1 text-white">Elite Accounts</h2>
-        <p class="text-white-50 small fw-medium">Secure Admin Gateway</p>
-    </div>
+<!-- ─── Background ─── -->
+<div class="scene-bg"></div>
 
-    <div class="login-card">
-        <div class="card-body p-4 p-md-5">
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert alert-danger border-0 rounded-3 small fw-bold mb-4" role="alert">
-                        <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ message }}
+<!-- ─── Floating Particles ─── -->
+<div id="particlesWrap"></div>
+
+<div class="login-scene">
+    <div class="login-container">
+
+        <!-- ═══ Brand Header ═══ -->
+        <div class="brand-header">
+            <div class="brand-icon">
+                <div class="brand-icon-inner">
+                    <i class="bi bi-shield-lock-fill"></i>
+                </div>
+                <span class="brand-icon-ring"></span>
+                <span class="brand-icon-ring-2"></span>
+            </div>
+            <h2 class="brand-title">Elite Accounts</h2>
+            <p class="brand-subtitle">Secure Admin Portal</p>
+        </div>
+
+        <!-- ═══ Card ═══ -->
+        <div class="login-card">
+            <div class="card-inner">
+
+                <!-- Card Title -->
+                <div class="card-title-row">
+                    <h3>Welcome back</h3>
+                    <p>Enter your credentials to access the dashboard</p>
+                </div>
+
+                <!-- Alert Messages -->
+                {% if messages %}
+                    {% for message in messages %}
+                    <div class="alert-modern" role="alert">
+                        <i class="bi bi-exclamation-octagon-fill"></i>
+                        <span>{{ message }}</span>
                     </div>
-                {% endfor %}
-            {% endif %}
+                    {% endfor %}
+                {% endif %}
 
-            <form method="POST">
-                {% csrf_token %}
+                <!-- Form -->
+                <form method="POST" id="loginForm">
+                    {% csrf_token %}
 
-                <div class="form-floating mb-3">
-                    <input type="text" name="username" class="form-control" id="floatingInput" placeholder="Username" required autofocus>
-                    <label for="floatingInput">Username</label>
-                </div>
-
-                <div class="form-floating mb-4 position-relative">
-                    <input type="password" name="password" class="form-control" id="floatingPassword" placeholder="Password" required>
-                    <label for="floatingPassword">Password</label>
-                    <i class="bi bi-eye password-toggle" id="togglePassword"></i>
-                </div>
-
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="rememberMe">
-                        <label class="form-check-label small text-muted" for="rememberMe">Remember me</label>
+                    <!-- Username -->
+                    <div class="field-wrap">
+                        <label class="field-label" for="usernameInput">Username</label>
+                        <div class="field-body">
+                            <i class="bi bi-person field-icon"></i>
+                            <input type="text" name="username" id="usernameInput"
+                                   class="field-input" placeholder="Enter your username"
+                                   autocomplete="username" required autofocus>
+                        </div>
                     </div>
-                    <a href="#" class="small text-primary text-decoration-none fw-bold">Forgot Access?</a>
+
+                    <!-- Password -->
+                    <div class="field-wrap" style="margin-bottom: 20px;">
+                        <label class="field-label" for="passwordInput">Password</label>
+                        <div class="field-body">
+                            <i class="bi bi-lock field-icon"></i>
+                            <input type="password" name="password" id="passwordInput"
+                                   class="field-input" placeholder="Enter your password"
+                                   autocomplete="current-password" required>
+                            <button type="button" class="field-eye" id="toggleEye" title="Toggle visibility">
+                                <i class="bi bi-eye" id="eyeIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Options Row -->
+                    <div class="options-row">
+                        <label class="custom-check">
+                            <input type="checkbox" id="rememberMe">
+                            <span class="check-label">Remember me for 30 days</span>
+                        </label>
+                        <a href="#" class="forgot-link">Forgot access?</a>
+                    </div>
+
+                    <!-- Submit -->
+                    <button type="submit" class="btn-submit" id="submitBtn">
+                        <span class="btn-label">Authorize Access</span>
+                        <i class="bi bi-arrow-right-circle-fill btn-icon"></i>
+                        <span class="spinner"></span>
+                    </button>
+                </form>
+
+                <!-- Divider -->
+                <div class="card-divider"></div>
+
+                <!-- Security Row -->
+                <div class="security-row">
+                    <div class="security-item">
+                        <i class="bi bi-shield-check-fill"></i>
+                        SSL Encrypted
+                    </div>
+                    <div class="security-item">
+                        <i class="bi bi-incognito"></i>
+                        Private Session
+                    </div>
+                    <div class="security-item">
+                        <i class="bi bi-patch-check-fill"></i>
+                        2FA Ready
+                    </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary btn-login w-100 shadow-sm">
-                    Authorize Access <i class="bi bi-key-fill ms-2"></i>
-                </button>
-            </form>
+            </div>
         </div>
-    </div>
 
-    <div class="text-center mt-4">
-        <div class="py-2 px-3 d-inline-block rounded-pill" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.8); font-size: 0.7rem;">
-            <i class="bi bi-patch-check-fill text-info me-1"></i>
-            Encrypted Session • © {{ 'now'|date:"Y" }} Elite Accounts
+        <!-- ═══ Footer ═══ -->
+        <div class="login-footer">
+            <div class="footer-chip">
+                <i class="bi bi-stars"></i>
+                <span>Elite Accounts</span>
+                <span class="footer-sep"></span>
+                <span>© 2025 — All rights reserved</span>
+            </div>
         </div>
+
     </div>
 </div>
 
 <script>
-    const togglePassword = document.querySelector('#togglePassword');
-    const password = document.querySelector('#floatingPassword');
+/* ─── Password Toggle ─── */
+(function () {
+    const input   = document.getElementById('passwordInput');
+    const btn     = document.getElementById('toggleEye');
+    const icon    = document.getElementById('eyeIcon');
 
-    togglePassword.addEventListener('click', function () {
-        const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
-        password.setAttribute('type', type);
-        this.classList.toggle('bi-eye');
-        this.classList.toggle('bi-eye-slash');
+    btn.addEventListener('click', function () {
+        const isPass = input.type === 'password';
+        input.type   = isPass ? 'text' : 'password';
+        icon.className = isPass ? 'bi bi-eye-slash' : 'bi bi-eye';
+        input.focus();
     });
+})();
+
+/* ─── Submit Loading State ─── */
+(function () {
+    const form = document.getElementById('loginForm');
+    const btn  = document.getElementById('submitBtn');
+
+    form.addEventListener('submit', function () {
+        // Brief delay so user sees loading
+        btn.classList.add('loading');
+    });
+})();
+
+/* ─── Floating Particles ─── */
+(function () {
+    const wrap = document.getElementById('particlesWrap');
+    const colors = [
+        'rgba(99,102,241,0.4)',
+        'rgba(139,92,246,0.35)',
+        'rgba(6,182,212,0.3)',
+        'rgba(255,255,255,0.15)',
+    ];
+
+    for (let i = 0; i < 18; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+
+        const size = Math.random() * 5 + 2;
+        const left = Math.random() * 100;
+        const delay = Math.random() * 20;
+        const duration = Math.random() * 18 + 14;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+
+        p.style.cssText = `
+            width: ${size}px;
+            height: ${size}px;
+            background: ${color};
+            left: ${left}%;
+            animation-duration: ${duration}s;
+            animation-delay: ${delay}s;
+            box-shadow: 0 0 ${size * 3}px ${color};
+        `;
+        wrap.appendChild(p);
+    }
+})();
+
+/* ─── Input Focus Sync ─── */
+(function () {
+    document.querySelectorAll('.field-input').forEach(input => {
+        input.addEventListener('focus', function () {
+            const icon = this.parentElement.querySelector('.field-icon');
+            if (icon) icon.style.color = 'var(--brand-primary)';
+        });
+        input.addEventListener('blur', function () {
+            const icon = this.parentElement.querySelector('.field-icon');
+            if (icon) icon.style.color = '';
+        });
+    });
+})();
+
+/* ─── Keyboard: Enter on username → focus password ─── */
+(function () {
+    const u = document.getElementById('usernameInput');
+    const p = document.getElementById('passwordInput');
+    u.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); p.focus(); }
+    });
+})();
 </script>
+
 {% endblock %}
