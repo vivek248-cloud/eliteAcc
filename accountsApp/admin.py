@@ -202,7 +202,6 @@ class WorkerNameAdmin(admin.ModelAdmin):
         'id',
         'name',
         'worker',
-        'is_active',
     )
 
     search_fields = (
@@ -212,7 +211,6 @@ class WorkerNameAdmin(admin.ModelAdmin):
 
     list_filter = (
         'worker',
-        'is_active',
     )
 
     ordering = (
