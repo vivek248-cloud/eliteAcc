@@ -96,7 +96,7 @@ urlpatterns = [
     path('salary/excel/',salary_excel_export,name='salary_excel_export'),
 
 
-    path('activity/today/', today_activity, name='today_activity'),
+    path('myactivity/', activity_view, name='today_activity'),
     path('settings/', settings_view, name='settings'),
     path('settings/backup/', database_backup, name='database_backup'),
     path('settings/restore/', restore_database, name='restore_database'),

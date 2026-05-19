@@ -16,9 +16,9 @@ DEBUG = True
 
 # DEBUG = False
 
-# ALLOWED_HOSTS = ['eliteaccounts.in', 'www.eliteaccounts.in', '31.97.62.126','*']
+ALLOWED_HOSTS = ['eliteaccounts.in', 'www.eliteaccounts.in', '31.97.62.126','*']
 
-ALLOWED_HOSTS = ['eliteaccounts.in', 'www.eliteaccounts.in', '31.97.62.126']
+# ALLOWED_HOSTS = ['eliteaccounts.in', 'www.eliteaccounts.in', '31.97.62.126']
 
 # Application definition
 
@@ -128,7 +128,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kolkata'
 
 USE_I18N = True
 

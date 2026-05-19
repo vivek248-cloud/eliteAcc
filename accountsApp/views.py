@@ -16,7 +16,8 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
-from django.utils.timezone import now
+from django.utils import timezone
+from zoneinfo import ZoneInfo
 
 def login_view(request):
 
@@ -116,7 +117,8 @@ def switch_company(request, pk):
 
 
 
-# from django.utils.timezone import now
+# from django.utils import timezone
+from zoneinfo import ZoneInfo
 # from django.db.models.functions import TruncMonth
 # from django.db.models import Avg
 
@@ -587,10 +589,11 @@ def switch_company(request, pk):
 
 
 
-from django.utils.timezone import now
+from django.utils import timezone
+from zoneinfo import ZoneInfo
 from django.db.models.functions import TruncMonth
 from django.db.models import Avg
-from django.utils.timezone import localtime
+from django.utils.timezone import localtime, now
 
 
 @login_required(login_url='login')
@@ -618,7 +621,7 @@ def home(request):
     if days:
         try:
             days_int = int(days)
-            ed = now().date()
+            ed = timezone.now().date()
             sd = ed - timedelta(days=days_int)
         except:
             pass
@@ -860,7 +863,9 @@ def home(request):
     # =========================
     # ALERTS
     # =========================
-    today = now().date()
+    india_tz = ZoneInfo("Asia/Kolkata")
+
+    today = timezone.now().astimezone(india_tz).date()
 
     avg_payment = payment_qs.aggregate(
         avg=Avg('amount')
@@ -901,7 +906,7 @@ def home(request):
         total=Sum('amount')
     )['total'] or Decimal('0')
 
-    today_dt = now()
+    today_dt = timezone.now().date()
 
     monthly_received_total = payment_qs.filter(
         payment_date__year=today_dt.year,
@@ -944,9 +949,9 @@ def home(request):
         e = expense_values[expense_labels.index(d)] if d in expense_labels else 0
         profit_trend_data.append(p - e)
 
-    current_date = now()
+    current_date = timezone.now().date()
 
-    current_hour = localtime().hour
+    current_hour = timezone.now().hour
 
     if current_hour < 12:
         greeting = "Good Morning ☀️"
@@ -1106,60 +1111,191 @@ def company_index(request):
 
 #create view for Company
 
+from django.contrib import messages
+from django.shortcuts import render, redirect, get_object_or_404
+
+from .models import Company, ActivityLog
+
+
+# =====================================================
+# CREATE COMPANY
+# =====================================================
+
 def company_create(request):
+
     if request.method == 'POST':
+
         name = request.POST.get('name')
+
         logo = request.FILES.get('logo')
 
         if name:
-            Company.objects.create(
+
+            company = Company.objects.create(
                 name=name,
                 logo=logo
             )
-            messages.success(request, "Company created successfully")
+
+            # =========================================
+            # ACTIVITY LOG
+            # =========================================
+
+            ActivityLog.objects.create(
+
+                action="Created Company",
+
+                description=f"""
+Company Created Successfully
+
+Company:
+{company.name}
+
+Created By:
+{request.user.username}
+"""
+            )
+
+            messages.success(
+                request,
+                "Company created successfully"
+            )
+
             return redirect('company_index')
 
-        messages.error(request, "Company name is required")
+        messages.error(
+            request,
+            "Company name is required"
+        )
 
-    return render(request, 'company/create.html')
+    return render(
+        request,
+        'company/create.html'
+    )
+
+
+# =====================================================
+# DELETE COMPANY
+# =====================================================
 
 def company_delete(request, pk):
-    company = get_object_or_404(Company, pk=pk)
+
+    company = get_object_or_404(
+        Company,
+        pk=pk
+    )
 
     if request.method == 'POST':
+
+        # =========================================
+        # ACTIVITY LOG
+        # =========================================
+
+        ActivityLog.objects.create(
+
+            action="Deleted Company",
+
+            description=f"""
+Company Deleted
+
+Company:
+{company.name}
+
+Deleted By:
+{request.user.username}
+"""
+        )
+
         company.delete()
+
+        messages.success(
+            request,
+            "Company deleted successfully"
+        )
+
         return redirect('company_index')
 
-    return render(request, 'company/delete.html', {
-        'company': company
-    })
+    return render(
+        request,
+        'company/delete.html',
+        {
+            'company': company
+        }
+    )
 
 
-#update view for Company
+# =====================================================
+# UPDATE COMPANY
+# =====================================================
 
 def company_update(request, pk):
-    company = get_object_or_404(Company, pk=pk)
+
+    company = get_object_or_404(
+        Company,
+        pk=pk
+    )
 
     if request.method == 'POST':
+
+        old_name = company.name
+
         name = request.POST.get('name')
+
         logo = request.FILES.get('logo')
 
         if name:
+
             company.name = name
 
-            # Only update logo if new file uploaded
+            # Only update logo if uploaded
             if logo:
                 company.logo = logo
 
             company.save()
-            messages.success(request, "Company updated successfully")
+
+            # =========================================
+            # ACTIVITY LOG
+            # =========================================
+
+            ActivityLog.objects.create(
+
+                action="Updated Company",
+
+                description=f"""
+Company Updated Successfully
+
+Old Name:
+{old_name}
+
+New Name:
+{company.name}
+
+Logo Updated:
+{"Yes" if logo else "No"}
+
+Updated By:
+{request.user.username}
+"""
+            )
+
+            messages.success(
+                request,
+                "Company updated successfully"
+            )
+
             return redirect('company_index')
 
-        messages.error(request, "Company name is required")
+        messages.error(
+            request,
+            "Company name is required"
+        )
 
-    return render(request, 'company/update.html', {
-        'company': company
-    })
+    return render(
+        request,
+        'company/update.html',
+        {
+            'company': company
+        }
+    )
 
 
 
@@ -1269,79 +1405,256 @@ def client_index(request):
 
 
 
+# from decimal import Decimal, InvalidOperation
+# from django.contrib.auth.decorators import login_required
+# from django.contrib import messages
+# from django.shortcuts import render, redirect
+# from .models import Client, Company
+
+
+# @login_required(login_url='login')
+# def client_create(request):
+
+#     # 🏢 COMPANY FROM SESSION
+#     selected_company_id = request.session.get('selected_company_id')
+
+#     if not selected_company_id:
+#         messages.error(request, "Please select a company first.")
+#         return redirect('dashboard')
+
+#     company = Company.objects.filter(id=selected_company_id).first()
+
+#     if not company:
+#         messages.error(request, "Company not found.")
+#         return redirect('dashboard')
+
+#     if request.method == 'POST':
+#         name = request.POST.get('name')
+#         location = request.POST.get('location')
+#         budget = request.POST.get('budget')
+
+#         if not name or not budget:
+#             messages.error(request, "Name and budget are required.")
+#             return redirect('client_create')
+
+#         # Normalize data (optional but recommended)
+#         name = name.strip()
+#         location = location.strip() if location else None
+
+#         try:
+#             budget_decimal = Decimal(budget)
+#         except InvalidOperation:
+#             messages.error(request, "Invalid budget amount.")
+#             return redirect('client_create')
+
+#         # 🚫 PREVENT DUPLICATE CLIENT
+#         if Client.objects.filter(
+#             company=company,
+#             name__iexact=name,
+#             location__iexact=location
+#         ).exists():
+#             messages.error(
+#                 request,
+#                 "Client with this name and location already exists."
+#             )
+#             return redirect('client_create')
+
+#         # ✅ CREATE CLIENT
+#         Client.objects.create(
+#             company=company,
+#             name=name,
+#             location=location,
+#             budget=budget_decimal
+#         )
+
+#         messages.success(request, "Client created successfully.")
+#         return redirect('client_index')
+
+#     return render(request, 'client/create.html', {
+#         'company': company,
+#     })
+
+
+
+
 from decimal import Decimal, InvalidOperation
+
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.shortcuts import render, redirect
-from .models import Client, Company
+
+from .models import (
+    Client,
+    Company,
+    ActivityLog
+)
 
 
 @login_required(login_url='login')
 def client_create(request):
 
-    # 🏢 COMPANY FROM SESSION
-    selected_company_id = request.session.get('selected_company_id')
+    # =====================================================
+    # COMPANY FROM SESSION
+    # =====================================================
+
+    selected_company_id = request.session.get(
+        'selected_company_id'
+    )
 
     if not selected_company_id:
-        messages.error(request, "Please select a company first.")
+
+        messages.error(
+            request,
+            "Please select a company first."
+        )
+
         return redirect('dashboard')
 
-    company = Company.objects.filter(id=selected_company_id).first()
+    company = Company.objects.filter(
+        id=selected_company_id
+    ).first()
 
     if not company:
-        messages.error(request, "Company not found.")
+
+        messages.error(
+            request,
+            "Company not found."
+        )
+
         return redirect('dashboard')
 
+    # =====================================================
+    # CREATE CLIENT
+    # =====================================================
+
     if request.method == 'POST':
+
         name = request.POST.get('name')
+
         location = request.POST.get('location')
+
         budget = request.POST.get('budget')
 
+        # =====================================================
+        # VALIDATION
+        # =====================================================
+
         if not name or not budget:
-            messages.error(request, "Name and budget are required.")
+
+            messages.error(
+                request,
+                "Name and budget are required."
+            )
+
             return redirect('client_create')
 
-        # Normalize data (optional but recommended)
+        # Clean data
         name = name.strip()
-        location = location.strip() if location else None
+
+        location = (
+            location.strip()
+            if location else None
+        )
+
+        # =====================================================
+        # BUDGET VALIDATION
+        # =====================================================
 
         try:
+
             budget_decimal = Decimal(budget)
+
         except InvalidOperation:
-            messages.error(request, "Invalid budget amount.")
+
+            messages.error(
+                request,
+                "Invalid budget amount."
+            )
+
             return redirect('client_create')
 
-        # 🚫 PREVENT DUPLICATE CLIENT
+        # =====================================================
+        # PREVENT DUPLICATE CLIENT
+        # =====================================================
+
         if Client.objects.filter(
             company=company,
             name__iexact=name,
             location__iexact=location
         ).exists():
+
             messages.error(
                 request,
                 "Client with this name and location already exists."
             )
+
             return redirect('client_create')
 
-        # ✅ CREATE CLIENT
-        Client.objects.create(
+        # =====================================================
+        # CREATE CLIENT
+        # =====================================================
+
+        client = Client.objects.create(
+
             company=company,
+
             name=name,
+
             location=location,
+
             budget=budget_decimal
         )
 
-        messages.success(request, "Client created successfully.")
+        # =====================================================
+        # ACTIVITY LOG
+        # =====================================================
+
+        ActivityLog.objects.create(
+
+            action="Created Client",
+
+            description=f"""
+Client Created Successfully
+
+Client:
+{client.name}
+
+Location:
+{client.location or 'N/A'}
+
+Budget:
+Rs. {client.budget}
+
+Company:
+{company.name}
+
+Created By:
+{request.user.username}
+"""
+        )
+
+        # =====================================================
+        # SUCCESS MESSAGE
+        # =====================================================
+
+        messages.success(
+            request,
+            "Client created successfully."
+        )
+
         return redirect('client_index')
 
-    return render(request, 'client/create.html', {
-        'company': company,
-    })
+    # =====================================================
+    # GET REQUEST
+    # =====================================================
 
-
-
-
-
+    return render(
+        request,
+        'client/create.html',
+        {
+            'company': company,
+        }
+    )
 
 
 
@@ -1353,45 +1666,173 @@ from django.shortcuts import get_object_or_404, render, redirect
 from .models import Client, Company
 
 
+# @login_required(login_url='login')
+# def client_update(request, pk):
+
+#     # 🏢 COMPANY FROM SESSION
+#     selected_company_id = request.session.get('selected_company_id')
+
+#     if not selected_company_id:
+#         messages.error(request, "Please select a company first.")
+#         return redirect('dashboard')
+
+#     company = get_object_or_404(Company, id=selected_company_id)
+
+#     # 🔒 Fetch client ONLY from selected company
+#     client = get_object_or_404(
+#         Client,
+#         pk=pk,
+#         company_id=selected_company_id
+#     )
+
+#     if request.method == 'POST':
+#         name = request.POST.get('name')
+#         location = request.POST.get('location')
+#         budget = request.POST.get('budget')
+
+#         if not name or not budget:
+#             messages.error(request, "Name and budget are required.")
+#             return redirect('client_update', pk=client.id)
+
+#         # Normalize values
+#         name = name.strip()
+#         location = location.strip() if location else None
+
+#         try:
+#             budget_decimal = Decimal(budget)
+#         except InvalidOperation:
+#             messages.error(request, "Invalid budget amount.")
+#             return redirect('client_update', pk=client.id)
+
+#         # 🚫 Prevent duplicate client (excluding current record)
+#         if Client.objects.filter(
+#             company=company,
+#             name__iexact=name,
+#             location__iexact=location
+#         ).exclude(pk=client.pk).exists():
+
+#             messages.error(
+#                 request,
+#                 "Another client with this name and location already exists."
+#             )
+#             return redirect('client_update', pk=client.id)
+
+#         # ✅ Update client
+#         client.name = name
+#         client.location = location
+#         client.budget = budget_decimal
+#         client.save()
+
+#         messages.success(request, "Client updated successfully.")
+#         return redirect('client_index')
+
+#     return render(request, 'client/update.html', {
+#         'client': client,
+#         'company': company,
+#     })
+
+
+
 @login_required(login_url='login')
 def client_update(request, pk):
 
-    # 🏢 COMPANY FROM SESSION
-    selected_company_id = request.session.get('selected_company_id')
+    # =====================================================
+    # COMPANY FROM SESSION
+    # =====================================================
+
+    selected_company_id = request.session.get(
+        'selected_company_id'
+    )
 
     if not selected_company_id:
-        messages.error(request, "Please select a company first.")
+
+        messages.error(
+            request,
+            "Please select a company first."
+        )
+
         return redirect('dashboard')
 
-    company = get_object_or_404(Company, id=selected_company_id)
+    company = get_object_or_404(
+        Company,
+        id=selected_company_id
+    )
 
-    # 🔒 Fetch client ONLY from selected company
+    # =====================================================
+    # FETCH CLIENT ONLY FROM SELECTED COMPANY
+    # =====================================================
+
     client = get_object_or_404(
         Client,
         pk=pk,
         company_id=selected_company_id
     )
 
+    # =====================================================
+    # UPDATE CLIENT
+    # =====================================================
+
     if request.method == 'POST':
+
+        # Store old values for activity log
+        old_name = client.name
+        old_location = client.location
+        old_budget = client.budget
+
         name = request.POST.get('name')
+
         location = request.POST.get('location')
+
         budget = request.POST.get('budget')
 
+        # =====================================================
+        # VALIDATION
+        # =====================================================
+
         if not name or not budget:
-            messages.error(request, "Name and budget are required.")
-            return redirect('client_update', pk=client.id)
+
+            messages.error(
+                request,
+                "Name and budget are required."
+            )
+
+            return redirect(
+                'client_update',
+                pk=client.id
+            )
 
         # Normalize values
         name = name.strip()
-        location = location.strip() if location else None
+
+        location = (
+            location.strip()
+            if location else None
+        )
+
+        # =====================================================
+        # BUDGET VALIDATION
+        # =====================================================
 
         try:
-            budget_decimal = Decimal(budget)
-        except InvalidOperation:
-            messages.error(request, "Invalid budget amount.")
-            return redirect('client_update', pk=client.id)
 
-        # 🚫 Prevent duplicate client (excluding current record)
+            budget_decimal = Decimal(budget)
+
+        except InvalidOperation:
+
+            messages.error(
+                request,
+                "Invalid budget amount."
+            )
+
+            return redirect(
+                'client_update',
+                pk=client.id
+            )
+
+        # =====================================================
+        # PREVENT DUPLICATE CLIENT
+        # =====================================================
+
         if Client.objects.filter(
             company=company,
             name__iexact=name,
@@ -1402,33 +1843,180 @@ def client_update(request, pk):
                 request,
                 "Another client with this name and location already exists."
             )
-            return redirect('client_update', pk=client.id)
 
-        # ✅ Update client
+            return redirect(
+                'client_update',
+                pk=client.id
+            )
+
+        # =====================================================
+        # UPDATE CLIENT
+        # =====================================================
+
         client.name = name
         client.location = location
         client.budget = budget_decimal
+
         client.save()
 
-        messages.success(request, "Client updated successfully.")
+        # =====================================================
+        # ACTIVITY LOG
+        # =====================================================
+
+        ActivityLog.objects.create(
+
+            action="Updated Client",
+
+            description=f"""
+Client Updated Successfully
+
+Old Name:
+{old_name}
+
+New Name:
+{client.name}
+
+Old Location:
+{old_location or 'N/A'}
+
+New Location:
+{client.location or 'N/A'}
+
+Old Budget:
+Rs. {old_budget}
+
+New Budget:
+Rs. {client.budget}
+
+Company:
+{company.name}
+
+Updated By:
+{request.user.username}
+"""
+        )
+
+        # =====================================================
+        # SUCCESS MESSAGE
+        # =====================================================
+
+        messages.success(
+            request,
+            "Client updated successfully."
+        )
+
         return redirect('client_index')
 
-    return render(request, 'client/update.html', {
-        'client': client,
-        'company': company,
-    })
+    # =====================================================
+    # GET REQUEST
+    # =====================================================
+
+    return render(
+        request,
+        'client/update.html',
+        {
+            'client': client,
+            'company': company,
+        }
+    )
 
 
+
+
+
+
+@login_required(login_url='login')
 def client_delete(request, pk):
-    client = get_object_or_404(Client, pk=pk)
+
+    # =====================================================
+    # COMPANY FROM SESSION
+    # =====================================================
+
+    selected_company_id = request.session.get(
+        'selected_company_id'
+    )
+
+    if not selected_company_id:
+
+        messages.error(
+            request,
+            "Please select a company first."
+        )
+
+        return redirect('dashboard')
+
+    # =====================================================
+    # FETCH CLIENT ONLY FROM SELECTED COMPANY
+    # =====================================================
+
+    client = get_object_or_404(
+        Client,
+        pk=pk,
+        company_id=selected_company_id
+    )
+
+    # =====================================================
+    # DELETE CLIENT
+    # =====================================================
 
     if request.method == 'POST':
+
+        # =========================================
+        # ACTIVITY LOG
+        # =========================================
+
+        ActivityLog.objects.create(
+
+            action="Deleted Client",
+
+            description=f"""
+Client Deleted Successfully
+
+Client:
+{client.name}
+
+Location:
+{client.location or 'N/A'}
+
+Budget:
+Rs. {client.budget}
+
+Company:
+{client.company.name}
+
+Deleted By:
+{request.user.username}
+"""
+        )
+
+        # =========================================
+        # DELETE CLIENT
+        # =========================================
+
         client.delete()
+
+        # =========================================
+        # SUCCESS MESSAGE
+        # =========================================
+
+        messages.success(
+            request,
+            "Client deleted successfully."
+        )
+
         return redirect('client_index')
 
-    return render(request, 'client/delete.html', {
-        'client': client
-    })
+    # =====================================================
+    # GET REQUEST
+    # =====================================================
+
+    return render(
+        request,
+        'client/delete.html',
+        {
+            'client': client
+        }
+    )
 
 
 
@@ -2919,7 +3507,8 @@ def all_client_info_excel(request):
 
 
 from django.db.models import Sum, Max, Q
-from django.utils.timezone import now
+from django.utils import timezone
+from zoneinfo import ZoneInfo
 from decimal import Decimal
 from django.shortcuts import redirect
 
@@ -3043,7 +3632,7 @@ def bank_index(request):
         'filter_year': filter_year,
 
         'months': range(1, 13),
-        'current_year': now().year,
+        'current_year': timezone.now().year,
     })
 
 
@@ -3057,107 +3646,479 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 
 
+# def bank_create(request):
+
+#     selected_company_id = request.session.get('selected_company_id')
+
+#     if not selected_company_id:
+#         return redirect('dashboard')
+
+#     if request.method == 'POST':
+
+#         name = request.POST.get('name', '').strip()
+#         opening_balance = Decimal(request.POST.get('opening_balance') or 0)
+
+#         if not name:
+#             messages.error(request, "Bank name is required.")
+#             return redirect('bank_create')
+
+#         # 🔐 Prevent duplicate bank inside same company
+#         if Bank.objects.filter(
+#             company_id=selected_company_id,
+#             name__iexact=name,
+#             is_active=True
+#         ).exists():
+#             messages.error(request, "Bank with this name already exists.")
+#             return redirect('bank_create')
+
+#         Bank.objects.create(
+#             company_id=selected_company_id,
+#             name=name,
+#             opening_balance=opening_balance,
+#             available_balance=opening_balance
+#         )
+
+#         messages.success(request, "Bank created successfully.")
+#         return redirect('bank_index')
+
+#     return render(request, 'bank/create.html')
+
+
+
+@login_required(login_url='login')
 def bank_create(request):
 
-    selected_company_id = request.session.get('selected_company_id')
+    # =====================================================
+    # COMPANY FROM SESSION
+    # =====================================================
+
+    selected_company_id = request.session.get(
+        'selected_company_id'
+    )
 
     if not selected_company_id:
         return redirect('dashboard')
 
+    # =====================================================
+    # CREATE BANK
+    # =====================================================
+
     if request.method == 'POST':
 
-        name = request.POST.get('name', '').strip()
-        opening_balance = Decimal(request.POST.get('opening_balance') or 0)
+        name = request.POST.get(
+            'name',
+            ''
+        ).strip()
+
+        opening_balance = Decimal(
+            request.POST.get('opening_balance') or 0
+        )
+
+        # =====================================================
+        # VALIDATION
+        # =====================================================
 
         if not name:
-            messages.error(request, "Bank name is required.")
+
+            messages.error(
+                request,
+                "Bank name is required."
+            )
+
             return redirect('bank_create')
 
-        # 🔐 Prevent duplicate bank inside same company
+        # =====================================================
+        # PREVENT DUPLICATE BANK
+        # =====================================================
+
         if Bank.objects.filter(
             company_id=selected_company_id,
             name__iexact=name,
             is_active=True
         ).exists():
-            messages.error(request, "Bank with this name already exists.")
+
+            messages.error(
+                request,
+                "Bank with this name already exists."
+            )
+
             return redirect('bank_create')
 
-        Bank.objects.create(
+        # =====================================================
+        # CREATE BANK
+        # =====================================================
+
+        bank = Bank.objects.create(
+
             company_id=selected_company_id,
+
             name=name,
+
             opening_balance=opening_balance,
+
             available_balance=opening_balance
         )
 
-        messages.success(request, "Bank created successfully.")
+        # =====================================================
+        # ACTIVITY LOG
+        # =====================================================
+
+        ActivityLog.objects.create(
+
+            action="Created Bank",
+
+            description=f"""
+Bank Created Successfully
+
+Bank Name:
+{bank.name}
+
+Opening Balance:
+Rs. {bank.opening_balance}
+
+Available Balance:
+Rs. {bank.available_balance}
+
+Company ID:
+{selected_company_id}
+
+Created By:
+{request.user.username}
+"""
+        )
+
+        # =====================================================
+        # SUCCESS MESSAGE
+        # =====================================================
+
+        messages.success(
+            request,
+            "Bank created successfully."
+        )
+
         return redirect('bank_index')
 
-    return render(request, 'bank/create.html')
+    # =====================================================
+    # GET REQUEST
+    # =====================================================
+
+    return render(
+        request,
+        'bank/create.html'
+    )
 
 
+
+
+# from django.shortcuts import get_object_or_404
+
+
+# def bank_update(request, pk):
+
+#     selected_company_id = request.session.get('selected_company_id')
+
+#     if not selected_company_id:
+#         return redirect('dashboard')
+
+#     # 🔐 Ensure bank belongs to selected company
+#     bank = get_object_or_404(
+#         Bank,
+#         pk=pk,
+#         company_id=selected_company_id
+#     )
+
+#     if request.method == 'POST':
+
+#         name = request.POST.get('name', '').strip()
+#         opening_balance = Decimal(request.POST.get('opening_balance') or 0)
+
+#         if not name:
+#             messages.error(request, "Bank name is required.")
+#             return redirect('bank_update', pk=bank.id)
+
+#         # 🔐 Prevent duplicate rename
+#         if Bank.objects.filter(
+#             company_id=selected_company_id,
+#             name__iexact=name,
+#             is_active=True
+#         ).exclude(id=bank.id).exists():
+#             messages.error(request, "Another bank with this name already exists.")
+#             return redirect('bank_update', pk=bank.id)
+
+#         bank.name = name
+#         bank.opening_balance = opening_balance
+#         bank.save(update_fields=['name', 'opening_balance'])
+
+#         # 🔁 Always recalc after updating opening balance
+#         bank.recalculate_balance()
+
+#         messages.success(request, "Bank updated successfully.")
+#         return redirect('bank_index')
+
+#     return render(request, 'bank/update.html', {
+#         'bank': bank
+#     })
 
 from django.shortcuts import get_object_or_404
 
 
+@login_required(login_url='login')
 def bank_update(request, pk):
 
-    selected_company_id = request.session.get('selected_company_id')
+    # =====================================================
+    # COMPANY FROM SESSION
+    # =====================================================
+
+    selected_company_id = request.session.get(
+        'selected_company_id'
+    )
 
     if not selected_company_id:
         return redirect('dashboard')
 
-    # 🔐 Ensure bank belongs to selected company
+    # =====================================================
+    # FETCH BANK FROM SELECTED COMPANY
+    # =====================================================
+
     bank = get_object_or_404(
         Bank,
         pk=pk,
         company_id=selected_company_id
     )
 
+    # =====================================================
+    # UPDATE BANK
+    # =====================================================
+
     if request.method == 'POST':
 
-        name = request.POST.get('name', '').strip()
-        opening_balance = Decimal(request.POST.get('opening_balance') or 0)
+        # Store old values for activity log
+        old_name = bank.name
+        old_opening_balance = bank.opening_balance
+        old_available_balance = bank.available_balance
+
+        name = request.POST.get(
+            'name',
+            ''
+        ).strip()
+
+        opening_balance = Decimal(
+            request.POST.get('opening_balance') or 0
+        )
+
+        # =====================================================
+        # VALIDATION
+        # =====================================================
 
         if not name:
-            messages.error(request, "Bank name is required.")
-            return redirect('bank_update', pk=bank.id)
 
-        # 🔐 Prevent duplicate rename
+            messages.error(
+                request,
+                "Bank name is required."
+            )
+
+            return redirect(
+                'bank_update',
+                pk=bank.id
+            )
+
+        # =====================================================
+        # PREVENT DUPLICATE BANK
+        # =====================================================
+
         if Bank.objects.filter(
             company_id=selected_company_id,
             name__iexact=name,
             is_active=True
         ).exclude(id=bank.id).exists():
-            messages.error(request, "Another bank with this name already exists.")
-            return redirect('bank_update', pk=bank.id)
+
+            messages.error(
+                request,
+                "Another bank with this name already exists."
+            )
+
+            return redirect(
+                'bank_update',
+                pk=bank.id
+            )
+
+        # =====================================================
+        # UPDATE BANK
+        # =====================================================
 
         bank.name = name
         bank.opening_balance = opening_balance
-        bank.save(update_fields=['name', 'opening_balance'])
 
-        # 🔁 Always recalc after updating opening balance
+        bank.save(
+            update_fields=[
+                'name',
+                'opening_balance'
+            ]
+        )
+
+        # =====================================================
+        # RECALCULATE BALANCE
+        # =====================================================
+
         bank.recalculate_balance()
 
-        messages.success(request, "Bank updated successfully.")
+        # Refresh updated balance
+        bank.refresh_from_db()
+
+        # =====================================================
+        # ACTIVITY LOG
+        # =====================================================
+
+        ActivityLog.objects.create(
+
+            action="Updated Bank",
+
+            description=f"""
+Bank Updated Successfully
+
+Old Bank Name:
+{old_name}
+
+New Bank Name:
+{bank.name}
+
+Old Opening Balance:
+Rs. {old_opening_balance}
+
+New Opening Balance:
+Rs. {bank.opening_balance}
+
+Old Available Balance:
+Rs. {old_available_balance}
+
+New Available Balance:
+Rs. {bank.available_balance}
+
+Company ID:
+{selected_company_id}
+
+Updated By:
+{request.user.username}
+"""
+        )
+
+        # =====================================================
+        # SUCCESS MESSAGE
+        # =====================================================
+
+        messages.success(
+            request,
+            "Bank updated successfully."
+        )
+
         return redirect('bank_index')
 
-    return render(request, 'bank/update.html', {
-        'bank': bank
-    })
+    # =====================================================
+    # GET REQUEST
+    # =====================================================
+
+    return render(
+        request,
+        'bank/update.html',
+        {
+            'bank': bank
+        }
+    )
 
 
 
 
+@login_required(login_url='login')
 def bank_delete(request, pk):
-    bank = get_object_or_404(Bank, pk=pk)
+
+    # =====================================================
+    # COMPANY FROM SESSION
+    # =====================================================
+
+    selected_company_id = request.session.get(
+        'selected_company_id'
+    )
+
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    # =====================================================
+    # FETCH BANK FROM SELECTED COMPANY
+    # =====================================================
+
+    bank = get_object_or_404(
+        Bank,
+        pk=pk,
+        company_id=selected_company_id
+    )
+
+    # =====================================================
+    # DELETE BANK
+    # =====================================================
 
     if request.method == 'POST':
+
+        # Store values before delete
+        bank_name = bank.name
+        opening_balance = bank.opening_balance
+        available_balance = bank.available_balance
+
+        # =====================================================
+        # ACTIVITY LOG
+        # =====================================================
+
+        ActivityLog.objects.create(
+
+            action="Deleted Bank",
+
+            description=f"""
+Bank Deleted Successfully
+
+Bank Name:
+{bank_name}
+
+Opening Balance:
+Rs. {opening_balance}
+
+Available Balance:
+Rs. {available_balance}
+
+Company ID:
+{selected_company_id}
+
+Deleted By:
+{request.user.username}
+"""
+        )
+
+        # =====================================================
+        # DELETE BANK
+        # =====================================================
+
         bank.delete()
+
+        # =====================================================
+        # SUCCESS MESSAGE
+        # =====================================================
+
+        messages.success(
+            request,
+            "Bank deleted successfully."
+        )
+
         return redirect('bank_index')
 
-    return render(request, 'bank/delete.html', {
-        'bank': bank
-    })
+    # =====================================================
+    # GET REQUEST
+    # =====================================================
+
+    return render(
+        request,
+        'bank/delete.html',
+        {
+            'bank': bank
+        }
+    )
 
 
 from django.shortcuts import redirect, get_object_or_404
@@ -3858,131 +4819,494 @@ def transfer_list(request):
     })
 
 
+
+# def transfer_create(request):
+
+#     selected_company_id = request.session.get('selected_company_id')
+#     if not selected_company_id:
+#         return redirect('dashboard')
+
+#     banks = Bank.objects.filter(company_id=selected_company_id,is_active=True)
+
+#     if request.method == 'POST':
+
+#         from_bank_id = request.POST.get('from_bank')
+#         to_bank_id = request.POST.get('to_bank')
+#         transfer_date = request.POST.get('transfer_date')
+#         amount_raw = request.POST.get('amount')
+
+#         # =========================
+#         # 🔐 VALIDATION
+#         # =========================
+#         if not amount_raw:
+#             messages.error(request, "Amount is required")
+#             return redirect('transfer_create')
+
+#         try:
+#             amount = Decimal(str(amount_raw).replace(',', '').strip())
+#         except:
+#             messages.error(request, "Invalid amount format")
+#             return redirect('transfer_create')
+
+#         if amount <= 0:
+#             messages.error(request, "Amount must be greater than zero")
+#             return redirect('transfer_create')
+
+#         from_bank = banks.filter(id=from_bank_id).first()
+#         to_bank = banks.filter(id=to_bank_id).first()
+
+#         if not from_bank or not to_bank:
+#             messages.error(request, "Invalid bank selection")
+#             return redirect('transfer_create')
+
+#         if from_bank.id == to_bank.id:
+#             messages.error(request, "Cannot transfer to the same bank")
+#             return redirect('transfer_create')
+
+#         # 🚨 OPTIONAL: Prevent overdraft
+#         if from_bank.available_balance < amount:
+#             messages.error(
+#                 request,
+#                 f"Insufficient balance in {from_bank.name}"
+#             )
+#             return redirect('transfer_create')
+
+#         # =========================
+#         # 💾 SAVE TRANSFER
+#         # =========================
+#         with transaction.atomic():
+
+#             BankTransfer.objects.create(
+#                 from_bank=from_bank,
+#                 to_bank=to_bank,
+#                 amount=amount,
+#                 transfer_date=transfer_date
+#             )
+
+#             # ✅ ONLY recalculate (NO manual +/-)
+#             from_bank.recalculate_balance()
+#             to_bank.recalculate_balance()
+
+#         messages.success(request, "Transfer created successfully")
+#         return redirect('transfer_list')
+
+#     return render(request, 'transfer/create.html', {
+#         'banks': banks
+#     })
+
+
+
 from decimal import Decimal
 from django.db import transaction
 from django.contrib import messages
 from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
 
+from .models import (
+    Bank,
+    BankTransfer,
+    ActivityLog
+)
+
+
+@login_required(login_url='login')
 def transfer_create(request):
 
-    selected_company_id = request.session.get('selected_company_id')
+    # =====================================================
+    # COMPANY FROM SESSION
+    # =====================================================
+
+    selected_company_id = request.session.get(
+        'selected_company_id'
+    )
+
     if not selected_company_id:
         return redirect('dashboard')
 
-    banks = Bank.objects.filter(company_id=selected_company_id,is_active=True)
+    # =====================================================
+    # FETCH ACTIVE BANKS
+    # =====================================================
+
+    banks = Bank.objects.filter(
+        company_id=selected_company_id,
+        is_active=True
+    )
+
+    # =====================================================
+    # CREATE TRANSFER
+    # =====================================================
 
     if request.method == 'POST':
 
         from_bank_id = request.POST.get('from_bank')
+
         to_bank_id = request.POST.get('to_bank')
+
         transfer_date = request.POST.get('transfer_date')
+
         amount_raw = request.POST.get('amount')
 
-        # =========================
-        # 🔐 VALIDATION
-        # =========================
+        # =====================================================
+        # VALIDATION
+        # =====================================================
+
         if not amount_raw:
-            messages.error(request, "Amount is required")
+
+            messages.error(
+                request,
+                "Amount is required"
+            )
+
             return redirect('transfer_create')
 
         try:
-            amount = Decimal(str(amount_raw).replace(',', '').strip())
+
+            amount = Decimal(
+                str(amount_raw)
+                .replace(',', '')
+                .strip()
+            )
+
         except:
-            messages.error(request, "Invalid amount format")
+
+            messages.error(
+                request,
+                "Invalid amount format"
+            )
+
             return redirect('transfer_create')
 
         if amount <= 0:
-            messages.error(request, "Amount must be greater than zero")
+
+            messages.error(
+                request,
+                "Amount must be greater than zero"
+            )
+
             return redirect('transfer_create')
 
-        from_bank = banks.filter(id=from_bank_id).first()
-        to_bank = banks.filter(id=to_bank_id).first()
+        # =====================================================
+        # FETCH BANKS
+        # =====================================================
+
+        from_bank = banks.filter(
+            id=from_bank_id
+        ).first()
+
+        to_bank = banks.filter(
+            id=to_bank_id
+        ).first()
 
         if not from_bank or not to_bank:
-            messages.error(request, "Invalid bank selection")
+
+            messages.error(
+                request,
+                "Invalid bank selection"
+            )
+
             return redirect('transfer_create')
+
+        # =====================================================
+        # PREVENT SAME BANK TRANSFER
+        # =====================================================
 
         if from_bank.id == to_bank.id:
-            messages.error(request, "Cannot transfer to the same bank")
+
+            messages.error(
+                request,
+                "Cannot transfer to the same bank"
+            )
+
             return redirect('transfer_create')
 
-        # 🚨 OPTIONAL: Prevent overdraft
+        # =====================================================
+        # PREVENT OVERDRAFT
+        # =====================================================
+
         if from_bank.available_balance < amount:
+
             messages.error(
                 request,
                 f"Insufficient balance in {from_bank.name}"
             )
+
             return redirect('transfer_create')
 
-        # =========================
-        # 💾 SAVE TRANSFER
-        # =========================
+        # =====================================================
+        # SAVE TRANSFER
+        # =====================================================
+
         with transaction.atomic():
 
-            BankTransfer.objects.create(
+            transfer = BankTransfer.objects.create(
+
                 from_bank=from_bank,
+
                 to_bank=to_bank,
+
                 amount=amount,
+
                 transfer_date=transfer_date
             )
 
-            # ✅ ONLY recalculate (NO manual +/-)
+            # =====================================================
+            # RECALCULATE BALANCES
+            # =====================================================
+
             from_bank.recalculate_balance()
+
             to_bank.recalculate_balance()
 
-        messages.success(request, "Transfer created successfully")
+            # Refresh balances
+            from_bank.refresh_from_db()
+
+            to_bank.refresh_from_db()
+
+            # =====================================================
+            # ACTIVITY LOG
+            # =====================================================
+
+            ActivityLog.objects.create(
+
+                action="Created Bank Transfer",
+
+                description=f"""
+Bank Transfer Created Successfully
+
+From Bank:
+{from_bank.name}
+
+To Bank:
+{to_bank.name}
+
+Transfer Amount:
+Rs. {amount}
+
+Transfer Date:
+{transfer_date}
+
+From Bank Balance After Transfer:
+Rs. {from_bank.available_balance}
+
+To Bank Balance After Transfer:
+Rs. {to_bank.available_balance}
+
+Transfer ID:
+{transfer.id}
+
+Created By:
+{request.user.username}
+"""
+            )
+
+        # =====================================================
+        # SUCCESS MESSAGE
+        # =====================================================
+
+        messages.success(
+            request,
+            "Transfer created successfully"
+        )
+
         return redirect('transfer_list')
 
-    return render(request, 'transfer/create.html', {
-        'banks': banks
-    })
+    # =====================================================
+    # GET REQUEST
+    # =====================================================
+
+    return render(
+        request,
+        'transfer/create.html',
+        {
+            'banks': banks
+        }
+    )
 
 
 
+# def transfer_delete(request, pk):
 
+#     selected_company_id = request.session.get('selected_company_id')
+
+#     transfer = get_object_or_404(
+#         BankTransfer,
+#         pk=pk,
+#         from_bank__company_id=selected_company_id
+#     )
+
+#     if request.method == 'POST':
+
+#         with transaction.atomic():
+
+#             from_bank = transfer.from_bank
+#             to_bank = transfer.to_bank
+#             amount = transfer.amount
+
+#             # 🔁 REVERSE TRANSFER EFFECT (IMPORTANT)
+#             from_bank.available_balance += amount
+#             to_bank.available_balance -= amount
+
+#             from_bank.save(update_fields=['available_balance'])
+#             to_bank.save(update_fields=['available_balance'])
+
+#             transfer.delete()
+
+#         messages.success(request, "Transfer deleted successfully")
+#         return redirect('transfer_list')
+
+#     # 👉 GET → show confirm page
+#     return render(request, 'transfer/delete.html', {
+#         'transfer': transfer
+#     })
+
+
+
+@login_required(login_url='login')
 def transfer_delete(request, pk):
 
-    selected_company_id = request.session.get('selected_company_id')
+    # =====================================================
+    # COMPANY FROM SESSION
+    # =====================================================
+
+    selected_company_id = request.session.get(
+        'selected_company_id'
+    )
+
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    # =====================================================
+    # FETCH TRANSFER FROM COMPANY
+    # =====================================================
 
     transfer = get_object_or_404(
+
         BankTransfer,
+
         pk=pk,
+
         from_bank__company_id=selected_company_id
     )
+
+    # =====================================================
+    # DELETE TRANSFER
+    # =====================================================
 
     if request.method == 'POST':
 
         with transaction.atomic():
 
             from_bank = transfer.from_bank
+
             to_bank = transfer.to_bank
+
             amount = transfer.amount
 
-            # 🔁 REVERSE TRANSFER EFFECT (IMPORTANT)
+            transfer_date = transfer.transfer_date
+
+            # Store balances before delete
+            old_from_balance = from_bank.available_balance
+            old_to_balance = to_bank.available_balance
+
+            # =====================================================
+            # REVERSE TRANSFER EFFECT
+            # =====================================================
+
             from_bank.available_balance += amount
+
             to_bank.available_balance -= amount
 
-            from_bank.save(update_fields=['available_balance'])
-            to_bank.save(update_fields=['available_balance'])
+            from_bank.save(
+                update_fields=['available_balance']
+            )
+
+            to_bank.save(
+                update_fields=['available_balance']
+            )
+
+            # Refresh balances
+            from_bank.refresh_from_db()
+            to_bank.refresh_from_db()
+
+            # =====================================================
+            # ACTIVITY LOG
+            # =====================================================
+
+            ActivityLog.objects.create(
+
+                action="Deleted Bank Transfer",
+
+                description=f"""
+Bank Transfer Deleted Successfully
+
+From Bank:
+{from_bank.name}
+
+To Bank:
+{to_bank.name}
+
+Transfer Amount:
+Rs. {amount}
+
+Transfer Date:
+{transfer_date}
+
+Old From Bank Balance:
+Rs. {old_from_balance}
+
+New From Bank Balance:
+Rs. {from_bank.available_balance}
+
+Old To Bank Balance:
+Rs. {old_to_balance}
+
+New To Bank Balance:
+Rs. {to_bank.available_balance}
+
+Deleted By:
+{request.user.username}
+"""
+            )
+
+            # =====================================================
+            # DELETE TRANSFER
+            # =====================================================
 
             transfer.delete()
 
-        messages.success(request, "Transfer deleted successfully")
+        # =====================================================
+        # SUCCESS MESSAGE
+        # =====================================================
+
+        messages.success(
+            request,
+            "Transfer deleted successfully"
+        )
+
         return redirect('transfer_list')
 
-    # 👉 GET → show confirm page
-    return render(request, 'transfer/delete.html', {
-        'transfer': transfer
-    })
+    # =====================================================
+    # GET REQUEST
+    # =====================================================
+
+    return render(
+        request,
+        'transfer/delete.html',
+        {
+            'transfer': transfer
+        }
+    )
 
 
 
 
 #cash views will be added here
-from django.utils.timezone import now
+from django.utils import timezone
+from zoneinfo import ZoneInfo
 
 
-from django.utils.timezone import now
+from django.utils import timezone
+from zoneinfo import ZoneInfo
 from django.utils.dateparse import parse_date
 from django.db.models import Sum
 
@@ -4065,7 +5389,7 @@ def cash_index(request):
         # dropdown data
         'clients': Client.objects.all(),
         'months': range(1, 13),
-        'current_year': now().year,
+        'current_year': timezone.now().year,
     })
 
 
@@ -4427,126 +5751,540 @@ def payment_index(request):
 
 
 
+
+# def payment_create(request):
+
+#     selected_company_id = request.session.get('selected_company_id')
+
+#     if not selected_company_id:
+#         return redirect('dashboard')
+
+#     clients = Client.objects.filter(company_id=selected_company_id,is_active=True)
+#     banks = Bank.objects.filter(
+#         company_id=selected_company_id,
+#         is_active=True
+#     ).order_by('name')
+
+
+#     if request.method == 'POST':
+
+#         client_id = request.POST.get('client')
+#         bank_id = request.POST.get('bank')
+#         amount = Decimal(request.POST.get('amount'))
+#         payment_mode = request.POST.get('payment_mode')
+#         payment_date = request.POST.get('payment_date')
+
+#         client = Client.objects.get(
+#             id=client_id,
+#             company_id=selected_company_id,is_active=True
+#         )
+
+#         # 🔥 Get total already paid
+#         total_paid = client.payments.aggregate(
+#             total=Sum('amount')
+#         )['total'] or Decimal('0.00')
+
+#         new_total = total_paid + amount
+
+#         # ❌ VALIDATION
+#         if new_total > client.budget:
+#             messages.error(
+#                 request,
+#                 f"❌ Payment exceeds project value! "
+#                 f"Remaining allowed: ₹ {client.budget - total_paid:,.2f}"
+#             )
+#             return render(request, 'payment/create.html', {
+#                 'clients': clients,
+#                 'banks': banks
+#             })
+
+#         with transaction.atomic():
+
+#             # 💵 CASH MODE
+#             if payment_mode == 'cash':
+#                 cash_bank = Bank.objects.get(
+#                     name__iexact='cash',
+#                     company_id=selected_company_id
+#                 )
+
+#                 Payment.objects.create(
+#                     client=client,
+#                     bank=cash_bank,
+#                     amount=amount,
+#                     payment_mode=Payment.CASH,
+#                     payment_date=payment_date
+#                 )
+
+#                 cash_bank.recalculate_balance()
+
+#             # 🔵 CHEQUE MODE
+#             elif payment_mode == 'cheque':
+
+#                 if not bank_id:
+#                     messages.error(request, "Select a bank for cheque payment")
+#                     return render(request, 'payment/create.html', {
+#                         'clients': clients,
+#                         'banks': banks
+#                     })
+
+#                 bank = Bank.objects.get(
+#                     id=bank_id,
+#                     company_id=selected_company_id,is_active=True
+#                 )
+
+#                 Payment.objects.create(
+#                     client=client,
+#                     bank=bank,
+#                     amount=amount,
+#                     payment_mode=Payment.CHEQUE,
+#                     payment_date=payment_date
+#                 )
+
+#                 bank.recalculate_balance()
+
+#         messages.success(request, "✅ Payment added successfully")
+#         return redirect('payment_index')
+
+#     return render(request, 'payment/create.html', {
+#         'clients': clients,
+#         'banks': banks
+#     })
+
+
+
+from decimal import Decimal
+from django.db import transaction
 from django.db.models import Sum
 from django.contrib import messages
-from django.db import transaction
-from decimal import Decimal
-from django.shortcuts import redirect, render
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
 
+from .models import (
+    Client,
+    Bank,
+    Payment,
+    ActivityLog
+)
+
+
+@login_required(login_url='login')
 def payment_create(request):
 
-    selected_company_id = request.session.get('selected_company_id')
+    # =====================================================
+    # COMPANY FROM SESSION
+    # =====================================================
+
+    selected_company_id = request.session.get(
+        'selected_company_id'
+    )
 
     if not selected_company_id:
         return redirect('dashboard')
 
-    clients = Client.objects.filter(company_id=selected_company_id,is_active=True)
+    # =====================================================
+    # FETCH CLIENTS & BANKS
+    # =====================================================
+
+    clients = Client.objects.filter(
+        company_id=selected_company_id,
+        is_active=True
+    )
+
     banks = Bank.objects.filter(
         company_id=selected_company_id,
         is_active=True
     ).order_by('name')
 
+    # =====================================================
+    # CREATE PAYMENT
+    # =====================================================
 
     if request.method == 'POST':
 
         client_id = request.POST.get('client')
+
         bank_id = request.POST.get('bank')
-        amount = Decimal(request.POST.get('amount'))
+
         payment_mode = request.POST.get('payment_mode')
+
         payment_date = request.POST.get('payment_date')
+
+        # =====================================================
+        # VALIDATE AMOUNT
+        # =====================================================
+
+        try:
+
+            amount = Decimal(
+                request.POST.get('amount')
+            )
+
+        except:
+
+            messages.error(
+                request,
+                "Invalid payment amount"
+            )
+
+            return render(
+                request,
+                'payment/create.html',
+                {
+                    'clients': clients,
+                    'banks': banks
+                }
+            )
+
+        # =====================================================
+        # FETCH CLIENT
+        # =====================================================
 
         client = Client.objects.get(
             id=client_id,
-            company_id=selected_company_id,is_active=True
+            company_id=selected_company_id,
+            is_active=True
         )
 
-        # 🔥 Get total already paid
+        # =====================================================
+        # PROJECT BUDGET VALIDATION
+        # =====================================================
+
         total_paid = client.payments.aggregate(
             total=Sum('amount')
         )['total'] or Decimal('0.00')
 
         new_total = total_paid + amount
 
-        # ❌ VALIDATION
         if new_total > client.budget:
+
             messages.error(
                 request,
                 f"❌ Payment exceeds project value! "
                 f"Remaining allowed: ₹ {client.budget - total_paid:,.2f}"
             )
-            return render(request, 'payment/create.html', {
-                'clients': clients,
-                'banks': banks
-            })
+
+            return render(
+                request,
+                'payment/create.html',
+                {
+                    'clients': clients,
+                    'banks': banks
+                }
+            )
+
+        # =====================================================
+        # SAVE PAYMENT
+        # =====================================================
 
         with transaction.atomic():
 
-            # 💵 CASH MODE
+            # =====================================================
+            # CASH PAYMENT
+            # =====================================================
+
             if payment_mode == 'cash':
+
                 cash_bank = Bank.objects.get(
                     name__iexact='cash',
                     company_id=selected_company_id
                 )
 
-                Payment.objects.create(
+                payment = Payment.objects.create(
+
                     client=client,
+
                     bank=cash_bank,
+
                     amount=amount,
+
                     payment_mode=Payment.CASH,
+
                     payment_date=payment_date
                 )
 
                 cash_bank.recalculate_balance()
 
-            # 🔵 CHEQUE MODE
+                cash_bank.refresh_from_db()
+
+                # =====================================================
+                # ACTIVITY LOG
+                # =====================================================
+
+                ActivityLog.objects.create(
+
+                    action="Created Cash Payment",
+
+                    description=f"""
+Cash Payment Added Successfully
+
+Client:
+{client.name}
+
+Location:
+{client.location or 'N/A'}
+
+Amount:
+Rs. {amount}
+
+Payment Date:
+{payment_date}
+
+Payment Mode:
+Cash
+
+Bank:
+{cash_bank.name}
+
+Updated Bank Balance:
+Rs. {cash_bank.available_balance}
+
+Payment ID:
+{payment.id}
+
+Created By:
+{request.user.username}
+"""
+                )
+
+            # =====================================================
+            # CHEQUE PAYMENT
+            # =====================================================
+
             elif payment_mode == 'cheque':
 
                 if not bank_id:
-                    messages.error(request, "Select a bank for cheque payment")
-                    return render(request, 'payment/create.html', {
-                        'clients': clients,
-                        'banks': banks
-                    })
+
+                    messages.error(
+                        request,
+                        "Select a bank for cheque payment"
+                    )
+
+                    return render(
+                        request,
+                        'payment/create.html',
+                        {
+                            'clients': clients,
+                            'banks': banks
+                        }
+                    )
 
                 bank = Bank.objects.get(
                     id=bank_id,
-                    company_id=selected_company_id,is_active=True
+                    company_id=selected_company_id,
+                    is_active=True
                 )
 
-                Payment.objects.create(
+                payment = Payment.objects.create(
+
                     client=client,
+
                     bank=bank,
+
                     amount=amount,
+
                     payment_mode=Payment.CHEQUE,
+
                     payment_date=payment_date
                 )
 
                 bank.recalculate_balance()
 
-        messages.success(request, "✅ Payment added successfully")
+                bank.refresh_from_db()
+
+                # =====================================================
+                # ACTIVITY LOG
+                # =====================================================
+
+                ActivityLog.objects.create(
+
+                    action="Created Cheque Payment",
+
+                    description=f"""
+Cheque Payment Added Successfully
+
+Client:
+{client.name}
+
+Location:
+{client.location or 'N/A'}
+
+Amount:
+Rs. {amount}
+
+Payment Date:
+{payment_date}
+
+Payment Mode:
+Cheque
+
+Bank:
+{bank.name}
+
+Updated Bank Balance:
+Rs. {bank.available_balance}
+
+Payment ID:
+{payment.id}
+
+Created By:
+{request.user.username}
+"""
+                )
+
+        # =====================================================
+        # SUCCESS MESSAGE
+        # =====================================================
+
+        messages.success(
+            request,
+            "✅ Payment added successfully"
+        )
+
         return redirect('payment_index')
 
-    return render(request, 'payment/create.html', {
-        'clients': clients,
-        'banks': banks
-    })
+    # =====================================================
+    # GET REQUEST
+    # =====================================================
+
+    return render(
+        request,
+        'payment/create.html',
+        {
+            'clients': clients,
+            'banks': banks
+        }
+    )
 
 
 
 
 
+# def payment_update(request, pk):
+
+#     selected_company_id = request.session.get('selected_company_id')
+
+#     payment = get_object_or_404(
+#         Payment,
+#         pk=pk,
+#         client__company_id=selected_company_id
+#     )
+
+#     clients = Client.objects.filter(company_id=selected_company_id,is_active=True)
+#     banks = Bank.objects.filter(
+#         company_id=selected_company_id,
+#         is_active=True
+#     ).order_by('name')
+
+
+#     old_bank = payment.bank
+
+#     if request.method == 'POST':
+
+#         client_id = request.POST.get('client')
+#         bank_id = request.POST.get('bank')
+#         new_amount = Decimal(request.POST.get('amount'))
+#         new_mode = request.POST.get('payment_mode')
+#         new_date = request.POST.get('payment_date')
+
+#         client = get_object_or_404(
+#             Client,
+#             id=client_id,
+#             company_id=selected_company_id
+#         )
+
+#         # 🔥 Get total paid EXCLUDING this payment
+#         total_paid = client.payments.exclude(id=payment.id).aggregate(
+#             total=Sum('amount')
+#         )['total'] or Decimal('0.00')
+
+#         new_total = total_paid + new_amount
+
+#         # ❌ VALIDATION
+#         if new_total > client.budget:
+#             remaining_allowed = client.budget - total_paid
+#             messages.error(
+#                 request,
+#                 f"❌ Payment exceeds project value! "
+#                 f"Remaining allowed: ₹ {remaining_allowed:,.2f}"
+#             )
+#             return render(request, 'payment/update.html', {
+#                 'payment': payment,
+#                 'clients': clients,
+#                 'banks': banks
+#             })
+
+#         with transaction.atomic():
+
+#             # 🔁 Remove old bank effect
+#             if old_bank:
+#                 old_bank.recalculate_balance()
+
+#             # 💵 CASH MODE
+#             if new_mode == Payment.CASH:
+
+#                 cash_bank = Bank.objects.get(
+#                     name__iexact='cash',
+#                     company_id=selected_company_id
+#                 )
+
+#                 payment.bank = cash_bank
+#                 payment.payment_mode = Payment.CASH
+
+#             # 🏦 CHEQUE MODE
+#             elif new_mode == Payment.CHEQUE:
+
+#                 if not bank_id:
+#                     messages.error(request, "Select bank for cheque payment")
+#                     return render(request, 'payment/update.html', {
+#                         'payment': payment,
+#                         'clients': clients,
+#                         'banks': banks
+#                     })
+
+#                 bank = Bank.objects.get(
+#                     id=bank_id,
+#                     company_id=selected_company_id,is_active=True
+#                 )
+
+#                 payment.bank = bank
+#                 payment.payment_mode = Payment.CHEQUE
+
+#             payment.client = client
+#             payment.amount = new_amount
+#             payment.payment_date = new_date
+#             payment.save()
+
+#             # 🔁 Apply new bank effect
+#             payment.bank.recalculate_balance()
+
+#         messages.success(request, "✅ Payment updated successfully")
+#         return redirect('payment_index')
+
+#     return render(request, 'payment/update.html', {
+#         'payment': payment,
+#         'clients': clients,
+#         'banks': banks
+#     })
 
 
 
-from django.db.models import Sum
-from django.contrib import messages
-from decimal import Decimal
-from django.db import transaction
-from django.shortcuts import get_object_or_404, render, redirect
-
+@login_required(login_url='login')
 def payment_update(request, pk):
 
-    selected_company_id = request.session.get('selected_company_id')
+    # =====================================================
+    # COMPANY FROM SESSION
+    # =====================================================
+
+    selected_company_id = request.session.get(
+        'selected_company_id'
+    )
+
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    # =====================================================
+    # FETCH PAYMENT
+    # =====================================================
 
     payment = get_object_or_404(
         Payment,
@@ -4554,22 +6292,71 @@ def payment_update(request, pk):
         client__company_id=selected_company_id
     )
 
-    clients = Client.objects.filter(company_id=selected_company_id,is_active=True)
+    # =====================================================
+    # FETCH CLIENTS & BANKS
+    # =====================================================
+
+    clients = Client.objects.filter(
+        company_id=selected_company_id,
+        is_active=True
+    )
+
     banks = Bank.objects.filter(
         company_id=selected_company_id,
         is_active=True
     ).order_by('name')
 
-
+    # Store old values for activity log
+    old_client = payment.client
     old_bank = payment.bank
+    old_amount = payment.amount
+    old_mode = payment.payment_mode
+    old_date = payment.payment_date
+
+    # =====================================================
+    # UPDATE PAYMENT
+    # =====================================================
 
     if request.method == 'POST':
 
         client_id = request.POST.get('client')
+
         bank_id = request.POST.get('bank')
-        new_amount = Decimal(request.POST.get('amount'))
+
         new_mode = request.POST.get('payment_mode')
+
         new_date = request.POST.get('payment_date')
+
+        # =====================================================
+        # VALIDATE AMOUNT
+        # =====================================================
+
+        try:
+
+            new_amount = Decimal(
+                request.POST.get('amount')
+            )
+
+        except:
+
+            messages.error(
+                request,
+                "Invalid payment amount"
+            )
+
+            return render(
+                request,
+                'payment/update.html',
+                {
+                    'payment': payment,
+                    'clients': clients,
+                    'banks': banks
+                }
+            )
+
+        # =====================================================
+        # FETCH CLIENT
+        # =====================================================
 
         client = get_object_or_404(
             Client,
@@ -4577,34 +6364,57 @@ def payment_update(request, pk):
             company_id=selected_company_id
         )
 
-        # 🔥 Get total paid EXCLUDING this payment
-        total_paid = client.payments.exclude(id=payment.id).aggregate(
+        # =====================================================
+        # BUDGET VALIDATION
+        # =====================================================
+
+        total_paid = client.payments.exclude(
+            id=payment.id
+        ).aggregate(
             total=Sum('amount')
         )['total'] or Decimal('0.00')
 
         new_total = total_paid + new_amount
 
-        # ❌ VALIDATION
         if new_total > client.budget:
-            remaining_allowed = client.budget - total_paid
+
+            remaining_allowed = (
+                client.budget - total_paid
+            )
+
             messages.error(
                 request,
                 f"❌ Payment exceeds project value! "
                 f"Remaining allowed: ₹ {remaining_allowed:,.2f}"
             )
-            return render(request, 'payment/update.html', {
-                'payment': payment,
-                'clients': clients,
-                'banks': banks
-            })
+
+            return render(
+                request,
+                'payment/update.html',
+                {
+                    'payment': payment,
+                    'clients': clients,
+                    'banks': banks
+                }
+            )
+
+        # =====================================================
+        # UPDATE PAYMENT
+        # =====================================================
 
         with transaction.atomic():
 
-            # 🔁 Remove old bank effect
+            # =====================================================
+            # RECALCULATE OLD BANK
+            # =====================================================
+
             if old_bank:
                 old_bank.recalculate_balance()
 
-            # 💵 CASH MODE
+            # =====================================================
+            # CASH MODE
+            # =====================================================
+
             if new_mode == Payment.CASH:
 
                 cash_bank = Bank.objects.get(
@@ -4613,64 +6423,277 @@ def payment_update(request, pk):
                 )
 
                 payment.bank = cash_bank
+
                 payment.payment_mode = Payment.CASH
 
-            # 🏦 CHEQUE MODE
+            # =====================================================
+            # CHEQUE MODE
+            # =====================================================
+
             elif new_mode == Payment.CHEQUE:
 
                 if not bank_id:
-                    messages.error(request, "Select bank for cheque payment")
-                    return render(request, 'payment/update.html', {
-                        'payment': payment,
-                        'clients': clients,
-                        'banks': banks
-                    })
+
+                    messages.error(
+                        request,
+                        "Select bank for cheque payment"
+                    )
+
+                    return render(
+                        request,
+                        'payment/update.html',
+                        {
+                            'payment': payment,
+                            'clients': clients,
+                            'banks': banks
+                        }
+                    )
 
                 bank = Bank.objects.get(
                     id=bank_id,
-                    company_id=selected_company_id,is_active=True
+                    company_id=selected_company_id,
+                    is_active=True
                 )
 
                 payment.bank = bank
+
                 payment.payment_mode = Payment.CHEQUE
 
+            # =====================================================
+            # UPDATE PAYMENT FIELDS
+            # =====================================================
+
             payment.client = client
+
             payment.amount = new_amount
+
             payment.payment_date = new_date
+
             payment.save()
 
-            # 🔁 Apply new bank effect
+            # =====================================================
+            # RECALCULATE NEW BANK
+            # =====================================================
+
             payment.bank.recalculate_balance()
 
-        messages.success(request, "✅ Payment updated successfully")
+            payment.bank.refresh_from_db()
+
+            # =====================================================
+            # ACTIVITY LOG
+            # =====================================================
+
+            ActivityLog.objects.create(
+
+                action="Updated Payment",
+
+                description=f"""
+Payment Updated Successfully
+
+Old Client:
+{old_client.name}
+
+New Client:
+{client.name}
+
+Old Amount:
+Rs. {old_amount}
+
+New Amount:
+Rs. {new_amount}
+
+Old Payment Mode:
+{old_mode}
+
+New Payment Mode:
+{new_mode}
+
+Old Bank:
+{old_bank.name if old_bank else 'N/A'}
+
+New Bank:
+{payment.bank.name}
+
+Old Payment Date:
+{old_date}
+
+New Payment Date:
+{new_date}
+
+Updated Bank Balance:
+Rs. {payment.bank.available_balance}
+
+Payment ID:
+{payment.id}
+
+Updated By:
+{request.user.username}
+"""
+            )
+
+        # =====================================================
+        # SUCCESS MESSAGE
+        # =====================================================
+
+        messages.success(
+            request,
+            "✅ Payment updated successfully"
+        )
+
         return redirect('payment_index')
 
-    return render(request, 'payment/update.html', {
-        'payment': payment,
-        'clients': clients,
-        'banks': banks
-    })
+    # =====================================================
+    # GET REQUEST
+    # =====================================================
 
+    return render(
+        request,
+        'payment/update.html',
+        {
+            'payment': payment,
+            'clients': clients,
+            'banks': banks
+        }
+    )
 
-
-
-
+@login_required(login_url='login')
 def payment_delete(request, pk):
-    payment = get_object_or_404(Payment, pk=pk)
+
+    # =====================================================
+    # COMPANY FROM SESSION
+    # =====================================================
+
+    selected_company_id = request.session.get(
+        'selected_company_id'
+    )
+
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    # =====================================================
+    # FETCH PAYMENT
+    # =====================================================
+
+    payment = get_object_or_404(
+        Payment,
+        pk=pk,
+        client__company_id=selected_company_id
+    )
+
     bank = payment.bank
 
+    # Store values before delete
+    client_name = payment.client.name
+    client_location = payment.client.location
+    amount = payment.amount
+    payment_mode = payment.payment_mode
+    payment_date = payment.payment_date
+    bank_name = bank.name if bank else 'N/A'
+
+    # =====================================================
+    # DELETE PAYMENT
+    # =====================================================
+
     if request.method == 'POST':
+
         with transaction.atomic():
+
+            # Store old balance
+            old_balance = (
+                bank.available_balance
+                if bank else Decimal('0.00')
+            )
+
+            # =====================================================
+            # ACTIVITY LOG
+            # =====================================================
+
+            ActivityLog.objects.create(
+
+                action="Deleted Payment",
+
+                description=f"""
+Payment Deleted Successfully
+
+Client:
+{client_name}
+
+Location:
+{client_location or 'N/A'}
+
+Amount:
+Rs. {amount}
+
+Payment Mode:
+{payment_mode}
+
+Payment Date:
+{payment_date}
+
+Bank:
+{bank_name}
+
+Old Bank Balance:
+Rs. {old_balance}
+
+Deleted By:
+{request.user.username}
+"""
+            )
+
+            # =====================================================
+            # DELETE PAYMENT
+            # =====================================================
+
             payment.delete()
 
+            # =====================================================
+            # RECALCULATE BANK BALANCE
+            # =====================================================
+
             if bank:
+
                 bank.recalculate_balance()
+
+                bank.refresh_from_db()
+
+                # =====================================================
+                # UPDATE LOG WITH NEW BALANCE
+                # =====================================================
+
+                latest_log = ActivityLog.objects.latest('id')
+
+                latest_log.description += f"""
+
+New Bank Balance:
+Rs. {bank.available_balance}
+"""
+
+                latest_log.save()
+
+        # =====================================================
+        # SUCCESS MESSAGE
+        # =====================================================
+
+        messages.success(
+            request,
+            "Payment deleted successfully."
+        )
 
         return redirect('payment_index')
 
-    return render(request, 'payment/delete.html', {
-        'payment': payment
-    })
+    # =====================================================
+    # GET REQUEST
+    # =====================================================
+
+    return render(
+        request,
+        'payment/delete.html',
+        {
+            'payment': payment
+        }
+    )
+
 
 
 #worker views will be added here
@@ -4700,51 +6723,236 @@ def worker_index(request):
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 
+# def worker_create(request):
+
+#     company_id = request.session.get('selected_company_id')
+
+#     if not company_id:
+#         return redirect('dashboard')
+
+#     if request.method == 'POST':
+#         name = request.POST.get('name', '').strip()
+
+#         if not name:
+#             messages.error(request, "Worker name is required")
+
+#         else:
+
+#             # 🔎 Duplicate check (case insensitive)
+#             if Worker.objects.filter(
+#                 company_id=company_id,
+#                 name__iexact=name
+#             ).exists():
+
+#                 messages.warning(request, "This worker Team already exists for this company.")
+#                 return redirect('worker_create')
+
+#             Worker.objects.create(
+#                 name=name,
+#                 company_id=company_id
+#             )
+
+#             messages.success(request, "Worker added successfully")
+#             return redirect('worker_index')
+
+#     return render(request, 'worker/create.html', {
+#         'title': 'Add Worker',
+#         'company': get_object_or_404(Company, id=company_id)
+#     })
+
+
+
+@login_required(login_url='login')
 def worker_create(request):
 
-    company_id = request.session.get('selected_company_id')
+    # =====================================================
+    # COMPANY FROM SESSION
+    # =====================================================
+
+    company_id = request.session.get(
+        'selected_company_id'
+    )
 
     if not company_id:
         return redirect('dashboard')
 
+    company = get_object_or_404(
+        Company,
+        id=company_id
+    )
+
+    # =====================================================
+    # CREATE WORKER
+    # =====================================================
+
     if request.method == 'POST':
-        name = request.POST.get('name', '').strip()
+
+        name = request.POST.get(
+            'name',
+            ''
+        ).strip()
+
+        # =====================================================
+        # VALIDATION
+        # =====================================================
 
         if not name:
-            messages.error(request, "Worker name is required")
+
+            messages.error(
+                request,
+                "Worker name is required"
+            )
 
         else:
 
-            # 🔎 Duplicate check (case insensitive)
+            # =====================================================
+            # PREVENT DUPLICATE WORKER
+            # =====================================================
+
             if Worker.objects.filter(
                 company_id=company_id,
                 name__iexact=name
             ).exists():
 
-                messages.warning(request, "This worker Team already exists for this company.")
+                messages.warning(
+                    request,
+                    "This worker Team already exists for this company."
+                )
+
                 return redirect('worker_create')
 
-            Worker.objects.create(
+            # =====================================================
+            # CREATE WORKER
+            # =====================================================
+
+            worker = Worker.objects.create(
+
                 name=name,
+
                 company_id=company_id
             )
 
-            messages.success(request, "Worker added successfully")
+            # =====================================================
+            # ACTIVITY LOG
+            # =====================================================
+
+            ActivityLog.objects.create(
+
+                action="Created Worker",
+
+                description=f"""
+Worker Team Created Successfully
+
+Worker Team:
+{worker.name}
+
+Company:
+{company.name}
+
+Worker ID:
+{worker.id}
+
+Created By:
+{request.user.username}
+"""
+            )
+
+            # =====================================================
+            # SUCCESS MESSAGE
+            # =====================================================
+
+            messages.success(
+                request,
+                "Worker added successfully"
+            )
+
             return redirect('worker_index')
 
-    return render(request, 'worker/create.html', {
-        'title': 'Add Worker',
-        'company': get_object_or_404(Company, id=company_id)
-    })
+    # =====================================================
+    # GET REQUEST
+    # =====================================================
+
+    return render(
+        request,
+        'worker/create.html',
+        {
+            'title': 'Add Worker',
+            'company': company
+        }
+    )
 
 
 
+# def worker_update(request, pk):
+
+#     company_id = request.session.get('selected_company_id')
+
+#     if not company_id:
+#         return redirect('dashboard')
+
+#     worker = get_object_or_404(
+#         Worker,
+#         pk=pk,
+#         company_id=company_id
+#     )
+
+#     if request.method == 'POST':
+
+#         name = request.POST.get('name', '').strip()
+
+#         if not name:
+#             messages.error(request, "Worker name is required")
+
+#         else:
+
+#             # 🔎 Duplicate check (excluding current worker)
+#             duplicate = Worker.objects.filter(
+#                 company_id=company_id,
+#                 name__iexact=name
+#             ).exclude(pk=worker.pk).exists()
+
+#             if duplicate:
+#                 messages.warning(request, "Another worker Team with this name already exists.")
+#                 return redirect('worker_update', pk=pk)
+
+#             worker.name = name
+#             worker.company_id = company_id
+#             worker.save()
+
+#             messages.success(request, "Worker updated successfully")
+#             return redirect('worker_index')
+
+#     return render(request, 'worker/update.html', {
+#         'title': 'Update Worker',
+#         'worker': worker,
+#         'company': get_object_or_404(Company, id=company_id)
+#     })
+
+
+
+
+@login_required(login_url='login')
 def worker_update(request, pk):
 
-    company_id = request.session.get('selected_company_id')
+    # =====================================================
+    # COMPANY FROM SESSION
+    # =====================================================
+
+    company_id = request.session.get(
+        'selected_company_id'
+    )
 
     if not company_id:
         return redirect('dashboard')
+
+    company = get_object_or_404(
+        Company,
+        id=company_id
+    )
+
+    # =====================================================
+    # FETCH WORKER
+    # =====================================================
 
     worker = get_object_or_404(
         Worker,
@@ -4752,52 +6960,215 @@ def worker_update(request, pk):
         company_id=company_id
     )
 
+    # =====================================================
+    # UPDATE WORKER
+    # =====================================================
+
     if request.method == 'POST':
 
-        name = request.POST.get('name', '').strip()
+        # Store old value for activity log
+        old_name = worker.name
+
+        name = request.POST.get(
+            'name',
+            ''
+        ).strip()
+
+        # =====================================================
+        # VALIDATION
+        # =====================================================
 
         if not name:
-            messages.error(request, "Worker name is required")
+
+            messages.error(
+                request,
+                "Worker name is required"
+            )
 
         else:
 
-            # 🔎 Duplicate check (excluding current worker)
+            # =====================================================
+            # PREVENT DUPLICATE WORKER
+            # =====================================================
+
             duplicate = Worker.objects.filter(
                 company_id=company_id,
                 name__iexact=name
-            ).exclude(pk=worker.pk).exists()
+            ).exclude(
+                pk=worker.pk
+            ).exists()
 
             if duplicate:
-                messages.warning(request, "Another worker Team with this name already exists.")
-                return redirect('worker_update', pk=pk)
+
+                messages.warning(
+                    request,
+                    "Another worker Team with this name already exists."
+                )
+
+                return redirect(
+                    'worker_update',
+                    pk=pk
+                )
+
+            # =====================================================
+            # UPDATE WORKER
+            # =====================================================
 
             worker.name = name
+
             worker.company_id = company_id
+
             worker.save()
 
-            messages.success(request, "Worker updated successfully")
+            # =====================================================
+            # ACTIVITY LOG
+            # =====================================================
+
+            ActivityLog.objects.create(
+
+                action="Updated Worker",
+
+                description=f"""
+Worker Team Updated Successfully
+
+Old Worker Team:
+{old_name}
+
+New Worker Team:
+{worker.name}
+
+Company:
+{company.name}
+
+Worker ID:
+{worker.id}
+
+Updated By:
+{request.user.username}
+"""
+            )
+
+            # =====================================================
+            # SUCCESS MESSAGE
+            # =====================================================
+
+            messages.success(
+                request,
+                "Worker updated successfully"
+            )
+
             return redirect('worker_index')
 
-    return render(request, 'worker/update.html', {
-        'title': 'Update Worker',
-        'worker': worker,
-        'company': get_object_or_404(Company, id=company_id)
-    })
+    # =====================================================
+    # GET REQUEST
+    # =====================================================
+
+    return render(
+        request,
+        'worker/update.html',
+        {
+            'title': 'Update Worker',
+            'worker': worker,
+            'company': company
+        }
+    )
 
 
 
 
+
+@login_required(login_url='login')
 def worker_delete(request, pk):
-    worker = get_object_or_404(Worker, pk=pk)
+
+    # =====================================================
+    # COMPANY FROM SESSION
+    # =====================================================
+
+    company_id = request.session.get(
+        'selected_company_id'
+    )
+
+    if not company_id:
+        return redirect('dashboard')
+
+    company = get_object_or_404(
+        Company,
+        id=company_id
+    )
+
+    # =====================================================
+    # FETCH WORKER
+    # =====================================================
+
+    worker = get_object_or_404(
+        Worker,
+        pk=pk,
+        company_id=company_id
+    )
+
+    # Store values before delete
+    worker_name = worker.name
+    worker_id = worker.id
+
+    # =====================================================
+    # DELETE WORKER
+    # =====================================================
 
     if request.method == 'POST':
+
+        # =====================================================
+        # ACTIVITY LOG
+        # =====================================================
+
+        ActivityLog.objects.create(
+
+            action="Deleted Worker",
+
+            description=f"""
+Worker Team Deleted Successfully
+
+Worker Team:
+{worker_name}
+
+Worker ID:
+{worker_id}
+
+Company:
+{company.name}
+
+Deleted By:
+{request.user.username}
+"""
+        )
+
+        # =====================================================
+        # DELETE WORKER
+        # =====================================================
+
         worker.delete()
-        messages.success(request, "Worker deleted successfully")
+
+        # =====================================================
+        # SUCCESS MESSAGE
+        # =====================================================
+
+        messages.success(
+            request,
+            "Worker deleted successfully"
+        )
+
         return redirect('worker_index')
 
-    return render(request, 'worker/delete.html', {
-        'worker': worker
-    })
+    # =====================================================
+    # GET REQUEST
+    # =====================================================
+
+    return render(
+        request,
+        'worker/delete.html',
+        {
+            'worker': worker
+        }
+    )
 
 
 def worker_name_index(request):
@@ -4828,73 +7199,307 @@ def worker_name_index(request):
 
 
 
+# def worker_name_create(request):
+
+#     selected_company_id = request.session.get('selected_company_id')
+#     if not selected_company_id:
+#         return redirect('dashboard')
+
+#     workers = Worker.objects.filter(company_id=selected_company_id)
+
+#     if request.method == 'POST':
+#         worker_id = request.POST.get('worker')
+#         name = request.POST.get('name', '').strip()
+
+#         if not worker_id or not name:
+#             messages.error(request, "Worker and name are required")
+#             return redirect('worker_name_create')
+
+#         # 🔐 Ensure worker belongs to selected company
+#         worker = get_object_or_404(
+#             Worker,
+#             id=worker_id,
+#             company_id=selected_company_id
+#         )
+
+#         # 🔎 Duplicate check
+#         if WorkerName.objects.filter(
+#             worker=worker,
+#             name__iexact=name
+#         ).exists():
+
+#             messages.warning(request, "This worker name already exists for this worker Team.")
+#             return redirect('worker_name_create')
+
+#         WorkerName.objects.create(
+#             worker=worker,
+#             name=name
+#         )
+
+#         messages.success(request, "Worker name added successfully")
+#         return redirect('worker_name_index')
+
+#     return render(request, 'worker_name/create.html', {
+#         'workers': workers
+#     })
+
+
+
+@login_required(login_url='login')
 def worker_name_create(request):
 
-    selected_company_id = request.session.get('selected_company_id')
+    # =====================================================
+    # COMPANY FROM SESSION
+    # =====================================================
+
+    selected_company_id = request.session.get(
+        'selected_company_id'
+    )
+
     if not selected_company_id:
         return redirect('dashboard')
 
-    workers = Worker.objects.filter(company_id=selected_company_id)
+    # =====================================================
+    # FETCH WORKERS
+    # =====================================================
+
+    workers = Worker.objects.filter(
+        company_id=selected_company_id
+    )
+
+    # =====================================================
+    # CREATE WORKER NAME
+    # =====================================================
 
     if request.method == 'POST':
+
         worker_id = request.POST.get('worker')
-        name = request.POST.get('name', '').strip()
+
+        name = request.POST.get(
+            'name',
+            ''
+        ).strip()
+
+        # =====================================================
+        # VALIDATION
+        # =====================================================
 
         if not worker_id or not name:
-            messages.error(request, "Worker and name are required")
+
+            messages.error(
+                request,
+                "Worker and name are required"
+            )
+
             return redirect('worker_name_create')
 
-        # 🔐 Ensure worker belongs to selected company
+        # =====================================================
+        # FETCH WORKER
+        # =====================================================
+
         worker = get_object_or_404(
             Worker,
             id=worker_id,
             company_id=selected_company_id
         )
 
-        # 🔎 Duplicate check
+        # =====================================================
+        # PREVENT DUPLICATE WORKER NAME
+        # =====================================================
+
         if WorkerName.objects.filter(
             worker=worker,
             name__iexact=name
         ).exists():
 
-            messages.warning(request, "This worker name already exists for this worker Team.")
+            messages.warning(
+                request,
+                "This worker name already exists for this worker Team."
+            )
+
             return redirect('worker_name_create')
 
-        WorkerName.objects.create(
+        # =====================================================
+        # CREATE WORKER NAME
+        # =====================================================
+
+        worker_name = WorkerName.objects.create(
+
             worker=worker,
+
             name=name
         )
 
-        messages.success(request, "Worker name added successfully")
+        # =====================================================
+        # ACTIVITY LOG
+        # =====================================================
+
+        ActivityLog.objects.create(
+
+            action="Created Worker Name",
+
+            description=f"""
+Worker Name Created Successfully
+
+Worker Team:
+{worker.name}
+
+Worker Name:
+{worker_name.name}
+
+Worker Name ID:
+{worker_name.id}
+
+Company ID:
+{selected_company_id}
+
+Created By:
+{request.user.username}
+"""
+        )
+
+        # =====================================================
+        # SUCCESS MESSAGE
+        # =====================================================
+
+        messages.success(
+            request,
+            "Worker name added successfully"
+        )
+
         return redirect('worker_name_index')
 
-    return render(request, 'worker_name/create.html', {
-        'workers': workers
-    })
+    # =====================================================
+    # GET REQUEST
+    # =====================================================
 
+    return render(
+        request,
+        'worker_name/create.html',
+        {
+            'workers': workers
+        }
+    )
 
 
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
 
+# def worker_name_update(request, pk):
+
+#     selected_company_id = request.session.get('selected_company_id')
+#     if not selected_company_id:
+#         return redirect('dashboard')
+
+#     worker_name = get_object_or_404(WorkerName, pk=pk)
+
+#     workers = Worker.objects.filter(company_id=selected_company_id)
+
+#     if request.method == 'POST':
+
+#         worker_id = request.POST.get('worker')
+#         name = request.POST.get('name', '').strip()
+
+#         if not worker_id or not name:
+#             messages.error(request, "Worker and name are required")
+#             return redirect('worker_name_update', pk=pk)
+
+#         worker = get_object_or_404(
+#             Worker,
+#             id=worker_id,
+#             company_id=selected_company_id
+#         )
+
+#         # 🔎 Duplicate check (exclude current record)
+#         duplicate = WorkerName.objects.filter(
+#             worker=worker,
+#             name__iexact=name
+#         ).exclude(pk=worker_name.pk).exists()
+
+#         if duplicate:
+#             messages.warning(request, "Another worker with this name already exists.")
+#             return redirect('worker_name_update', pk=pk)
+
+#         worker_name.worker = worker
+#         worker_name.name = name
+#         worker_name.save()
+
+#         messages.success(request, "Worker name updated successfully")
+#         return redirect('worker_name_index')
+
+#     return render(request, 'worker_name/update.html', {
+#         'worker_name': worker_name,
+#         'workers': workers,
+#     })
+
+
+@login_required(login_url='login')
 def worker_name_update(request, pk):
 
-    selected_company_id = request.session.get('selected_company_id')
+    # =====================================================
+    # COMPANY FROM SESSION
+    # =====================================================
+
+    selected_company_id = request.session.get(
+        'selected_company_id'
+    )
+
     if not selected_company_id:
         return redirect('dashboard')
 
-    worker_name = get_object_or_404(WorkerName, pk=pk)
+    # =====================================================
+    # FETCH WORKER NAME
+    # =====================================================
 
-    workers = Worker.objects.filter(company_id=selected_company_id)
+    worker_name = get_object_or_404(
+        WorkerName,
+        pk=pk
+    )
+
+    # =====================================================
+    # FETCH WORKERS
+    # =====================================================
+
+    workers = Worker.objects.filter(
+        company_id=selected_company_id
+    )
+
+    # =====================================================
+    # UPDATE WORKER NAME
+    # =====================================================
 
     if request.method == 'POST':
 
+        # Store old values for activity log
+        old_worker = worker_name.worker
+        old_name = worker_name.name
+
         worker_id = request.POST.get('worker')
-        name = request.POST.get('name', '').strip()
+
+        name = request.POST.get(
+            'name',
+            ''
+        ).strip()
+
+        # =====================================================
+        # VALIDATION
+        # =====================================================
 
         if not worker_id or not name:
-            messages.error(request, "Worker and name are required")
-            return redirect('worker_name_update', pk=pk)
+
+            messages.error(
+                request,
+                "Worker and name are required"
+            )
+
+            return redirect(
+                'worker_name_update',
+                pk=pk
+            )
+
+        # =====================================================
+        # FETCH WORKER
+        # =====================================================
 
         worker = get_object_or_404(
             Worker,
@@ -4902,45 +7507,190 @@ def worker_name_update(request, pk):
             company_id=selected_company_id
         )
 
-        # 🔎 Duplicate check (exclude current record)
+        # =====================================================
+        # PREVENT DUPLICATE WORKER NAME
+        # =====================================================
+
         duplicate = WorkerName.objects.filter(
             worker=worker,
             name__iexact=name
-        ).exclude(pk=worker_name.pk).exists()
+        ).exclude(
+            pk=worker_name.pk
+        ).exists()
 
         if duplicate:
-            messages.warning(request, "Another worker with this name already exists.")
-            return redirect('worker_name_update', pk=pk)
+
+            messages.warning(
+                request,
+                "Another worker with this name already exists."
+            )
+
+            return redirect(
+                'worker_name_update',
+                pk=pk
+            )
+
+        # =====================================================
+        # UPDATE WORKER NAME
+        # =====================================================
 
         worker_name.worker = worker
+
         worker_name.name = name
+
         worker_name.save()
 
-        messages.success(request, "Worker name updated successfully")
+        # =====================================================
+        # ACTIVITY LOG
+        # =====================================================
+
+        ActivityLog.objects.create(
+
+            action="Updated Worker Name",
+
+            description=f"""
+Worker Name Updated Successfully
+
+Old Worker Team:
+{old_worker.name}
+
+New Worker Team:
+{worker.name}
+
+Old Worker Name:
+{old_name}
+
+New Worker Name:
+{worker_name.name}
+
+Worker Name ID:
+{worker_name.id}
+
+Company ID:
+{selected_company_id}
+
+Updated By:
+{request.user.username}
+"""
+        )
+
+        # =====================================================
+        # SUCCESS MESSAGE
+        # =====================================================
+
+        messages.success(
+            request,
+            "Worker name updated successfully"
+        )
+
         return redirect('worker_name_index')
 
-    return render(request, 'worker_name/update.html', {
-        'worker_name': worker_name,
-        'workers': workers,
-    })
+    # =====================================================
+    # GET REQUEST
+    # =====================================================
+
+    return render(
+        request,
+        'worker_name/update.html',
+        {
+            'worker_name': worker_name,
+            'workers': workers,
+        }
+    )
 
 
 
-
-
-
+@login_required(login_url='login')
 def worker_name_delete(request, pk):
-    worker_name = get_object_or_404(WorkerName, pk=pk)
+
+    # =====================================================
+    # COMPANY FROM SESSION
+    # =====================================================
+
+    selected_company_id = request.session.get(
+        'selected_company_id'
+    )
+
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    # =====================================================
+    # FETCH WORKER NAME
+    # =====================================================
+
+    worker_name = get_object_or_404(
+        WorkerName,
+        pk=pk,
+        worker__company_id=selected_company_id
+    )
+
+    # Store values before delete
+    worker_team = worker_name.worker.name
+    worker_person_name = worker_name.name
+    worker_name_id = worker_name.id
+
+    # =====================================================
+    # DELETE WORKER NAME
+    # =====================================================
 
     if request.method == 'POST':
+
+        # =====================================================
+        # ACTIVITY LOG
+        # =====================================================
+
+        ActivityLog.objects.create(
+
+            action="Deleted Worker Name",
+
+            description=f"""
+Worker Name Deleted Successfully
+
+Worker Team:
+{worker_team}
+
+Worker Name:
+{worker_person_name}
+
+Worker Name ID:
+{worker_name_id}
+
+Company ID:
+{selected_company_id}
+
+Deleted By:
+{request.user.username}
+"""
+        )
+
+        # =====================================================
+        # DELETE WORKER NAME
+        # =====================================================
+
         worker_name.delete()
-        messages.success(request, "Worker name deleted successfully")
+
+        # =====================================================
+        # SUCCESS MESSAGE
+        # =====================================================
+
+        messages.success(
+            request,
+            "Worker name deleted successfully"
+        )
+
         return redirect('worker_name_index')
 
-    return render(request, 'worker_name/delete.html', {
-        'worker_name': worker_name
-    })
+    # =====================================================
+    # GET REQUEST
+    # =====================================================
 
+    return render(
+        request,
+        'worker_name/delete.html',
+        {
+            'worker_name': worker_name
+        }
+    )
 
 from django.shortcuts import get_object_or_404, render, redirect
 from django.http import JsonResponse
@@ -4992,48 +7742,227 @@ from .models import ExpenseCategory
 
 
 # ➕ CREATE
+# def expense_category_create(request):
+
+#     selected_company_id = request.session.get('selected_company_id')
+
+#     if not selected_company_id:
+#         return redirect('dashboard')
+
+#     if request.method == 'POST':
+#         name = request.POST.get('name', '').strip()
+
+#         if not name:
+#             messages.error(request, "Category name is required")
+#             return redirect('expense_category_create')
+
+#         # 🚫 Prevent duplicate category
+#         if ExpenseCategory.objects.filter(
+#             company_id=selected_company_id,
+#             name__iexact=name
+#         ).exists():
+#             messages.error(request, "Category already exists")
+#             return redirect('expense_category_create')
+
+#         ExpenseCategory.objects.create(
+#             company_id=selected_company_id,
+#             name=name
+#         )
+
+#         messages.success(request, "Category created successfully")
+#         return redirect('expense_category_index')
+
+#     return render(request, 'expense_category/create.html')
+
+
+
+
+@login_required(login_url='login')
 def expense_category_create(request):
 
-    selected_company_id = request.session.get('selected_company_id')
+    # =====================================================
+    # COMPANY FROM SESSION
+    # =====================================================
+
+    selected_company_id = request.session.get(
+        'selected_company_id'
+    )
 
     if not selected_company_id:
         return redirect('dashboard')
 
+    company = get_object_or_404(
+        Company,
+        id=selected_company_id
+    )
+
+    # =====================================================
+    # CREATE EXPENSE CATEGORY
+    # =====================================================
+
     if request.method == 'POST':
-        name = request.POST.get('name', '').strip()
+
+        name = request.POST.get(
+            'name',
+            ''
+        ).strip()
+
+        # =====================================================
+        # VALIDATION
+        # =====================================================
 
         if not name:
-            messages.error(request, "Category name is required")
+
+            messages.error(
+                request,
+                "Category name is required"
+            )
+
             return redirect('expense_category_create')
 
-        # 🚫 Prevent duplicate category
+        # =====================================================
+        # PREVENT DUPLICATE CATEGORY
+        # =====================================================
+
         if ExpenseCategory.objects.filter(
             company_id=selected_company_id,
             name__iexact=name
         ).exists():
-            messages.error(request, "Category already exists")
+
+            messages.error(
+                request,
+                "Category already exists"
+            )
+
             return redirect('expense_category_create')
 
-        ExpenseCategory.objects.create(
+        # =====================================================
+        # CREATE CATEGORY
+        # =====================================================
+
+        category = ExpenseCategory.objects.create(
+
             company_id=selected_company_id,
+
             name=name
         )
 
-        messages.success(request, "Category created successfully")
+        # =====================================================
+        # ACTIVITY LOG
+        # =====================================================
+
+        ActivityLog.objects.create(
+
+            action="Created Expense Category",
+
+            description=f"""
+Expense Category Created Successfully
+
+Category Name:
+{category.name}
+
+Category ID:
+{category.id}
+
+Company:
+{company.name}
+
+Created By:
+{request.user.username}
+"""
+        )
+
+        # =====================================================
+        # SUCCESS MESSAGE
+        # =====================================================
+
+        messages.success(
+            request,
+            "Category created successfully"
+        )
+
         return redirect('expense_category_index')
 
-    return render(request, 'expense_category/create.html')
+    # =====================================================
+    # GET REQUEST
+    # =====================================================
+
+    return render(
+        request,
+        'expense_category/create.html'
+    )
+
+
+
 
 
 
 # ✏️ UPDATE
 
+# def expense_category_update(request, pk):
+
+#     selected_company_id = request.session.get('selected_company_id')
+
+#     if not selected_company_id:
+#         return redirect('dashboard')
+
+#     category = get_object_or_404(
+#         ExpenseCategory,
+#         pk=pk,
+#         company_id=selected_company_id
+#     )
+
+#     if request.method == 'POST':
+#         name = request.POST.get('name', '').strip()
+
+#         if not name:
+#             messages.error(request, "Category name is required")
+#             return redirect('expense_category_update', pk=pk)
+
+#         # 🚫 Prevent duplicate (exclude current record)
+#         if ExpenseCategory.objects.filter(
+#             company_id=selected_company_id,
+#             name__iexact=name
+#         ).exclude(pk=category.pk).exists():
+
+#             messages.error(request, "Another category with this name already exists")
+#             return redirect('expense_category_update', pk=pk)
+
+#         category.name = name
+#         category.save()
+
+#         messages.success(request, "Category updated successfully")
+#         return redirect('expense_category_index')
+
+#     return render(request, 'expense_category/update.html', {
+#         'category': category
+#     })
+
+
+
+
+@login_required(login_url='login')
 def expense_category_update(request, pk):
 
-    selected_company_id = request.session.get('selected_company_id')
+    # =====================================================
+    # COMPANY FROM SESSION
+    # =====================================================
+
+    selected_company_id = request.session.get(
+        'selected_company_id'
+    )
 
     if not selected_company_id:
         return redirect('dashboard')
+
+    company = get_object_or_404(
+        Company,
+        id=selected_company_id
+    )
+
+    # =====================================================
+    # FETCH CATEGORY
+    # =====================================================
 
     category = get_object_or_404(
         ExpenseCategory,
@@ -5041,46 +7970,212 @@ def expense_category_update(request, pk):
         company_id=selected_company_id
     )
 
+    # =====================================================
+    # UPDATE CATEGORY
+    # =====================================================
+
     if request.method == 'POST':
-        name = request.POST.get('name', '').strip()
+
+        # Store old value for activity log
+        old_name = category.name
+
+        name = request.POST.get(
+            'name',
+            ''
+        ).strip()
+
+        # =====================================================
+        # VALIDATION
+        # =====================================================
 
         if not name:
-            messages.error(request, "Category name is required")
-            return redirect('expense_category_update', pk=pk)
 
-        # 🚫 Prevent duplicate (exclude current record)
+            messages.error(
+                request,
+                "Category name is required"
+            )
+
+            return redirect(
+                'expense_category_update',
+                pk=pk
+            )
+
+        # =====================================================
+        # PREVENT DUPLICATE CATEGORY
+        # =====================================================
+
         if ExpenseCategory.objects.filter(
             company_id=selected_company_id,
             name__iexact=name
-        ).exclude(pk=category.pk).exists():
+        ).exclude(
+            pk=category.pk
+        ).exists():
 
-            messages.error(request, "Another category with this name already exists")
-            return redirect('expense_category_update', pk=pk)
+            messages.error(
+                request,
+                "Another category with this name already exists"
+            )
+
+            return redirect(
+                'expense_category_update',
+                pk=pk
+            )
+
+        # =====================================================
+        # UPDATE CATEGORY
+        # =====================================================
 
         category.name = name
+
         category.save()
 
-        messages.success(request, "Category updated successfully")
+        # =====================================================
+        # ACTIVITY LOG
+        # =====================================================
+
+        ActivityLog.objects.create(
+
+            action="Updated Expense Category",
+
+            description=f"""
+Expense Category Updated Successfully
+
+Old Category Name:
+{old_name}
+
+New Category Name:
+{category.name}
+
+Category ID:
+{category.id}
+
+Company:
+{company.name}
+
+Updated By:
+{request.user.username}
+"""
+        )
+
+        # =====================================================
+        # SUCCESS MESSAGE
+        # =====================================================
+
+        messages.success(
+            request,
+            "Category updated successfully"
+        )
+
         return redirect('expense_category_index')
 
-    return render(request, 'expense_category/update.html', {
-        'category': category
-    })
+    # =====================================================
+    # GET REQUEST
+    # =====================================================
+
+    return render(
+        request,
+        'expense_category/update.html',
+        {
+            'category': category
+        }
+    )
+
+
 
 
 # 🗑 DELETE
+@login_required(login_url='login')
 def expense_category_delete(request, pk):
-    category = get_object_or_404(ExpenseCategory, pk=pk)
+
+    # =====================================================
+    # COMPANY FROM SESSION
+    # =====================================================
+
+    selected_company_id = request.session.get(
+        'selected_company_id'
+    )
+
+    if not selected_company_id:
+        return redirect('dashboard')
+
+    company = get_object_or_404(
+        Company,
+        id=selected_company_id
+    )
+
+    # =====================================================
+    # FETCH CATEGORY
+    # =====================================================
+
+    category = get_object_or_404(
+        ExpenseCategory,
+        pk=pk,
+        company_id=selected_company_id
+    )
+
+    # Store values before delete
+    category_name = category.name
+    category_id = category.id
+
+    # =====================================================
+    # DELETE CATEGORY
+    # =====================================================
 
     if request.method == 'POST':
+
+        # =====================================================
+        # ACTIVITY LOG
+        # =====================================================
+
+        ActivityLog.objects.create(
+
+            action="Deleted Expense Category",
+
+            description=f"""
+Expense Category Deleted Successfully
+
+Category Name:
+{category_name}
+
+Category ID:
+{category_id}
+
+Company:
+{company.name}
+
+Deleted By:
+{request.user.username}
+"""
+        )
+
+        # =====================================================
+        # DELETE CATEGORY
+        # =====================================================
+
         category.delete()
-        messages.success(request, "Category deleted successfully")
+
+        # =====================================================
+        # SUCCESS MESSAGE
+        # =====================================================
+
+        messages.success(
+            request,
+            "Category deleted successfully"
+        )
+
         return redirect('expense_category_index')
 
-    return render(request, 'expense_category/delete.html', {
-        'category': category
-    })
+    # =====================================================
+    # GET REQUEST
+    # =====================================================
 
+    return render(
+        request,
+        'expense_category/delete.html',
+        {
+            'category': category
+        }
+    )
 
 
 
@@ -5941,17 +9036,196 @@ from django.contrib import messages
 from django.shortcuts import redirect, render
 
 
+# def expense_create(request):
+
+#     # 🏢 COMPANY FROM SESSION
+#     selected_company_id = request.session.get('selected_company_id')
+#     if not selected_company_id:
+#         return redirect('dashboard')
+
+#     # =========================
+#     # 📋 DROPDOWNS
+#     # =========================
+#     clients = Client.objects.filter(company_id=selected_company_id,is_active=True)
+
+#     categories = ExpenseCategory.objects.filter(
+#         company_id=selected_company_id
+#     )
+
+#     subcategories = ExpenseSubCategory.objects.filter(
+#         category__company_id=selected_company_id
+#     )
+
+#     workers = Worker.objects.filter(company_id=selected_company_id)
+
+#     banks = Bank.objects.filter(
+#         company_id=selected_company_id,
+#         is_active=True
+#     ).order_by('name')
+
+#     cash_bank = Bank.objects.filter(
+#         company_id=selected_company_id,
+#         name__iexact='cash'
+#     ).first()
+
+#     worker_names = WorkerName.objects.filter(
+#         worker__company_id=selected_company_id,is_active=True
+#     ).select_related('worker')
+
+#     # =========================
+#     # 📩 POST
+#     # =========================
+#     if request.method == 'POST':
+
+#         client_id = request.POST.get('client')
+#         bank_id = request.POST.get('bank')
+#         category_id = request.POST.get('category')
+#         subcategory_id = request.POST.get('subcategory')
+#         salary_to_id = request.POST.get('salary_to')
+#         worker_name_id = request.POST.get('worker_name')
+#         description = request.POST.get('description', '').strip()
+#         spend_mode = request.POST.get('spend_mode')
+#         expense_date = request.POST.get('expense_date')
+
+#         amount_raw = request.POST.get('amount')
+
+#         if not amount_raw:
+#             messages.error(request, "Amount is required")
+#             return redirect('expense_create')
+
+#         try:
+#             amount = Decimal(str(amount_raw).replace(',', '').strip())
+#         except:
+#             messages.error(request, "Invalid amount")
+#             return redirect('expense_create')
+
+#         # =========================
+#         # 🔐 VALIDATIONS
+#         # =========================
+#         client = clients.filter(id=client_id).first()
+#         if not client:
+#             messages.error(request, "Invalid client")
+#             return redirect('expense_create')
+
+#         category = categories.filter(id=category_id).first() if category_id else None
+
+#         subcategory = None
+#         if subcategory_id:
+#             subcategory = subcategories.filter(
+#                 id=subcategory_id,
+#                 category_id=category_id
+#             ).first()
+
+#             if not subcategory:
+#                 messages.error(request, "Invalid sub-category selection")
+#                 return redirect('expense_create')
+
+#         worker = workers.filter(id=salary_to_id).first() if salary_to_id else None
+
+#         # =========================
+#         # 🔎 DUPLICATE DETECTION
+#         # =========================
+
+#         duplicate_expense = Expense.objects.filter(
+#             client_id=client_id,
+#             client__company_id=selected_company_id,
+#             category_id=category_id,
+#             subcategory_id=subcategory_id,
+#             expense_date=expense_date,
+#             amount=amount
+#         ).first()
+
+#         duplicate_warning = False
+
+#         if duplicate_expense:
+#             duplicate_warning = True
+
+#         # =========================
+#         # 💾 SAVE EXPENSE
+#         # =========================
+#         with transaction.atomic():
+
+#             if spend_mode == Expense.CASH:
+#                 bank = cash_bank
+
+#             else:
+#                 bank = banks.filter(id=bank_id).first()
+#                 if not bank:
+#                     messages.error(request, "Invalid bank")
+#                     return redirect('expense_create')
+
+#             Expense.objects.create(
+#                 client=client,
+#                 bank=bank,
+#                 category=category,
+#                 subcategory=subcategory,
+#                 salary_to=worker,
+#                 worker_name_id=worker_name_id,
+#                 description=description,
+#                 amount=amount,
+#                 spend_mode=spend_mode,
+#                 expense_date=expense_date
+#             )
+
+#             bank.recalculate_balance()
+
+#         # =========================
+#         # 🔔 ALERT MESSAGE
+#         # =========================
+#         if duplicate_warning:
+#             messages.warning(
+#                 request,
+#                 "⚠ A similar expense already existed. This entry was saved anyway."
+#             )
+
+#         messages.success(request, "Expense added successfully")
+
+#         return redirect('expense_index')
+
+#     # =========================
+#     # GET PAGE
+#     # =========================
+#     return render(request, 'expense/create.html', {
+#         'clients': clients,
+#         'banks': banks,
+#         'cash_bank': cash_bank,
+#         'categories': categories,
+#         'subcategories': subcategories,
+#         'workers': workers,
+#         'selected_company_id': selected_company_id,
+#         'worker_names': worker_names,
+#     })
+
+
+
+
+@login_required(login_url='login')
 def expense_create(request):
 
-    # 🏢 COMPANY FROM SESSION
-    selected_company_id = request.session.get('selected_company_id')
+    # =====================================================
+    # COMPANY FROM SESSION
+    # =====================================================
+
+    selected_company_id = request.session.get(
+        'selected_company_id'
+    )
+
     if not selected_company_id:
         return redirect('dashboard')
 
+    company = get_object_or_404(
+        Company,
+        id=selected_company_id
+    )
+
     # =========================
-    # 📋 DROPDOWNS
+    # DROPDOWNS
     # =========================
-    clients = Client.objects.filter(company_id=selected_company_id,is_active=True)
+
+    clients = Client.objects.filter(
+        company_id=selected_company_id,
+        is_active=True
+    )
 
     categories = ExpenseCategory.objects.filter(
         company_id=selected_company_id
@@ -5961,7 +9235,9 @@ def expense_create(request):
         category__company_id=selected_company_id
     )
 
-    workers = Worker.objects.filter(company_id=selected_company_id)
+    workers = Worker.objects.filter(
+        company_id=selected_company_id
+    )
 
     banks = Bank.objects.filter(
         company_id=selected_company_id,
@@ -5974,61 +9250,124 @@ def expense_create(request):
     ).first()
 
     worker_names = WorkerName.objects.filter(
-        worker__company_id=selected_company_id,is_active=True
+        worker__company_id=selected_company_id,
+        is_active=True
     ).select_related('worker')
 
     # =========================
-    # 📩 POST
+    # POST
     # =========================
+
     if request.method == 'POST':
 
         client_id = request.POST.get('client')
+
         bank_id = request.POST.get('bank')
+
         category_id = request.POST.get('category')
+
         subcategory_id = request.POST.get('subcategory')
+
         salary_to_id = request.POST.get('salary_to')
+
         worker_name_id = request.POST.get('worker_name')
-        description = request.POST.get('description', '').strip()
+
+        description = request.POST.get(
+            'description',
+            ''
+        ).strip()
+
         spend_mode = request.POST.get('spend_mode')
+
         expense_date = request.POST.get('expense_date')
 
         amount_raw = request.POST.get('amount')
 
+        # =========================
+        # VALIDATE AMOUNT
+        # =========================
+
         if not amount_raw:
-            messages.error(request, "Amount is required")
+
+            messages.error(
+                request,
+                "Amount is required"
+            )
+
             return redirect('expense_create')
 
         try:
-            amount = Decimal(str(amount_raw).replace(',', '').strip())
+
+            amount = Decimal(
+                str(amount_raw)
+                .replace(',', '')
+                .strip()
+            )
+
         except:
-            messages.error(request, "Invalid amount")
+
+            messages.error(
+                request,
+                "Invalid amount"
+            )
+
             return redirect('expense_create')
 
         # =========================
-        # 🔐 VALIDATIONS
+        # VALIDATIONS
         # =========================
-        client = clients.filter(id=client_id).first()
+
+        client = clients.filter(
+            id=client_id
+        ).first()
+
         if not client:
-            messages.error(request, "Invalid client")
+
+            messages.error(
+                request,
+                "Invalid client"
+            )
+
             return redirect('expense_create')
 
-        category = categories.filter(id=category_id).first() if category_id else None
+        category = (
+            categories.filter(id=category_id).first()
+            if category_id else None
+        )
 
         subcategory = None
+
         if subcategory_id:
+
             subcategory = subcategories.filter(
                 id=subcategory_id,
                 category_id=category_id
             ).first()
 
             if not subcategory:
-                messages.error(request, "Invalid sub-category selection")
+
+                messages.error(
+                    request,
+                    "Invalid sub-category selection"
+                )
+
                 return redirect('expense_create')
 
-        worker = workers.filter(id=salary_to_id).first() if salary_to_id else None
+        worker = (
+            workers.filter(id=salary_to_id).first()
+            if salary_to_id else None
+        )
+
+        worker_name = None
+
+        if worker_name_id:
+
+            worker_name = worker_names.filter(
+                id=worker_name_id
+            ).first()
 
         # =========================
-        # 🔎 DUPLICATE DETECTION
+        # DUPLICATE DETECTION
         # =========================
 
         duplicate_expense = Expense.objects.filter(
@@ -6046,65 +9385,171 @@ def expense_create(request):
             duplicate_warning = True
 
         # =========================
-        # 💾 SAVE EXPENSE
+        # SAVE EXPENSE
         # =========================
+
         with transaction.atomic():
 
+            # =========================
+            # CASH MODE
+            # =========================
+
             if spend_mode == Expense.CASH:
+
                 bank = cash_bank
 
+            # =========================
+            # BANK MODE
+            # =========================
+
             else:
-                bank = banks.filter(id=bank_id).first()
+
+                bank = banks.filter(
+                    id=bank_id
+                ).first()
+
                 if not bank:
-                    messages.error(request, "Invalid bank")
+
+                    messages.error(
+                        request,
+                        "Invalid bank"
+                    )
+
                     return redirect('expense_create')
 
-            Expense.objects.create(
+            # =========================
+            # CREATE EXPENSE
+            # =========================
+
+            expense = Expense.objects.create(
+
                 client=client,
+
                 bank=bank,
+
                 category=category,
+
                 subcategory=subcategory,
+
                 salary_to=worker,
+
                 worker_name_id=worker_name_id,
+
                 description=description,
+
                 amount=amount,
+
                 spend_mode=spend_mode,
+
                 expense_date=expense_date
             )
 
+            # =========================
+            # RECALCULATE BANK
+            # =========================
+
             bank.recalculate_balance()
 
+            bank.refresh_from_db()
+
+            # =========================
+            # ACTIVITY LOG
+            # =========================
+
+            ActivityLog.objects.create(
+
+                action="Created Expense",
+
+                description=f"""
+Expense Created Successfully
+
+Client:
+{client.name}
+
+Location:
+{client.location or 'N/A'}
+
+Category:
+{category.name if category else 'N/A'}
+
+Sub Category:
+{subcategory.name if subcategory else 'N/A'}
+
+Worker Team:
+{worker.name if worker else 'N/A'}
+
+Worker Name:
+{worker_name.name if worker_name else 'N/A'}
+
+Description:
+{description or 'N/A'}
+
+Expense Amount:
+Rs. {amount}
+
+Spend Mode:
+{spend_mode}
+
+Expense Date:
+{expense_date}
+
+Bank:
+{bank.name if bank else 'Cash'}
+
+Updated Bank Balance:
+Rs. {bank.available_balance}
+
+Expense ID:
+{expense.id}
+
+Company:
+{company.name}
+
+Created By:
+{request.user.username}
+"""
+            )
+
         # =========================
-        # 🔔 ALERT MESSAGE
+        # DUPLICATE WARNING
         # =========================
+
         if duplicate_warning:
+
             messages.warning(
                 request,
                 "⚠ A similar expense already existed. This entry was saved anyway."
             )
 
-        messages.success(request, "Expense added successfully")
+        # =========================
+        # SUCCESS MESSAGE
+        # =========================
+
+        messages.success(
+            request,
+            "Expense added successfully"
+        )
 
         return redirect('expense_index')
 
     # =========================
     # GET PAGE
     # =========================
-    return render(request, 'expense/create.html', {
-        'clients': clients,
-        'banks': banks,
-        'cash_bank': cash_bank,
-        'categories': categories,
-        'subcategories': subcategories,
-        'workers': workers,
-        'selected_company_id': selected_company_id,
-        'worker_names': worker_names,
-    })
 
-
-
-
-
+    return render(
+        request,
+        'expense/create.html',
+        {
+            'clients': clients,
+            'banks': banks,
+            'cash_bank': cash_bank,
+            'categories': categories,
+            'subcategories': subcategories,
+            'workers': workers,
+            'selected_company_id': selected_company_id,
+            'worker_names': worker_names,
+        }
+    )
 
 
 
@@ -6115,12 +9560,207 @@ from django.contrib import messages
 from decimal import Decimal
 
 
+# def expense_update(request, pk):
+
+#     # 🏢 COMPANY FROM SESSION
+#     selected_company_id = request.session.get('selected_company_id')
+#     if not selected_company_id:
+#         return redirect('dashboard')
+
+#     expense = get_object_or_404(
+#         Expense,
+#         pk=pk,
+#         client__company_id=selected_company_id
+#     )
+
+#     # =========================
+#     # 📋 DROPDOWNS
+#     # =========================
+#     clients = Client.objects.filter(company_id=selected_company_id,is_active=True)
+
+#     categories = ExpenseCategory.objects.filter(
+#         company_id=selected_company_id
+#     )
+
+#     subcategories = ExpenseSubCategory.objects.filter(
+#         category__company_id=selected_company_id
+#     )
+
+#     workers = Worker.objects.filter(company_id=selected_company_id)
+
+#     worker_names = WorkerName.objects.filter(
+#         worker__company_id=selected_company_id,is_active=True
+#     ).select_related('worker')
+
+#     banks = Bank.objects.filter(
+#         company_id=selected_company_id,
+#         is_active=True
+#     ).order_by('name')
+
+#     cash_bank = Bank.objects.filter(
+#         company_id=selected_company_id,
+#         name__iexact='cash'
+#     ).first()
+
+#     old_bank = expense.bank
+
+#     # =========================
+#     # POST
+#     # =========================
+#     if request.method == "POST":
+
+#         client_id = request.POST.get('client')
+#         category_id = request.POST.get('category')
+#         subcategory_id = request.POST.get('subcategory')
+#         salary_to_id = request.POST.get('salary_to')
+#         worker_name_id = request.POST.get('worker_name')
+#         bank_id = request.POST.get('bank')
+#         description = request.POST.get('description', '').strip()
+#         spend_mode = request.POST.get('spend_mode')
+#         expense_date = request.POST.get('expense_date')
+
+#         try:
+#             new_amount = Decimal(request.POST.get('amount'))
+#         except:
+#             messages.error(request, "Invalid amount")
+#             return redirect('expense_update', pk=pk)
+
+#         # =========================
+#         # VALIDATIONS
+#         # =========================
+
+#         client = clients.filter(id=client_id).first()
+#         if not client:
+#             messages.error(request, "Invalid client")
+#             return redirect('expense_update', pk=pk)
+
+#         category = categories.filter(id=category_id).first() if category_id else None
+
+#         subcategory = None
+#         if subcategory_id:
+#             subcategory = subcategories.filter(
+#                 id=subcategory_id,
+#                 category_id=category_id
+#             ).first()
+
+#         worker = None
+#         worker_name = None
+
+#         if category and category.name.lower() == "salary":
+
+#             if salary_to_id:
+#                 worker = workers.filter(id=salary_to_id).first()
+
+#             if worker_name_id:
+#                 worker_name = worker_names.filter(
+#                     id=worker_name_id,
+#                     worker=worker
+#                 ).first()
+
+#         # =========================
+#         # DUPLICATE CHECK
+#         # =========================
+
+#         duplicate_expense = Expense.objects.filter(
+#             client_id=client_id,
+#             client__company_id=selected_company_id,
+#             category_id=category_id,
+#             subcategory_id=subcategory_id,
+#             expense_date=expense_date,
+#             amount=new_amount
+#         ).exclude(pk=expense.pk).first()
+
+#         duplicate_warning = False
+
+#         if duplicate_expense:
+#             duplicate_warning = True
+
+#         # =========================
+#         # UPDATE EXPENSE
+#         # =========================
+#         with transaction.atomic():
+
+#             if old_bank:
+#                 old_bank.recalculate_balance()
+
+#             if spend_mode == Expense.CASH:
+#                 bank = cash_bank
+#             else:
+#                 bank = banks.filter(id=bank_id).first()
+
+#                 if not bank:
+#                     messages.error(request, "Invalid bank")
+#                     return redirect('expense_update', pk=pk)
+
+#             expense.client = client
+#             expense.category = category
+#             expense.subcategory = subcategory
+#             expense.salary_to = worker
+#             expense.worker_name = worker_name
+#             expense.bank = bank
+#             expense.description = description
+#             expense.amount = new_amount
+#             expense.spend_mode = spend_mode
+#             expense.expense_date = expense_date
+
+#             expense.save()
+
+#             bank.recalculate_balance()
+
+#         # =========================
+#         # ALERT
+#         # =========================
+
+#         if duplicate_warning:
+#             messages.warning(
+#                 request,
+#                 "⚠ Similar expense already exists. Update saved anyway."
+#             )
+
+#         messages.success(request, "Expense updated successfully")
+
+#         return redirect('expense_index')
+
+#     # =========================
+#     # GET PAGE
+#     # =========================
+#     return render(request, "expense/update.html", {
+#         "expense": expense,
+#         "clients": clients,
+#         "banks": banks,
+#         "cash_bank": cash_bank,
+#         "categories": categories,
+#         "subcategories": subcategories,
+#         "workers": workers,
+#         "worker_names": worker_names,
+#         "selected_company_id": selected_company_id,
+#     })
+
+
+
+
+@login_required(login_url='login')
 def expense_update(request, pk):
 
-    # 🏢 COMPANY FROM SESSION
-    selected_company_id = request.session.get('selected_company_id')
+    # =====================================================
+    # COMPANY FROM SESSION
+    # =====================================================
+
+    selected_company_id = request.session.get(
+        'selected_company_id'
+    )
+
     if not selected_company_id:
         return redirect('dashboard')
+
+    company = get_object_or_404(
+        Company,
+        id=selected_company_id
+    )
+
+    # =====================================================
+    # FETCH EXPENSE
+    # =====================================================
 
     expense = get_object_or_404(
         Expense,
@@ -6128,10 +9768,26 @@ def expense_update(request, pk):
         client__company_id=selected_company_id
     )
 
+    # Store old values for activity log
+    old_client = expense.client
+    old_category = expense.category
+    old_subcategory = expense.subcategory
+    old_worker = expense.salary_to
+    old_worker_name = expense.worker_name
+    old_bank = expense.bank
+    old_amount = expense.amount
+    old_spend_mode = expense.spend_mode
+    old_description = expense.description
+    old_expense_date = expense.expense_date
+
     # =========================
-    # 📋 DROPDOWNS
+    # DROPDOWNS
     # =========================
-    clients = Client.objects.filter(company_id=selected_company_id,is_active=True)
+
+    clients = Client.objects.filter(
+        company_id=selected_company_id,
+        is_active=True
+    )
 
     categories = ExpenseCategory.objects.filter(
         company_id=selected_company_id
@@ -6141,10 +9797,13 @@ def expense_update(request, pk):
         category__company_id=selected_company_id
     )
 
-    workers = Worker.objects.filter(company_id=selected_company_id)
+    workers = Worker.objects.filter(
+        company_id=selected_company_id
+    )
 
     worker_names = WorkerName.objects.filter(
-        worker__company_id=selected_company_id,is_active=True
+        worker__company_id=selected_company_id,
+        is_active=True
     ).select_related('worker')
 
     banks = Bank.objects.filter(
@@ -6157,42 +9816,86 @@ def expense_update(request, pk):
         name__iexact='cash'
     ).first()
 
-    old_bank = expense.bank
-
     # =========================
     # POST
     # =========================
+
     if request.method == "POST":
 
         client_id = request.POST.get('client')
+
         category_id = request.POST.get('category')
+
         subcategory_id = request.POST.get('subcategory')
+
         salary_to_id = request.POST.get('salary_to')
+
         worker_name_id = request.POST.get('worker_name')
+
         bank_id = request.POST.get('bank')
-        description = request.POST.get('description', '').strip()
+
+        description = request.POST.get(
+            'description',
+            ''
+        ).strip()
+
         spend_mode = request.POST.get('spend_mode')
+
         expense_date = request.POST.get('expense_date')
 
+        # =========================
+        # VALIDATE AMOUNT
+        # =========================
+
         try:
-            new_amount = Decimal(request.POST.get('amount'))
+
+            new_amount = Decimal(
+                str(request.POST.get('amount'))
+                .replace(',', '')
+                .strip()
+            )
+
         except:
-            messages.error(request, "Invalid amount")
-            return redirect('expense_update', pk=pk)
+
+            messages.error(
+                request,
+                "Invalid amount"
+            )
+
+            return redirect(
+                'expense_update',
+                pk=pk
+            )
 
         # =========================
         # VALIDATIONS
         # =========================
 
-        client = clients.filter(id=client_id).first()
-        if not client:
-            messages.error(request, "Invalid client")
-            return redirect('expense_update', pk=pk)
+        client = clients.filter(
+            id=client_id
+        ).first()
 
-        category = categories.filter(id=category_id).first() if category_id else None
+        if not client:
+
+            messages.error(
+                request,
+                "Invalid client"
+            )
+
+            return redirect(
+                'expense_update',
+                pk=pk
+            )
+
+        category = (
+            categories.filter(id=category_id).first()
+            if category_id else None
+        )
 
         subcategory = None
+
         if subcategory_id:
+
             subcategory = subcategories.filter(
                 id=subcategory_id,
                 category_id=category_id
@@ -6201,12 +9904,20 @@ def expense_update(request, pk):
         worker = None
         worker_name = None
 
+        # =========================
+        # SALARY CATEGORY LOGIC
+        # =========================
+
         if category and category.name.lower() == "salary":
 
             if salary_to_id:
-                worker = workers.filter(id=salary_to_id).first()
+
+                worker = workers.filter(
+                    id=salary_to_id
+                ).first()
 
             if worker_name_id:
+
                 worker_name = worker_names.filter(
                     id=worker_name_id,
                     worker=worker
@@ -6223,7 +9934,9 @@ def expense_update(request, pk):
             subcategory_id=subcategory_id,
             expense_date=expense_date,
             amount=new_amount
-        ).exclude(pk=expense.pk).first()
+        ).exclude(
+            pk=expense.pk
+        ).first()
 
         duplicate_warning = False
 
@@ -6233,19 +9946,49 @@ def expense_update(request, pk):
         # =========================
         # UPDATE EXPENSE
         # =========================
+
         with transaction.atomic():
+
+            # =========================
+            # RECALCULATE OLD BANK
+            # =========================
 
             if old_bank:
                 old_bank.recalculate_balance()
 
+            # =========================
+            # CASH MODE
+            # =========================
+
             if spend_mode == Expense.CASH:
+
                 bank = cash_bank
+
+            # =========================
+            # BANK MODE
+            # =========================
+
             else:
-                bank = banks.filter(id=bank_id).first()
+
+                bank = banks.filter(
+                    id=bank_id
+                ).first()
 
                 if not bank:
-                    messages.error(request, "Invalid bank")
-                    return redirect('expense_update', pk=pk)
+
+                    messages.error(
+                        request,
+                        "Invalid bank"
+                    )
+
+                    return redirect(
+                        'expense_update',
+                        pk=pk
+                    )
+
+            # =========================
+            # UPDATE EXPENSE
+            # =========================
 
             expense.client = client
             expense.category = category
@@ -6260,38 +10003,156 @@ def expense_update(request, pk):
 
             expense.save()
 
+            # =========================
+            # RECALCULATE NEW BANK
+            # =========================
+
             bank.recalculate_balance()
 
+            bank.refresh_from_db()
+
+            # =========================
+            # ACTIVITY LOG
+            # =========================
+
+            ActivityLog.objects.create(
+
+                action="Updated Expense",
+
+                description=f"""
+Expense Updated Successfully
+
+Expense ID:
+{expense.id}
+
+--------------------------------------------------
+
+OLD VALUES
+
+Client:
+{old_client.name}
+
+Location:
+{old_client.location or 'N/A'}
+
+Category:
+{old_category.name if old_category else 'N/A'}
+
+Sub Category:
+{old_subcategory.name if old_subcategory else 'N/A'}
+
+Worker Team:
+{old_worker.name if old_worker else 'N/A'}
+
+Worker Name:
+{old_worker_name.name if old_worker_name else 'N/A'}
+
+Description:
+{old_description or 'N/A'}
+
+Amount:
+Rs. {old_amount}
+
+Spend Mode:
+{old_spend_mode}
+
+Expense Date:
+{old_expense_date}
+
+Bank:
+{old_bank.name if old_bank else 'N/A'}
+
+--------------------------------------------------
+
+NEW VALUES
+
+Client:
+{client.name}
+
+Location:
+{client.location or 'N/A'}
+
+Category:
+{category.name if category else 'N/A'}
+
+Sub Category:
+{subcategory.name if subcategory else 'N/A'}
+
+Worker Team:
+{worker.name if worker else 'N/A'}
+
+Worker Name:
+{worker_name.name if worker_name else 'N/A'}
+
+Description:
+{description or 'N/A'}
+
+Amount:
+Rs. {new_amount}
+
+Spend Mode:
+{spend_mode}
+
+Expense Date:
+{expense_date}
+
+Bank:
+{bank.name if bank else 'Cash'}
+
+Updated Bank Balance:
+Rs. {bank.available_balance}
+
+--------------------------------------------------
+
+Company:
+{company.name}
+
+Updated By:
+{request.user.username}
+"""
+            )
+
         # =========================
-        # ALERT
+        # DUPLICATE WARNING
         # =========================
 
         if duplicate_warning:
+
             messages.warning(
                 request,
                 "⚠ Similar expense already exists. Update saved anyway."
             )
 
-        messages.success(request, "Expense updated successfully")
+        # =========================
+        # SUCCESS MESSAGE
+        # =========================
+
+        messages.success(
+            request,
+            "Expense updated successfully"
+        )
 
         return redirect('expense_index')
 
     # =========================
     # GET PAGE
     # =========================
-    return render(request, "expense/update.html", {
-        "expense": expense,
-        "clients": clients,
-        "banks": banks,
-        "cash_bank": cash_bank,
-        "categories": categories,
-        "subcategories": subcategories,
-        "workers": workers,
-        "worker_names": worker_names,
-        "selected_company_id": selected_company_id,
-    })
 
-
+    return render(
+        request,
+        "expense/update.html",
+        {
+            "expense": expense,
+            "clients": clients,
+            "banks": banks,
+            "cash_bank": cash_bank,
+            "categories": categories,
+            "subcategories": subcategories,
+            "workers": workers,
+            "worker_names": worker_names,
+            "selected_company_id": selected_company_id,
+        }
+    )
 
 
 
@@ -6301,14 +10162,29 @@ from django.contrib import messages
 from django.db import transaction
 
 
+@login_required(login_url='login')
 def expense_delete(request, pk):
 
-    # 🏢 COMPANY FROM SESSION
-    selected_company_id = request.session.get('selected_company_id')
+    # =====================================================
+    # COMPANY FROM SESSION
+    # =====================================================
+
+    selected_company_id = request.session.get(
+        'selected_company_id'
+    )
+
     if not selected_company_id:
         return redirect('dashboard')
 
-    # 🔒 Only allow deleting expense from selected company
+    company = get_object_or_404(
+        Company,
+        id=selected_company_id
+    )
+
+    # =====================================================
+    # FETCH EXPENSE
+    # =====================================================
+
     expense = get_object_or_404(
         Expense,
         pk=pk,
@@ -6317,22 +10193,169 @@ def expense_delete(request, pk):
 
     bank = expense.bank
 
+    # Store values before delete
+    client_name = expense.client.name
+    client_location = expense.client.location
+
+    category_name = (
+        expense.category.name
+        if expense.category else 'N/A'
+    )
+
+    subcategory_name = (
+        expense.subcategory.name
+        if expense.subcategory else 'N/A'
+    )
+
+    worker_team = (
+        expense.salary_to.name
+        if expense.salary_to else 'N/A'
+    )
+
+    worker_person = (
+        expense.worker_name.name
+        if expense.worker_name else 'N/A'
+    )
+
+    description = expense.description
+    amount = expense.amount
+    spend_mode = expense.spend_mode
+    expense_date = expense.expense_date
+
+    bank_name = (
+        bank.name if bank else 'Cash'
+    )
+
+    expense_id = expense.id
+
+    # =====================================================
+    # DELETE EXPENSE
+    # =====================================================
+
     if request.method == 'POST':
+
         with transaction.atomic():
+
+            # Store old bank balance
+            old_balance = (
+                bank.available_balance
+                if bank else Decimal('0.00')
+            )
+
+            # =====================================================
+            # ACTIVITY LOG
+            # =====================================================
+
+            ActivityLog.objects.create(
+
+                action="Deleted Expense",
+
+                description=f"""
+Expense Deleted Successfully
+
+Expense ID:
+{expense_id}
+
+Client:
+{client_name}
+
+Location:
+{client_location or 'N/A'}
+
+Category:
+{category_name}
+
+Sub Category:
+{subcategory_name}
+
+Worker Team:
+{worker_team}
+
+Worker Name:
+{worker_person}
+
+Description:
+{description or 'N/A'}
+
+Expense Amount:
+Rs. {amount}
+
+Spend Mode:
+{spend_mode}
+
+Expense Date:
+{expense_date}
+
+Bank:
+{bank_name}
+
+Old Bank Balance:
+Rs. {old_balance}
+
+Company:
+{company.name}
+
+Deleted By:
+{request.user.username}
+"""
+            )
+
+            # =====================================================
+            # DELETE EXPENSE
+            # =====================================================
 
             expense.delete()
 
-            # 🔁 Recalculate bank after delete
+            # =====================================================
+            # RECALCULATE BANK
+            # =====================================================
+
             if bank:
+
                 bank.recalculate_balance()
 
-        messages.success(request, "Expense deleted successfully")
+                bank.refresh_from_db()
+
+                # =====================================================
+                # UPDATE LOG WITH NEW BALANCE
+                # =====================================================
+
+                latest_log = ActivityLog.objects.latest('id')
+
+                latest_log.description += f"""
+
+New Bank Balance:
+Rs. {bank.available_balance}
+"""
+
+                latest_log.save()
+
+        # =====================================================
+        # SUCCESS MESSAGE
+        # =====================================================
+
+        messages.success(
+            request,
+            "Expense deleted successfully"
+        )
 
         return redirect('expense_index')
 
-    return render(request, 'expense/delete.html', {
-        'expense': expense
-    })
+    # =====================================================
+    # GET REQUEST
+    # =====================================================
+
+    return render(
+        request,
+        'expense/delete.html',
+        {
+            'expense': expense
+        }
+    )
+
+
+
+
 
 
 from django.http import JsonResponse
@@ -6974,7 +10997,8 @@ def salary_excel_export(request):
 
 from .models import AppSettings, BackupHistory
 from django.core.mail import send_mail
-from django.utils.timezone import now
+from django.utils import timezone
+from zoneinfo import ZoneInfo
 import os
 import zipfile
 import subprocess
@@ -6989,7 +11013,7 @@ from django.shortcuts import redirect
 @login_required
 def database_backup(request):
     try:
-        now_dt = now()
+        now_dt = timezone.now()
         month_folder = now_dt.strftime('%Y-%m')
         timestamp = now_dt.strftime('%Y-%m-%d_%H-%M')
 
@@ -7038,7 +11062,7 @@ def database_backup(request):
         )
 
         # 🔹 Auto delete backups older than 30 days
-        cutoff = now() - timedelta(days=30)
+        cutoff = timezone.now() - timedelta(days=30)
         old_backups = BackupHistory.objects.filter(created_at__lt=cutoff)
 
         for backup in old_backups:
@@ -7106,7 +11130,8 @@ from django.shortcuts import redirect
 from django.conf import settings
 from django.core.mail import send_mail
 from .models import AppSettings
-from django.utils.timezone import now
+from django.utils import timezone
+from zoneinfo import ZoneInfo
 
 
 @login_required
@@ -7122,7 +11147,7 @@ def restore_database(request):
         # 🔒 Logout BEFORE restore
         logout(request)
 
-        restore_time = now()
+        restore_time = timezone.now()
 
         # Save temp zip
         with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as temp_zip:
@@ -7205,67 +11230,316 @@ def settings_view(request):
     })
 
 
-from django.utils.timezone import now
+from django.utils import timezone
+from zoneinfo import ZoneInfo
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.db.models import Sum, Q
 from .models import Payment, Expense
 
 
-@login_required(login_url='login')
-def today_activity(request):
+from django.utils import timezone
+from zoneinfo import ZoneInfo
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
+from django.db.models import Sum, Q
 
-    selected_company_id = request.session.get('selected_company_id')
+from .models import (
+    Payment,
+    Expense,
+    ActivityLog
+)
+
+
+from zoneinfo import ZoneInfo
+
+from django.utils import timezone
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
+from django.db.models import Sum, Q
+
+from .models import (
+    Payment,
+    Expense,
+    ActivityLog
+)
+
+
+@login_required(login_url='login')
+def activity_view(request):
+
+    # =====================================================
+    # COMPANY FROM SESSION
+    # =====================================================
+
+    selected_company_id = request.session.get(
+        'selected_company_id'
+    )
 
     if not selected_company_id:
         return redirect('dashboard')
 
-    today = now().date()
-    search_query = request.GET.get('q', '').strip()
+    # =====================================================
+    # INDIA TIMEZONE
+    # =====================================================
 
-    # 💰 Payments Today
+    india_tz = ZoneInfo("Asia/Kolkata")
+
+    current_time_ist = timezone.now().astimezone(india_tz)
+
+    today = current_time_ist.date()
+
+    current_month = current_time_ist.month
+
+    current_year = current_time_ist.year
+
+    # =====================================================
+    # FILTERS
+    # =====================================================
+
+    search_query = request.GET.get(
+        'q',
+        ''
+    ).strip()
+
+    filter_type = request.GET.get(
+        'filter',
+        'today'
+    )
+
+    log_action = request.GET.get(
+        'log_action',
+        'all'
+    )
+
+    # =====================================================
+    # PAYMENTS
+    # =====================================================
+
     payments = Payment.objects.filter(
-        client__company_id=selected_company_id,
-        payment_date=today
-    ).select_related('client', 'bank')
+        client__company_id=selected_company_id
+    ).select_related(
+        'client',
+        'bank'
+    )
 
-    # 💸 Expenses Today
+    # =====================================================
+    # EXPENSES
+    # =====================================================
+
     expenses = Expense.objects.filter(
-        client__company_id=selected_company_id,
-        expense_date=today
-    ).select_related('client', 'category')
+        client__company_id=selected_company_id
+    ).select_related(
+        'client',
+        'category',
+        'bank'
+    )
 
-    # 🔎 Apply Search
+    # =====================================================
+    # ACTIVITY LOGS
+    # =====================================================
+
+    activity_logs = ActivityLog.objects.all()
+
+    # =====================================================
+    # DATE FILTERS
+    # =====================================================
+
+    # TODAY
+    if filter_type == 'today':
+
+        payments = payments.filter(
+            payment_date=today
+        )
+
+        expenses = expenses.filter(
+            expense_date=today
+        )
+
+        # ✅ FIXED UTC → IST ISSUE
+        activity_logs = activity_logs.filter(
+            created_at__year=current_year,
+            created_at__month=current_month,
+            created_at__day=today.day
+        )
+
+    # MONTH
+    elif filter_type == 'month':
+
+        payments = payments.filter(
+            payment_date__month=current_month,
+            payment_date__year=current_year
+        )
+
+        expenses = expenses.filter(
+            expense_date__month=current_month,
+            expense_date__year=current_year
+        )
+
+        activity_logs = activity_logs.filter(
+            created_at__month=current_month,
+            created_at__year=current_year
+        )
+
+    # YEAR
+    elif filter_type == 'year':
+
+        payments = payments.filter(
+            payment_date__year=current_year
+        )
+
+        expenses = expenses.filter(
+            expense_date__year=current_year
+        )
+
+        activity_logs = activity_logs.filter(
+            created_at__year=current_year
+        )
+
+    # =====================================================
+    # ACTION FILTERS
+    # =====================================================
+
+    if log_action == 'created':
+
+        activity_logs = activity_logs.filter(
+            action__icontains='Created'
+        )
+
+    elif log_action == 'updated':
+
+        activity_logs = activity_logs.filter(
+            action__icontains='Updated'
+        )
+
+    elif log_action == 'deleted':
+
+        activity_logs = activity_logs.filter(
+            action__icontains='Deleted'
+        )
+
+    # =====================================================
+    # SEARCH FILTER
+    # =====================================================
+
     if search_query:
 
         payments = payments.filter(
+
             Q(client__name__icontains=search_query) |
+
             Q(bank__name__icontains=search_query) |
+
             Q(amount__icontains=search_query)
         )
 
         expenses = expenses.filter(
+
             Q(client__name__icontains=search_query) |
+
             Q(category__name__icontains=search_query) |
+
             Q(description__icontains=search_query) |
+
             Q(amount__icontains=search_query)
         )
 
-    payments = payments.order_by('-id')
-    expenses = expenses.order_by('-id')
+        activity_logs = activity_logs.filter(
 
-    # 📊 Totals
-    total_income = payments.aggregate(Sum('amount'))['amount__sum'] or 0
-    total_expenses = expenses.aggregate(Sum('amount'))['amount__sum'] or 0
+            Q(action__icontains=search_query) |
 
-    return render(request, 'activity/today.html', {
-        'payments': payments,
-        'expenses': expenses,
-        'total_income': total_income,
-        'total_expenses': total_expenses,
-        'today': today,
-        'search_query': search_query
-    })
+            Q(description__icontains=search_query)
+        )
+
+    # =====================================================
+    # ORDERING
+    # =====================================================
+
+    payments = payments.order_by(
+        '-payment_date',
+        '-id'
+    )
+
+    expenses = expenses.order_by(
+        '-expense_date',
+        '-id'
+    )
+
+    activity_logs = activity_logs.order_by(
+        '-created_at',
+        '-id'
+    )
+
+    # =====================================================
+    # TOTALS
+    # =====================================================
+
+    total_income = payments.aggregate(
+        Sum('amount')
+    )['amount__sum'] or 0
+
+    total_expenses = expenses.aggregate(
+        Sum('amount')
+    )['amount__sum'] or 0
+
+    balance = total_income - total_expenses
+
+    # =====================================================
+    # PAGE TITLE
+    # =====================================================
+
+    if filter_type == 'today':
+
+        page_title = "Today's Activity"
+
+    elif filter_type == 'month':
+
+        page_title = "This Month Activity"
+
+    elif filter_type == 'year':
+
+        page_title = "This Year Activity"
+
+    else:
+
+        page_title = "Activity"
+
+    # =====================================================
+    # RENDER
+    # =====================================================
+
+    return render(
+        request,
+        'activity/today.html',
+        {
+
+            'payments': payments,
+
+            'expenses': expenses,
+
+            'activity_logs': activity_logs,
+
+            'total_income': total_income,
+
+            'total_expenses': total_expenses,
+
+            'balance': balance,
+
+            'today': today,
+
+            'search_query': search_query,
+
+            'filter_type': filter_type,
+
+            'log_action': log_action,
+
+            'page_title': page_title,
+        }
+    )
+
+
+
+
 
 
 @login_required
