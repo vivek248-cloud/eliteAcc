@@ -174,7 +174,7 @@ class WorkerAdmin(admin.ModelAdmin):
         'id',
         'name',
         'company',
-        'is_active',
+        
     )
 
     search_fields = (
@@ -183,7 +183,7 @@ class WorkerAdmin(admin.ModelAdmin):
 
     list_filter = (
         'company',
-        'is_active',
+        
     )
 
     ordering = (
