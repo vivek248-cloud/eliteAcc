@@ -206,14 +206,30 @@ class BankTransfer(models.Model):
         related_name='transfers_in'
     )
 
-    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2
+    )
+
+    # ✅ NEW DESCRIPTION FIELD
+    description = models.TextField(
+        blank=True,
+        null=True
+    )
 
     transfer_date = models.DateField()
 
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
 
     def __str__(self):
-        return f"{self.from_bank.name} → {self.to_bank.name} ₹{self.amount}"
+
+        return (
+            f"{self.from_bank.name} → "
+            f"{self.to_bank.name} "
+            f"₹{self.amount}"
+        )
     
 
 #cash Model
@@ -444,16 +460,102 @@ class BackupHistory(models.Model):
 
 
 
+from django.contrib.auth.models import User
+
+
 class ActivityLog(models.Model):
 
-    action = models.CharField(max_length=100)
+    # =====================================================
+    # BASIC INFO
+    # =====================================================
+
+    action = models.CharField(
+        max_length=100
+    )
 
     description = models.TextField()
 
-    created_at = models.DateTimeField(auto_now_add=True)
+    # =====================================================
+    # AUDIT TRAIL
+    # =====================================================
+
+    created_by = models.ForeignKey(
+
+        User,
+
+        on_delete=models.SET_NULL,
+
+        null=True,
+
+        blank=True,
+
+        related_name='activity_created_logs'
+    )
+
+    updated_by = models.ForeignKey(
+
+        User,
+
+        on_delete=models.SET_NULL,
+
+        null=True,
+
+        blank=True,
+
+        related_name='activity_updated_logs'
+    )
+
+    deleted_by = models.ForeignKey(
+
+        User,
+
+        on_delete=models.SET_NULL,
+
+        null=True,
+
+        blank=True,
+
+        related_name='activity_deleted_logs'
+    )
+
+    # =====================================================
+    # IP ADDRESS
+    # =====================================================
+
+    ip_address = models.GenericIPAddressField(
+
+        null=True,
+
+        blank=True
+    )
+
+    # =====================================================
+    # TIMESTAMP
+    # =====================================================
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    # =====================================================
+    # META
+    # =====================================================
 
     class Meta:
+
         ordering = ['-created_at']
 
+        verbose_name = 'Activity Log'
+
+        verbose_name_plural = 'Activity Logs'
+
+    # =====================================================
+    # STRING
+    # =====================================================
+
     def __str__(self):
-        return self.action
+
+        return (
+            f"{self.action} - "
+            f"{self.created_at.strftime('%d-%m-%Y %H:%M')}"
+        )

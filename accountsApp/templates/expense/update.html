@@ -165,16 +165,35 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label small fw-bold text-uppercase text-muted">Bank Source</label>
-                                <select name="bank" id="bank_select" class="form-select bg-light bg-opacity-50 border-light-subtle shadow-none" required>
+                                <select
+                                    name="bank"
+                                    id="bank_select"
+                                    class="form-select bg-light bg-opacity-50 border-light-subtle shadow-none"
+                                    required
+                                >
+
                                     {% for bank in banks %}
-                                        <option 
-                                            value="{{ bank.id }}" 
+
+                                        <option
+
+                                            value="{{ bank.id }}"
+
                                             data-balance="{{ bank.available_balance|default:0 }}"
-                                            data-type="{% if bank.name|lower == 'cash' %}cash{% else %}bank{% endif %}">
-                                            
-                                            {{ bank.name }} (₹{{ bank.available_balance|default:0 }})
+
+                                            data-type="{% if bank.name|lower == 'cash' %}cash{% else %}bank{% endif %}"
+
+                                            {% if expense.bank.id == bank.id %}
+                                                selected
+                                            {% endif %}
+                                        >
+
+                                            {{ bank.name }}
+                                            (₹{{ bank.available_balance|default:0 }})
+
                                         </option>
+
                                     {% endfor %}
+
                                 </select>
                                 <div id="cashWarning" class="form-text text-danger d-none small">⚠️ Must be <b>Cash</b> for cash mode.</div>
                                 <div id="chequeWarning" class="form-text text-danger d-none small">⚠️ Select a <b>Bank</b> for cheques.</div>

@@ -3,250 +3,368 @@
 
 {% block content %}
 
-<div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4">
-    <h4 class="mb-0 fw-semibold text-dark">Bank Accounts</h4>
-    <a href="{% url 'bank_create' %}" class="btn btn-primary shadow-sm d-inline-flex align-items-center">
-        <i class="bi bi-plus-lg me-2"></i> Add New Bank
-    </a>
-</div>
-
-<!-- Filter Card -->
-<div class="card shadow border-0 mb-4 rounded-3 overflow-hidden">
-    <div class="card-body px-4 py-3">
-        <form method="get" class="row g-3 align-items-end">
-            <div class="col-12 col-md-4 col-lg-3">
-                <label class="form-label fw-medium text-dark">Bank</label>
-                <select name="bank" class="form-select rounded-3">
-                    <option value="">All Banks</option>
-                    {% for bank in banks %}
-                        <option value="{{ bank.id }}"
-                            {% if selected_bank == bank.id|stringformat:"s" %}selected{% endif %}>
-                            {{ bank.name }}
-                        </option>
-                    {% endfor %}
-                </select>
+<!-- Page Header -->
+<div class="bank-page-wrapper">
+    <div class="page-header-section">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-3 mb-1">
+                    <div class="page-icon-wrapper">
+                        <i class="bi bi-bank2"></i>
+                    </div>
+                    <div>
+                        <h4 class="mb-0 fw-bold text-dark page-title">Bank Accounts</h4>
+                        <p class="mb-0 text-muted small mt-1">Manage and monitor all your bank accounts in one place</p>
+                    </div>
+                </div>
             </div>
+            <a href="{% url 'bank_create' %}" class="btn btn-add-bank">
+                <i class="bi bi-plus-lg me-2"></i> Add New Bank
+            </a>
+        </div>
+    </div>
 
-            <div class="col-12 col-md-4 col-lg-3">
-                <label class="form-label fw-medium text-dark">Period</label>
-                <select name="filter_type" id="filterType" class="form-select rounded-3" aria-required="true">
-                    <option value="">Select period</option>
-                    <option value="day"   {% if filter_type == 'day'   %}selected{% endif %}>Daily</option>
-                    <option value="month" {% if filter_type == 'month' %}selected{% endif %}>Monthly</option>
-                    <option value="year"  {% if filter_type == 'year'  %}selected{% endif %}>Yearly</option>
-                </select>
-            </div>
-
-            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
-                <label class="form-label fw-medium text-dark">Date</label>
-                <input type="date" name="date" class="form-control rounded-3"
-                       value="{{ filter_date }}"
-                       {% if filter_type != 'day' %}disabled{% endif %}>
-            </div>
-
-            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
-                <label class="form-label fw-medium text-dark">Month</label>
-                <select name="month" class="form-select rounded-3"
-                        {% if filter_type != 'month' %}disabled{% endif %}>
-                    <option value="">Choose month</option>
-                    {% for m in months %}
-                        <option value="{{ m }}"
-                            {% if filter_month == m|stringformat:"s" %}selected{% endif %}>
-                            {{ m }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div class="col-12 col-sm-6 col-md-4 col-lg-2">
-                <label class="form-label fw-medium text-dark">Year</label>
-                <input type="number" name="year" class="form-control rounded-3"
-                       placeholder="YYYY" min="2000" max="2035"
-                       value="{{ filter_year }}"
-                       {% if filter_type not in 'month year' %}disabled{% endif %}>
-            </div>
-
-            <div class="col-12 col-lg-auto ms-lg-auto d-flex gap-2 pt-3 pt-lg-0">
-                <button type="submit" class="btn btn-primary flex-fill flex-lg-grow-0 rounded-3">
-                    <i class="bi bi-funnel-fill me-1"></i> Filter
-                </button>
-                <a href="{% url 'bank_index' %}" class="btn btn-outline-secondary flex-fill flex-lg-grow-0 rounded-3">
-                    Reset
+    <!-- Filter Section -->
+    <div class="filter-section">
+        <div class="filter-card">
+            <div class="filter-header">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="filter-icon-badge">
+                        <i class="bi bi-funnel"></i>
+                    </div>
+                    <span class="fw-semibold text-dark">Filters</span>
+                </div>
+                <a href="{% url 'bank_index' %}" class="btn-reset-minimal">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
                 </a>
             </div>
-        </form>
-    </div>
-</div>
-
-<!-- Balances -->
-{% if not selected_bank and not filter_type %}
-    <div class="row g-3 mb-5">
-        <!-- Grand Total -->
-        <div class="col-12">
-            <div class="card border-0 shadow-lg text-white rounded-4 overflow-hidden bg-gradient-primary">
-                <div class="card-body text-center py-3">
-                    <div class="d-flex align-items-center justify-content-center gap-3 mb-3">
-                        <i class="bi bi-piggy-bank fs-2"></i>
-                        <h5 class="mb-0 fw-semibold">Total Available Across Banks</h5>
+            <div class="filter-body">
+                <form method="get" class="row g-3 align-items-end">
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <label class="filter-label">
+                            <i class="bi bi-building me-1"></i> Bank
+                        </label>
+                        <div class="filter-select-wrapper">
+                            <select name="bank" class="filter-select">
+                                <option value="">All Banks</option>
+                                {% for bank in banks %}
+                                    <option value="{{ bank.id }}"
+                                        {% if selected_bank == bank.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ bank.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <i class="bi bi-chevron-down filter-select-icon"></i>
+                        </div>
                     </div>
-                    <h2 class="fw-bold mb-0 display-5">₹ {{ total_bank|floatformat:2 }}</h2>
+
+                    <div class="col-12 col-md-6 col-lg-2">
+                        <label class="filter-label">
+                            <i class="bi bi-clock-history me-1"></i> Period
+                        </label>
+                        <div class="filter-select-wrapper">
+                            <select name="filter_type" id="filterType" class="filter-select">
+                                <option value="">Select period</option>
+                                <option value="day"   {% if filter_type == 'day'   %}selected{% endif %}>Daily</option>
+                                <option value="month" {% if filter_type == 'month' %}selected{% endif %}>Monthly</option>
+                                <option value="year"  {% if filter_type == 'year'  %}selected{% endif %}>Yearly</option>
+                            </select>
+                            <i class="bi bi-chevron-down filter-select-icon"></i>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                        <label class="filter-label">
+                            <i class="bi bi-calendar-day me-1"></i> Date
+                        </label>
+                        <input type="date" name="date" class="filter-input"
+                               value="{{ filter_date }}"
+                               {% if filter_type != 'day' %}disabled{% endif %}>
+                    </div>
+
+                    <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+                        <label class="filter-label">
+                            <i class="bi bi-calendar-month me-1"></i> Month
+                        </label>
+                        <div class="filter-select-wrapper">
+                            <select name="month" class="filter-select"
+                                    {% if filter_type != 'month' %}disabled{% endif %}>
+                                <option value="">Choose month</option>
+                                {% for m in months %}
+                                    <option value="{{ m }}"
+                                        {% if filter_month == m|stringformat:"s" %}selected{% endif %}>
+                                        {{ m }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <i class="bi bi-chevron-down filter-select-icon"></i>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-sm-6 col-md-4 col-lg-1">
+                        <label class="filter-label">
+                            <i class="bi bi-calendar me-1"></i> Year
+                        </label>
+                        <input type="number" name="year" class="filter-input"
+                               placeholder="YYYY" min="2000" max="2035"
+                               value="{{ filter_year }}"
+                               {% if filter_type not in 'month year' %}disabled{% endif %}>
+                    </div>
+
+                    <div class="col-12 col-lg-2 d-flex align-items-end">
+                        <button type="submit" class="btn-filter-apply w-100">
+                            <i class="bi bi-search me-1"></i> Apply
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Balance Overview -->
+    {% if not selected_bank and not filter_type %}
+    <div class="balance-overview-section">
+        <!-- Grand Total Card -->
+        <div class="grand-total-card">
+            <div class="grand-total-bg-pattern"></div>
+            <div class="grand-total-content">
+                <div class="grand-total-icon-ring">
+                    <i class="bi bi-piggy-bank"></i>
                 </div>
+                <div class="grand-total-info">
+                    <span class="grand-total-label">Total Available Balance</span>
+                    <h2 class="grand-total-amount">₹ {{ total_bank|floatformat:2 }}</h2>
+                    <span class="grand-total-sub">Across all bank accounts</span>
+                </div>
+            </div>
+            <div class="grand-total-decoration">
+                <div class="gt-dot gt-dot-1"></div>
+                <div class="gt-dot gt-dot-2"></div>
+                <div class="gt-dot gt-dot-3"></div>
             </div>
         </div>
 
         <!-- Per Bank Cards -->
-        {% for bank in banks %}
-        <div class="col-md-6 col-lg-4 col-xl-3">
-            <div class="card border-0 shadow h-100 rounded-4 transition-all hover-lift">
-                <div class="card-body text-center py-4">
-                    <h6 class="text-muted fw-medium mb-2">{{ bank.name }}</h6>
-                    <h4 class="fw-bold mb-1
-                        {% if bank.filtered_balance < 0 %}text-danger{% else %}text-success{% endif %}">
-                        ₹ {{ bank.filtered_balance|floatformat:2 }}
-                    </h4>
-                    <small class="text-muted">Available Balance</small>
-                    <div class="d-flex justify-content-center align-items-center gap-3 mt-2 small fw-semibold">
-
-                        <!-- IN -->
-                        <span class="d-flex align-items-center gap-1 text-success">
-                            <i class="bi bi-arrow-down-circle-fill"></i>
-                            {{ bank.payment_count }}
-                            <span class="text-muted fw-normal">In</span>
-                        </span>
-
-                        <!-- DIVIDER -->
-                        <span class="text-muted">•</span>
-
-                        <!-- OUT -->
-                        <span class="d-flex align-items-center gap-1 text-danger">
-                            <i class="bi bi-arrow-up-circle-fill"></i>
-                            {{ bank.expense_count }}
-                            <span class="text-muted fw-normal">Out</span>
-                        </span>
-
+        <div class="row g-3 mt-1">
+            {% for bank in banks %}
+            <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+                <div class="bank-balance-card">
+                    <div class="bank-card-accent {% if bank.filtered_balance < 0 %}accent-danger{% else %}accent-success{% endif %}"></div>
+                    <div class="bank-card-body">
+                        <div class="bank-card-header">
+                            <div class="bank-avatar">
+                                <span>{{ bank.name|first }}</span>
+                            </div>
+                            <div class="bank-card-badge {% if bank.filtered_balance < 0 %}badge-danger{% else %}badge-success{% endif %}">
+                                {% if bank.filtered_balance < 0 %}
+                                    <i class="bi bi-arrow-down-short"></i> Deficit
+                                {% else %}
+                                    <i class="bi bi-arrow-up-short"></i> Active
+                                {% endif %}
+                            </div>
+                        </div>
+                        <h6 class="bank-card-name">{{ bank.name }}</h6>
+                        <h3 class="bank-card-amount {% if bank.filtered_balance < 0 %}text-danger{% else %}text-success-dark{% endif %}">
+                            ₹ {{ bank.filtered_balance|floatformat:2 }}
+                        </h3>
+                        <div class="bank-card-stats">
+                            <div class="stat-item stat-in">
+                                <div class="stat-icon-circle stat-icon-in">
+                                    <i class="bi bi-arrow-down-left"></i>
+                                </div>
+                                <div>
+                                    <span class="stat-value">{{ bank.payment_count }}</span>
+                                    <span class="stat-label">Inflows</span>
+                                </div>
+                            </div>
+                            <div class="stat-divider"></div>
+                            <div class="stat-item stat-out">
+                                <div class="stat-icon-circle stat-icon-out">
+                                    <i class="bi bi-arrow-up-right"></i>
+                                </div>
+                                <div>
+                                    <span class="stat-value">{{ bank.expense_count }}</span>
+                                    <span class="stat-label">Outflows</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
     </div>
-{% else %}
-    <div class="card border-0 shadow-lg text-white rounded-4 overflow-hidden bg-gradient-primary mb-5">
-        <div class="card-body text-center py-5">
-            <div class="d-flex align-items-center justify-content-center gap-3 mb-3">
-                <i class="bi bi-filter-circle fs-2"></i>
-                <h5 class="mb-0 fw-semibold">Filtered Period Balance</h5>
+    {% else %}
+    <!-- Filtered Balance Card -->
+    <div class="filtered-balance-card">
+        <div class="filtered-balance-bg"></div>
+        <div class="filtered-balance-content">
+            <div class="filtered-badge">
+                <i class="bi bi-funnel-fill me-1"></i> Filtered Results
             </div>
-            <h2 class="fw-bold mb-0 display-5">₹ {{ total_bank|floatformat:2 }}</h2>
+            <div class="filtered-icon-ring">
+                <i class="bi bi-graph-up-arrow"></i>
+            </div>
+            <span class="filtered-label">Period Balance</span>
+            <h2 class="filtered-amount">₹ {{ total_bank|floatformat:2 }}</h2>
         </div>
     </div>
-{% endif %}
+    {% endif %}
 
-<!-- Table -->
-<div class="card shadow border-0 rounded-4 overflow-hidden">
-    <div class="table-responsive" style="max-height: 60vh;">
-        <table class="table table-hover align-middle mb-0">
-            <thead class="table-primary sticky-top shadow-sm">
-                <tr>
-                    <th class="ps-4">#</th>
-                    <th>Bank</th>
-                    <th class="text-end">Opening</th>
-                    <th class="text-end">Available</th>
-                    <th class="text-end">Last Tx</th>
-                    <th class="text-center">Log</th>
-                    <th>Actions</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for bank in banks %}
-                <tr class="transition-all hover-bg-light">
-                    <td class="ps-4">{{ forloop.counter }}</td>
-                    <td class="fw-medium">{{ bank.name }}</td>
-                    <td class="text-end">₹ {{ bank.opening_balance|floatformat:2 }}</td>
-                    <td class="text-end fw-bold
-                        {% if bank.filtered_balance < 0 %}text-danger{% else %}text-success{% endif %}">
-                        ₹ {{ bank.filtered_balance|floatformat:2 }}
-                    </td>
-                    <td class="text-end small">
-                        {% if bank.last_transaction_date %}
-                            {{ bank.last_transaction_date }}
-                        {% else %}
-                            <span class="text-muted">No transactions</span>
-                        {% endif %}
-                    </td>
-                    <td class="text-center">
-                        <a href="{% url 'bank_log' bank.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
-                            <i class="bi bi-journal-text me-1"></i>View Log
-                        </a>
-                    </td>
-                    <td>
-                        <div class="d-flex gap-2">
-                            <a href="{% url 'bank_update' bank.id %}" class="btn btn-sm btn-outline-warning rounded-pill px-3">
-                                <i class="bi bi-pencil"></i>
-                            </a>
-                            <a href="{% url 'bank_delete' bank.id %}" class="btn btn-sm btn-outline-danger rounded-pill px-3">
-                                <i class="bi bi-trash"></i>
-                            </a>
-                        </div>
-                    </td>
-<td>
-    <div class="d-flex align-items-center gap-2">
-        <a href="javascript:void(0)"
-           onclick="confirmToggle('{% url 'toggle_bank_status' bank.id %}', {{ bank.is_active|yesno:'true,false' }}, '{{ bank.name }}')"
-           class="cyber-toggle {% if bank.is_active %}toggle-on{% else %}toggle-off{% endif %}">
-            <div class="cyber-thumb">
-                {% if bank.is_active %}
-                    <div style="width:4px; height:4px; background:#0d6efd; border-radius:50%;"></div>
-                {% endif %}
+    <!-- Data Table -->
+    <div class="data-table-section">
+        <div class="table-card">
+            <div class="table-card-header">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="table-header-icon">
+                        <i class="bi bi-list-ul"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 fw-bold text-dark">All Accounts</h6>
+                        <small class="text-muted">{{ banks|length }} bank{{ banks|length|pluralize }} registered</small>
+                    </div>
+                </div>
             </div>
-        </a>
-        <small class="text-muted fw-bold" style="font-size: 0.65rem;">
-            {% if bank.is_active %}ON{% else %}OFF{% endif %}
-        </small>
-    </div>
-</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="7" class="text-center text-muted py-5 fs-5">
-                        <i class="bi bi-bank fs-1 d-block mb-3 opacity-50"></i>
-                        No bank accounts found
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+            <div class="table-responsive custom-scrollbar" style="max-height: 60vh;">
+                <table class="table saas-table mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-4 th-narrow">#</th>
+                            <th>Bank</th>
+                            <th class="text-end">Opening</th>
+                            <th class="text-end">Available</th>
+                            <th class="text-end">Last Transaction</th>
+                            <th class="text-center">Activity Log</th>
+                            <th class="text-center">Actions</th>
+                            <th class="text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bank in banks %}
+                        <tr class="table-row-animate">
+                            <td class="ps-4 text-muted fw-medium">{{ forloop.counter }}</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="table-bank-avatar">
+                                        <span>{{ bank.name|first }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="fw-semibold text-dark">{{ bank.name }}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-end">
+                                <span class="amount-cell">₹ {{ bank.opening_balance|floatformat:2 }}</span>
+                            </td>
+                            <td class="text-end">
+                                <span class="amount-cell fw-bold {% if bank.filtered_balance < 0 %}text-danger{% else %}text-success{% endif %}">
+                                    ₹ {{ bank.filtered_balance|floatformat:2 }}
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                {% if bank.last_transaction_date %}
+                                    <span class="date-badge">
+                                        <i class="bi bi-clock me-1"></i>{{ bank.last_transaction_date }}
+                                    </span>
+                                {% else %}
+                                    <span class="no-data-badge">
+                                        <i class="bi bi-dash-circle me-1"></i>No transactions
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <a href="{% url 'bank_log' bank.id %}" class="btn-view-log">
+                                    <i class="bi bi-journal-text me-1"></i> View Log
+                                </a>
+                            </td>
+                            <td class="text-center">
+                                <div class="d-flex justify-content-center gap-2">
+                                    <a href="{% url 'bank_update' bank.id %}" class="btn-action btn-action-edit" data-bs-toggle="tooltip" title="Edit">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </a>
+                                    <a href="{% url 'bank_delete' bank.id %}" class="btn-action btn-action-delete" data-bs-toggle="tooltip" title="Delete">
+                                        <i class="bi bi-trash3"></i>
+                                    </a>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <div class="d-flex align-items-center justify-content-center gap-2">
+                                    <a href="javascript:void(0)"
+                                       onclick="confirmToggle('{% url 'toggle_bank_status' bank.id %}', {{ bank.is_active|yesno:'true,false' }}, '{{ bank.name }}')"
+                                       class="status-toggle {% if bank.is_active %}toggle-active{% else %}toggle-inactive{% endif %}">
+                                        <div class="toggle-track">
+                                            <div class="toggle-thumb">
+                                                <i class="bi {% if bank.is_active %}bi-check-lg{% else %}bi-x-lg{% endif %}"></i>
+                                            </div>
+                                        </div>
+                                    </a>
+                                    <span class="status-label {% if bank.is_active %}status-on{% else %}status-off{% endif %}">
+                                        {% if bank.is_active %}Active{% else %}Inactive{% endif %}
+                                    </span>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <div class="empty-state">
+                                    <div class="empty-icon-wrapper">
+                                        <i class="bi bi-bank"></i>
+                                    </div>
+                                    <h5 class="mt-3 fw-bold text-dark">No Bank Accounts Found</h5>
+                                    <p class="text-muted mb-3">Get started by adding your first bank account</p>
+                                    <a href="{% url 'bank_create' %}" class="btn btn-add-bank btn-sm">
+                                        <i class="bi bi-plus-lg me-1"></i> Add Bank
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 
-
+<!-- Toggle Confirmation -->
 <script>
 function confirmToggle(url, isActive, bankName) {
     const action = isActive ? 'Deactivate' : 'Activate';
-    const color = isActive ? '#ef4444' : '#10b981'; // Red for deactivating, Green for activating
+    const color = isActive ? '#ef4444' : '#10b981';
+    const icon = isActive ? 'warning' : 'question';
 
     Swal.fire({
-        title: `<span style="font-size: 1.25rem;">${action} Bank?</span>`,
-        html: `Are you sure you want to change <b>${bankName}</b> to <b style="color:${color}">${isActive ? 'Inactive' : 'Active'}</b>?`,
-        icon: 'question',
+        title: `<span style="font-size:1.15rem;font-weight:700;">${action} Bank?</span>`,
+        html: `
+            <div style="margin-top:8px;">
+                <span style="color:#64748b;">Change</span>
+                <b style="color:#1e293b;"> ${bankName} </b>
+                <span style="color:#64748b;">to</span>
+                <b style="color:${color};"> ${isActive ? 'Inactive' : 'Active'}</b>?
+            </div>`,
+        icon: icon,
         showCancelButton: true,
-        confirmButtonText: `Yes, ${action}`,
-        cancelButtonText: 'Cancel',
+        confirmButtonText: `<i class="bi bi-${isActive ? 'pause-circle' : 'check-circle'} me-1"></i> Yes, ${action}`,
+        cancelButtonText: '<i class="bi bi-x-circle me-1"></i> Cancel',
         confirmButtonColor: color,
+        cancelButtonColor: '#94a3b8',
         background: '#ffffff',
         customClass: {
-            popup: 'rounded-5 border-0 shadow-lg',
-            confirmButton: 'rounded-pill px-4',
-            cancelButton: 'rounded-pill px-4'
+            popup: 'swal-popup-custom',
+            confirmButton: 'swal-btn-custom',
+            cancelButton: 'swal-btn-custom'
         },
-        backdrop: `rgba(30, 33, 48, 0.4)` // Dark overlay to match your sidebar
+        backdrop: 'rgba(15, 23, 42, 0.5)',
+        showClass: { popup: 'animate__animated animate__fadeInDown animate__faster' },
+        hideClass: { popup: 'animate__animated animate__fadeOutUp animate__faster' }
     }).then((result) => {
         if (result.isConfirmed) {
-            // Show a loading state before redirecting
             Swal.fire({
-                title: 'Updating...',
+                title: '<span style="font-size:1rem;">Updating...</span>',
                 allowOutsideClick: false,
+                background: '#ffffff',
+                customClass: { popup: 'swal-popup-custom' },
                 didOpen: () => { Swal.showLoading(); }
             });
             window.location.href = url;
@@ -255,118 +373,950 @@ function confirmToggle(url, isActive, bankName) {
 }
 </script>
 
-
-
-<style>
-    .cyber-toggle {
-        width: 50px;
-        height: 24px;
-        background: #e2e8f0;
-        border-radius: 30px;
-        position: relative;
-        transition: all 0.4s ease;
-        border: 2px solid transparent;
-    }
-
-    .cyber-thumb {
-        position: absolute;
-        top: 2px;
-        left: 2px;
-        width: 16px;
-        height: 16px;
-        background: white;
-        border-radius: 50%;
-        transition: all 0.3s shadow;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    }
-
-    /* Active State: Moving the thumb and changing background */
-    .toggle-on {
-        background: #0d6efd; /* Matches your sidebar accent */
-        box-shadow: 0 0 12px rgba(13, 110, 253, 0.3);
-    }
-    .toggle-on .cyber-thumb {
-        transform: translateX(26px);
-    }
-
-    /* Inactive State */
-    .toggle-off {
-        background: #cbd5e1;
-    }
-    
-    .cyber-toggle:hover {
-        transform: scale(1.05);
-        cursor: pointer;
-    }
-</style>
-
-
-<style>
-    :root {
-        --primary-gradient: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
-    }
-
-    .bg-gradient-primary {
-        background: var(--primary-gradient);
-    }
-
-    .table-primary {
-        --bs-table-bg: #e7f1ff;
-        --bs-table-color: #0c4a6e;
-    }
-
-    .sticky-top {
-        top: 0;
-        z-index: 10;
-    }
-
-    .table-responsive {
-        --shadow-size: 14px;
-        background:
-            linear-gradient(white, white),
-            radial-gradient(ellipse at top, rgba(0,0,0,0.08) 0%, transparent 70%) top,
-            radial-gradient(ellipse at bottom, rgba(0,0,0,0.08) 0%, transparent 70%) bottom;
-        background-repeat: no-repeat;
-        background-attachment: local, local, scroll;
-        background-size: 100% 100%, 100% var(--shadow-size), 100% var(--shadow-size);
-    }
-
-    .card, .btn {
-        transition: all 0.2s ease;
-    }
-
-    .hover-lift:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 30px rgba(0,0,0,0.12) !important;
-    }
-
-    .hover-bg-light:hover {
-        background-color: #f8f9fa !important;
-    }
-
-    .rounded-4 { border-radius: 1.25rem !important; }
-    .rounded-pill { border-radius: 3rem !important; }
-</style>
-
+<!-- Filter Logic -->
 <script>
-// Existing filter logic (unchanged but more robust)
 document.addEventListener('DOMContentLoaded', () => {
     const filterType = document.getElementById('filterType');
     if (!filterType) return;
 
+    const dateInput = document.querySelector('[name="date"]');
+    const monthSelect = document.querySelector('[name="month"]');
+    const yearInput = document.querySelector('[name="year"]');
+
     function toggleFields() {
         const val = filterType.value;
-        document.querySelector('[name="date"]').disabled  = val !== 'day';
-        document.querySelector('[name="month"]').disabled = val !== 'month';
-        document.querySelector('[name="year"]').disabled  = val !== 'month' && val !== 'year';
+        dateInput.disabled = val !== 'day';
+        monthSelect.disabled = val !== 'month';
+        yearInput.disabled = val !== 'month' && val !== 'year';
+
+        [dateInput, monthSelect, yearInput].forEach(el => {
+            el.closest('.col-12, .col-sm-6')?.classList.toggle('filter-disabled', el.disabled);
+        });
     }
 
     filterType.addEventListener('change', toggleFields);
-    toggleFields(); // initial state
+    toggleFields();
+
+    // Tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
 });
 </script>
+
+<style>
+/* ============================================
+   SAAS BANK PAGE – COMPLETE STYLESHEET
+   ============================================ */
+
+:root {
+    --bank-primary: #4f46e5;
+    --bank-primary-light: #eef2ff;
+    --bank-primary-dark: #3730a3;
+    --bank-success: #059669;
+    --bank-success-light: #ecfdf5;
+    --bank-danger: #dc2626;
+    --bank-danger-light: #fef2f2;
+    --bank-warning: #d97706;
+    --bank-warning-light: #fffbeb;
+    --bank-gray-50: #f8fafc;
+    --bank-gray-100: #f1f5f9;
+    --bank-gray-200: #e2e8f0;
+    --bank-gray-300: #cbd5e1;
+    --bank-gray-400: #94a3b8;
+    --bank-gray-500: #64748b;
+    --bank-gray-600: #475569;
+    --bank-gray-700: #334155;
+    --bank-gray-800: #1e293b;
+    --bank-gray-900: #0f172a;
+    --bank-radius-sm: 8px;
+    --bank-radius-md: 12px;
+    --bank-radius-lg: 16px;
+    --bank-radius-xl: 20px;
+    --bank-shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    --bank-shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+    --bank-shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04);
+    --bank-shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.08), 0 8px 10px -6px rgba(0,0,0,0.04);
+    --bank-transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bank-page-wrapper {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* ---------- Page Header ---------- */
+.page-header-section {
+    margin-bottom: 24px;
+}
+
+.page-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, var(--bank-primary), var(--bank-primary-dark));
+    border-radius: var(--bank-radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.3rem;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
+
+.page-title {
+    font-size: 1.5rem;
+    letter-spacing: -0.025em;
+}
+
+.btn-add-bank {
+    background: linear-gradient(135deg, var(--bank-primary), var(--bank-primary-dark));
+    color: white;
+    border: none;
+    padding: 10px 24px;
+    border-radius: var(--bank-radius-md);
+    font-weight: 600;
+    font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: var(--bank-transition);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+    text-decoration: none;
+}
+
+.btn-add-bank:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(79, 70, 229, 0.35);
+    color: white;
+}
+
+.btn-add-bank:active {
+    transform: translateY(0);
+}
+
+/* ---------- Filter Section ---------- */
+.filter-section {
+    margin-bottom: 24px;
+}
+
+.filter-card {
+    background: white;
+    border: 1px solid var(--bank-gray-200);
+    border-radius: var(--bank-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--bank-shadow-sm);
+}
+
+.filter-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    background: var(--bank-gray-50);
+    border-bottom: 1px solid var(--bank-gray-200);
+}
+
+.filter-icon-badge {
+    width: 32px;
+    height: 32px;
+    background: var(--bank-primary-light);
+    color: var(--bank-primary);
+    border-radius: var(--bank-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+}
+
+.btn-reset-minimal {
+    background: none;
+    border: 1px solid var(--bank-gray-300);
+    color: var(--bank-gray-500);
+    padding: 5px 14px;
+    border-radius: var(--bank-radius-sm);
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: var(--bank-transition);
+}
+
+.btn-reset-minimal:hover {
+    background: var(--bank-gray-100);
+    color: var(--bank-gray-700);
+    border-color: var(--bank-gray-400);
+}
+
+.filter-body {
+    padding: 20px;
+}
+
+.filter-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--bank-gray-600);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+}
+
+.filter-select-wrapper {
+    position: relative;
+}
+
+.filter-select,
+.filter-input {
+    width: 100%;
+    padding: 9px 14px;
+    border: 1.5px solid var(--bank-gray-200);
+    border-radius: var(--bank-radius-sm);
+    font-size: 0.875rem;
+    color: var(--bank-gray-800);
+    background: white;
+    transition: var(--bank-transition);
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+.filter-select {
+    padding-right: 36px;
+}
+
+.filter-select:focus,
+.filter-input:focus {
+    outline: none;
+    border-color: var(--bank-primary);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.filter-select:disabled,
+.filter-input:disabled {
+    background: var(--bank-gray-100);
+    color: var(--bank-gray-400);
+    cursor: not-allowed;
+    border-color: var(--bank-gray-200);
+}
+
+.filter-select-icon {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--bank-gray-400);
+    font-size: 0.7rem;
+    pointer-events: none;
+}
+
+.filter-disabled {
+    opacity: 0.5;
+}
+
+.btn-filter-apply {
+    background: var(--bank-primary);
+    color: white;
+    border: none;
+    padding: 9px 20px;
+    border-radius: var(--bank-radius-sm);
+    font-weight: 600;
+    font-size: 0.875rem;
+    transition: var(--bank-transition);
+    cursor: pointer;
+}
+
+.btn-filter-apply:hover {
+    background: var(--bank-primary-dark);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+}
+
+/* ---------- Grand Total Card ---------- */
+.grand-total-card {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #6d28d9 100%);
+    border-radius: var(--bank-radius-xl);
+    padding: 32px 36px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(79, 70, 229, 0.3);
+    margin-bottom: 12px;
+}
+
+.grand-total-bg-pattern {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at 20% 80%, rgba(255,255,255,0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255,255,255,0.06) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(255,255,255,0.03) 0%, transparent 80%);
+}
+
+.grand-total-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.grand-total-icon-ring {
+    width: 64px;
+    height: 64px;
+    min-width: 64px;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255,255,255,0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.6rem;
+}
+
+.grand-total-label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: rgba(255,255,255,0.8);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.grand-total-amount {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: white;
+    margin: 4px 0;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+}
+
+.grand-total-sub {
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.6);
+}
+
+.grand-total-decoration {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.gt-dot {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+}
+
+.gt-dot-1 { width: 200px; height: 200px; top: -60px; right: -40px; }
+.gt-dot-2 { width: 120px; height: 120px; bottom: -30px; right: 25%; }
+.gt-dot-3 { width: 80px; height: 80px; top: 20px; right: 18%; background: rgba(255,255,255,0.04); }
+
+/* ---------- Bank Balance Cards ---------- */
+.bank-balance-card {
+    background: white;
+    border: 1px solid var(--bank-gray-200);
+    border-radius: var(--bank-radius-lg);
+    overflow: hidden;
+    transition: var(--bank-transition);
+    height: 100%;
+    position: relative;
+}
+
+.bank-balance-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--bank-shadow-xl);
+    border-color: var(--bank-gray-300);
+}
+
+.bank-card-accent {
+    height: 4px;
+    width: 100%;
+}
+
+.accent-success { background: linear-gradient(90deg, #059669, #34d399); }
+.accent-danger { background: linear-gradient(90deg, #dc2626, #f87171); }
+
+.bank-card-body {
+    padding: 20px;
+}
+
+.bank-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.bank-avatar {
+    width: 42px;
+    height: 42px;
+    background: linear-gradient(135deg, var(--bank-primary-light), #ddd6fe);
+    border-radius: var(--bank-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: var(--bank-primary);
+    font-size: 1.1rem;
+}
+
+.bank-card-badge {
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+}
+
+.badge-success {
+    background: var(--bank-success-light);
+    color: var(--bank-success);
+}
+
+.badge-danger {
+    background: var(--bank-danger-light);
+    color: var(--bank-danger);
+}
+
+.bank-card-name {
+    font-weight: 600;
+    color: var(--bank-gray-700);
+    margin-bottom: 4px;
+    font-size: 0.9rem;
+}
+
+.bank-card-amount {
+    font-weight: 800;
+    font-size: 1.5rem;
+    margin-bottom: 16px;
+    letter-spacing: -0.02em;
+}
+
+.text-success-dark { color: var(--bank-success); }
+
+.bank-card-stats {
+    display: flex;
+    align-items: center;
+    background: var(--bank-gray-50);
+    border-radius: var(--bank-radius-sm);
+    padding: 10px;
+    gap: 12px;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.stat-icon-circle {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+}
+
+.stat-icon-in {
+    background: var(--bank-success-light);
+    color: var(--bank-success);
+}
+
+.stat-icon-out {
+    background: var(--bank-danger-light);
+    color: var(--bank-danger);
+}
+
+.stat-value {
+    display: block;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--bank-gray-800);
+    line-height: 1.2;
+}
+
+.stat-label {
+    display: block;
+    font-size: 0.65rem;
+    color: var(--bank-gray-400);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.stat-divider {
+    width: 1px;
+    height: 28px;
+    background: var(--bank-gray-200);
+}
+
+/* ---------- Filtered Balance Card ---------- */
+.filtered-balance-card {
+    background: linear-gradient(135deg, #4f46e5 0%, #6d28d9 100%);
+    border-radius: var(--bank-radius-xl);
+    padding: 40px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 28px;
+    box-shadow: 0 8px 32px rgba(79, 70, 229, 0.3);
+}
+
+.filtered-balance-bg {
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at 30% 70%, rgba(255,255,255,0.08), transparent 50%),
+        radial-gradient(circle at 70% 30%, rgba(255,255,255,0.05), transparent 50%);
+}
+
+.filtered-balance-content {
+    position: relative;
+    z-index: 2;
+}
+
+.filtered-badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.9);
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+    backdrop-filter: blur(10px);
+}
+
+.filtered-icon-ring {
+    width: 56px;
+    height: 56px;
+    background: rgba(255,255,255,0.15);
+    border: 2px solid rgba(255,255,255,0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.4rem;
+    margin: 0 auto 12px;
+}
+
+.filtered-label {
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.7);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: block;
+}
+
+.filtered-amount {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: white;
+    margin: 8px 0 0;
+    letter-spacing: -0.03em;
+}
+
+/* ---------- Data Table ---------- */
+.data-table-section {
+    margin-top: 28px;
+}
+
+.table-card {
+    background: white;
+    border: 1px solid var(--bank-gray-200);
+    border-radius: var(--bank-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--bank-shadow-md);
+}
+
+.table-card-header {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--bank-gray-200);
+    background: var(--bank-gray-50);
+}
+
+.table-header-icon {
+    width: 36px;
+    height: 36px;
+    background: var(--bank-primary-light);
+    color: var(--bank-primary);
+    border-radius: var(--bank-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: var(--bank-gray-100);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--bank-gray-300);
+    border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--bank-gray-400);
+}
+
+/* SaaS Table */
+.saas-table {
+    font-size: 0.875rem;
+}
+
+.saas-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.saas-table thead tr {
+    background: var(--bank-gray-50);
+    border-bottom: 2px solid var(--bank-gray-200);
+}
+
+.saas-table thead th {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--bank-gray-500);
+    padding: 12px 16px;
+    white-space: nowrap;
+    border: none;
+    background: var(--bank-gray-50);
+}
+
+.saas-table tbody tr {
+    border-bottom: 1px solid var(--bank-gray-100);
+    transition: var(--bank-transition);
+}
+
+.saas-table tbody tr:hover {
+    background: var(--bank-primary-light);
+}
+
+.saas-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.saas-table tbody td {
+    padding: 14px 16px;
+    vertical-align: middle;
+    border: none;
+    color: var(--bank-gray-700);
+}
+
+.th-narrow {
+    width: 50px;
+}
+
+/* Table Bank Avatar */
+.table-bank-avatar {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    background: linear-gradient(135deg, var(--bank-primary-light), #ddd6fe);
+    border-radius: var(--bank-radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: var(--bank-primary);
+    font-size: 0.9rem;
+}
+
+.amount-cell {
+    font-variant-numeric: tabular-nums;
+    font-size: 0.875rem;
+}
+
+.date-badge {
+    display: inline-flex;
+    align-items: center;
+    background: var(--bank-gray-100);
+    color: var(--bank-gray-600);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.no-data-badge {
+    display: inline-flex;
+    align-items: center;
+    color: var(--bank-gray-400);
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Action Buttons */
+.btn-view-log {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 14px;
+    background: var(--bank-primary-light);
+    color: var(--bank-primary);
+    border: 1px solid transparent;
+    border-radius: var(--bank-radius-sm);
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: var(--bank-transition);
+}
+
+.btn-view-log:hover {
+    background: var(--bank-primary);
+    color: white;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+}
+
+.btn-action {
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--bank-radius-sm);
+    border: 1px solid var(--bank-gray-200);
+    background: white;
+    color: var(--bank-gray-500);
+    font-size: 0.85rem;
+    transition: var(--bank-transition);
+    text-decoration: none;
+}
+
+.btn-action-edit:hover {
+    background: var(--bank-warning-light);
+    color: var(--bank-warning);
+    border-color: var(--bank-warning);
+}
+
+.btn-action-delete:hover {
+    background: var(--bank-danger-light);
+    color: var(--bank-danger);
+    border-color: var(--bank-danger);
+}
+
+/* ---------- Status Toggle ---------- */
+.status-toggle {
+    display: inline-block;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.toggle-track {
+    width: 44px;
+    height: 24px;
+    border-radius: 12px;
+    position: relative;
+    transition: var(--bank-transition);
+    padding: 3px;
+}
+
+.toggle-thumb {
+    width: 18px;
+    height: 18px;
+    background: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--bank-transition);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    position: absolute;
+    top: 3px;
+}
+
+.toggle-thumb i {
+    font-size: 0.55rem;
+    font-weight: 900;
+}
+
+.toggle-active .toggle-track {
+    background: linear-gradient(135deg, #059669, #34d399);
+    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+}
+
+.toggle-active .toggle-thumb {
+    left: calc(100% - 21px);
+    color: var(--bank-success);
+}
+
+.toggle-inactive .toggle-track {
+    background: var(--bank-gray-300);
+}
+
+.toggle-inactive .toggle-thumb {
+    left: 3px;
+    color: var(--bank-gray-400);
+}
+
+.status-toggle:hover .toggle-track {
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.status-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.status-on { color: var(--bank-success); }
+.status-off { color: var(--bank-gray-400); }
+
+/* ---------- Empty State ---------- */
+.empty-state {
+    padding: 20px;
+}
+
+.empty-icon-wrapper {
+    width: 72px;
+    height: 72px;
+    background: var(--bank-gray-100);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    font-size: 1.8rem;
+    color: var(--bank-gray-400);
+}
+
+/* ---------- SweetAlert Custom ---------- */
+.swal-popup-custom {
+    border-radius: 20px !important;
+    border: 1px solid var(--bank-gray-200) !important;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15) !important;
+}
+
+.swal-btn-custom {
+    border-radius: 10px !important;
+    padding: 10px 24px !important;
+    font-weight: 600 !important;
+    font-size: 0.875rem !important;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 768px) {
+    .grand-total-card {
+        padding: 24px 20px;
+    }
+
+    .grand-total-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 16px;
+    }
+
+    .grand-total-amount {
+        font-size: 2rem;
+    }
+
+    .filtered-amount {
+        font-size: 2rem;
+    }
+
+    .page-icon-wrapper {
+        width: 40px;
+        height: 40px;
+        font-size: 1.1rem;
+    }
+
+    .page-title {
+        font-size: 1.25rem;
+    }
+
+    .filter-body {
+        padding: 16px;
+    }
+
+    .table-card-header {
+        padding: 12px 16px;
+    }
+
+    .saas-table thead th,
+    .saas-table tbody td {
+        padding: 10px 12px;
+    }
+
+    .bank-card-amount {
+        font-size: 1.25rem;
+    }
+
+    .bank-card-stats {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .stat-divider {
+        width: 100%;
+        height: 1px;
+    }
+}
+
+@media (max-width: 576px) {
+    .grand-total-amount {
+        font-size: 1.75rem;
+    }
+
+    .grand-total-icon-ring {
+        width: 52px;
+        height: 52px;
+        font-size: 1.3rem;
+    }
+
+    .btn-add-bank {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* ---------- Animations ---------- */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.table-row-animate {
+    animation: fadeInUp 0.3s ease forwards;
+}
+
+.table-row-animate:nth-child(1) { animation-delay: 0.02s; }
+.table-row-animate:nth-child(2) { animation-delay: 0.04s; }
+.table-row-animate:nth-child(3) { animation-delay: 0.06s; }
+.table-row-animate:nth-child(4) { animation-delay: 0.08s; }
+.table-row-animate:nth-child(5) { animation-delay: 0.10s; }
+.table-row-animate:nth-child(6) { animation-delay: 0.12s; }
+.table-row-animate:nth-child(7) { animation-delay: 0.14s; }
+.table-row-animate:nth-child(8) { animation-delay: 0.16s; }
+.table-row-animate:nth-child(9) { animation-delay: 0.18s; }
+.table-row-animate:nth-child(10) { animation-delay: 0.20s; }
+
+.bank-balance-card {
+    animation: fadeInUp 0.4s ease forwards;
+}
+
+.bank-balance-card:nth-child(1) { animation-delay: 0.05s; }
+.bank-balance-card:nth-child(2) { animation-delay: 0.10s; }
+.bank-balance-card:nth-child(3) { animation-delay: 0.15s; }
+.bank-balance-card:nth-child(4) { animation-delay: 0.20s; }
+</style>
 
 {% endblock %}

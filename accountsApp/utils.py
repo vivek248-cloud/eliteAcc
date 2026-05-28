@@ -133,3 +133,98 @@ def expense_duplicate_exists(
         qs = qs.exclude(pk=exclude_id)
 
     return qs.exists()
+
+
+
+from decimal import Decimal
+
+
+def recalculate_banks(*banks):
+
+    """
+    Recalculate multiple banks safely.
+
+    Usage:
+        recalculate_banks(old_bank, new_bank)
+
+    Benefits:
+        ✔ prevents duplicate recalculation
+        ✔ avoids None errors
+        ✔ fixes stale queryset problems
+        ✔ avoids double deductions
+    """
+
+    unique_banks = set(
+        filter(None, banks)
+    )
+
+    for bank in unique_banks:
+
+        bank.refresh_from_db()
+
+        bank.recalculate_balance()
+
+
+
+
+from .models import ActivityLog
+
+
+def get_client_ip(request):
+
+    x_forwarded_for = request.META.get(
+        'HTTP_X_FORWARDED_FOR'
+    )
+
+    if x_forwarded_for:
+
+        ip = x_forwarded_for.split(',')[0]
+
+    else:
+
+        ip = request.META.get('REMOTE_ADDR')
+
+    return ip
+
+
+def log_activity(
+    request,
+    action,
+    description,
+    action_type='Created'
+):
+
+    user = (
+        request.user
+        if request.user.is_authenticated
+        else None
+    )
+
+    log_data = {
+
+        'action': action,
+
+        'description': description,
+
+        'ip_address': get_client_ip(request),
+    }
+
+    # =====================================================
+    # ACTION TYPE
+    # =====================================================
+
+    if action_type == 'Created':
+
+        log_data['created_by'] = user
+
+    elif action_type == 'Updated':
+
+        log_data['updated_by'] = user
+
+    elif action_type == 'Deleted':
+
+        log_data['deleted_by'] = user
+
+    ActivityLog.objects.create(
+        **log_data
+    )

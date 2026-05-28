@@ -2,55 +2,733 @@
 {% block title %}Bank Transfers | Elite Accounts{% endblock %}
 
 {% block content %}
-<div class="container py-4">
 
-    <div class="d-flex align-items-center justify-content-between mb-4">
-        <div>
-            <h4 class="fw-bold mb-0">Bank Transfers</h4>
-            <p class="text-muted small mb-0">Manage and track internal liquidity movement</p>
+<style>
+:root {
+    --primary: #6366f1;
+    --primary-dark: #4f46e5;
+    --primary-light: #eef2ff;
+    --primary-glow: rgba(99,102,241,.18);
+    --success: #10b981;
+    --success-bg: #ecfdf5;
+    --success-bd: #a7f3d0;
+    --danger: #ef4444;
+    --danger-bg: #fef2f2;
+    --danger-bd: #fecaca;
+    --warning: #f59e0b;
+    --text-1: #0f172a;
+    --text-2: #475569;
+    --text-3: #94a3b8;
+    --border: #e2e8f0;
+    --bg-page: #f8fafc;
+    --bg-card: #ffffff;
+    --r-sm: 8px;
+    --r-md: 12px;
+    --r-lg: 16px;
+    --r-xl: 20px;
+    --r-full: 9999px;
+    --sh-sm: 0 1px 3px rgba(0,0,0,.06);
+    --sh-md: 0 4px 12px rgba(0,0,0,.08);
+    --sh-lg: 0 12px 32px rgba(0,0,0,.10);
+    --ease: 200ms ease;
+}
+
+/* ── Page ── */
+.trn-page {
+    min-height: 100vh;
+    background: var(--bg-page);
+    padding: 2rem;
+}
+
+.trn-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* ── Header ── */
+.trn-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    animation: fadeDown .45s ease;
+}
+
+@keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.trn-header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.trn-header-icon {
+    width: 52px; height: 52px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    border-radius: var(--r-lg);
+    display: flex; align-items: center; justify-content: center;
+    color: white;
+    font-size: 1.4rem;
+    box-shadow: 0 6px 18px var(--primary-glow);
+    flex-shrink: 0;
+}
+
+.trn-header-title {
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: var(--text-1);
+    margin: 0 0 3px;
+    letter-spacing: -.025em;
+}
+
+.trn-header-sub {
+    font-size: .8rem;
+    color: var(--text-3);
+    margin: 0;
+}
+
+.btn-new-transfer {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 22px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    border: none;
+    border-radius: var(--r-lg);
+    font-size: .875rem;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all var(--ease);
+    box-shadow: 0 4px 14px var(--primary-glow);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-new-transfer::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.15), transparent);
+    transition: left .5s;
+}
+
+.btn-new-transfer:hover::before { left: 100%; }
+
+.btn-new-transfer:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px var(--primary-glow);
+    color: white;
+}
+
+/* ── Stats Row ── */
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    margin-bottom: 1.5rem;
+    animation: fadeUp .45s .05s ease both;
+}
+
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.stat-pill {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: var(--sh-sm);
+    transition: all var(--ease);
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-pill::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+}
+
+.stat-pill.sp-total::before   { background: linear-gradient(90deg, var(--primary), #818cf8); }
+.stat-pill.sp-in::before      { background: linear-gradient(90deg, var(--success), #34d399); }
+.stat-pill.sp-out::before     { background: linear-gradient(90deg, var(--danger), #f87171); }
+.stat-pill.sp-volume::before  { background: linear-gradient(90deg, var(--warning), #fbbf24); }
+
+.stat-pill:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--sh-md);
+}
+
+.stat-pill-icon {
+    width: 38px; height: 38px;
+    border-radius: var(--r-md);
+    display: flex; align-items: center; justify-content: center;
+    font-size: .95rem;
+    flex-shrink: 0;
+}
+
+.sp-total .stat-pill-icon  { background: var(--primary-light);    color: var(--primary); }
+.sp-in .stat-pill-icon     { background: var(--success-bg);       color: var(--success); }
+.sp-out .stat-pill-icon    { background: var(--danger-bg);        color: var(--danger); }
+.sp-volume .stat-pill-icon { background: rgba(245,158,11,.1);     color: var(--warning); }
+
+.stat-pill-info { flex: 1; }
+
+.stat-pill-label {
+    font-size: .62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--text-3);
+    margin-bottom: 2px;
+}
+
+.stat-pill-value {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--text-1);
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+}
+
+/* ── Filter Card ── */
+.filter-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--r-xl);
+    box-shadow: var(--sh-sm);
+    margin-bottom: 1.25rem;
+    animation: fadeUp .45s .1s ease both;
+}
+
+.filter-card-body {
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.filter-search-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+}
+
+.filter-search-icon {
+    position: absolute;
+    left: 12px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-3);
+    font-size: .85rem;
+    pointer-events: none;
+}
+
+.filter-search-input {
+    width: 100%;
+    padding: 9px 12px 9px 36px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--r-md);
+    font-size: .82rem;
+    font-weight: 500;
+    color: var(--text-1);
+    background: var(--bg-page);
+    transition: all var(--ease);
+    font-family: inherit;
+}
+
+.filter-search-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: white;
+    box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.filter-search-input::placeholder { color: var(--text-3); }
+
+/* Bank filter group */
+.bank-filter-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+}
+
+.bank-filter-select {
+    padding: 9px 32px 9px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--r-md);
+    font-size: .78rem;
+    font-weight: 600;
+    color: var(--text-1);
+    background: var(--bg-page);
+    appearance: none;
+    cursor: pointer;
+    transition: all var(--ease);
+    font-family: inherit;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    min-width: 140px;
+}
+
+.bank-filter-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.bank-filter-select.from { border-left: 3px solid var(--danger); }
+.bank-filter-select.to   { border-left: 3px solid var(--success); }
+
+.bank-arrow-sep {
+    width: 30px; height: 30px;
+    background: var(--primary);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: white;
+    font-size: .75rem;
+    flex-shrink: 0;
+}
+
+.filter-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.btn-apply {
+    padding: 9px 18px;
+    background: var(--text-1);
+    color: white;
+    border: none;
+    border-radius: var(--r-md);
+    font-size: .78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all var(--ease);
+    white-space: nowrap;
+    font-family: inherit;
+}
+
+.btn-apply:hover { background: #1e293b; transform: translateY(-1px); }
+
+.btn-reset {
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: var(--r-md);
+    color: var(--text-3);
+    text-decoration: none;
+    font-size: .85rem;
+    transition: all var(--ease);
+    flex-shrink: 0;
+}
+
+.btn-reset:hover {
+    border-color: var(--danger);
+    color: var(--danger);
+    background: var(--danger-bg);
+}
+
+/* ── Table Card ── */
+.table-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--r-xl);
+    box-shadow: var(--sh-md);
+    overflow: hidden;
+    animation: fadeUp .45s .15s ease both;
+}
+
+.table-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-page);
+}
+
+.table-card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: .85rem;
+    font-weight: 700;
+    color: var(--text-1);
+}
+
+.table-card-title i { color: var(--primary); }
+
+.count-badge {
+    padding: 3px 10px;
+    background: var(--primary-light);
+    color: var(--primary);
+    border-radius: var(--r-full);
+    font-size: .68rem;
+    font-weight: 700;
+}
+
+.live-dot-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: .72rem;
+    font-weight: 600;
+    color: var(--success);
+}
+
+.live-dot {
+    width: 7px; height: 7px;
+    background: var(--success);
+    border-radius: 50%;
+    animation: livePulse 2s infinite;
+}
+
+@keyframes livePulse {
+    0%,100% { opacity:1; transform:scale(1); }
+    50%      { opacity:.5; transform:scale(1.3); }
+}
+
+/* Table */
+.trn-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .84rem;
+}
+
+.trn-table thead th {
+    background: var(--bg-page);
+    padding: 11px 18px;
+    font-size: .64rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--text-3);
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    white-space: nowrap;
+}
+
+.trn-table thead th.text-center { text-align: center; }
+.trn-table thead th.text-end    { text-align: right; }
+
+.trn-table tbody tr {
+    border-bottom: 1px solid #f1f5f9;
+    transition: background var(--ease);
+}
+
+.trn-table tbody tr:hover { background: #fafcff; }
+.trn-table tbody tr:last-child { border-bottom: none; }
+
+.trn-table tbody td {
+    padding: 14px 18px;
+    vertical-align: middle;
+}
+
+/* Date cell */
+.td-date {}
+
+.date-main {
+    font-size: .84rem;
+    font-weight: 700;
+    color: var(--text-1);
+}
+
+.date-ref {
+    font-size: .65rem;
+    font-weight: 600;
+    color: var(--text-3);
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 2px;
+}
+
+/* Direction cell */
+.direction-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.bank-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: var(--r-md);
+    font-size: .75rem;
+    font-weight: 700;
+    white-space: nowrap;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bank-tag.from-tag {
+    background: var(--danger-bg);
+    color: var(--danger);
+    border: 1px solid var(--danger-bd);
+}
+
+.bank-tag.to-tag {
+    background: var(--success-bg);
+    color: var(--success);
+    border: 1px solid var(--success-bd);
+}
+
+.bank-tag i { font-size: .7rem; flex-shrink: 0; }
+
+.dir-arrow {
+    width: 28px; height: 28px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: white;
+    font-size: .7rem;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px var(--primary-glow);
+}
+
+/* Description cell */
+.td-desc {
+    max-width: 200px;
+}
+
+.desc-text {
+    font-size: .78rem;
+    color: var(--text-2);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 180px;
+}
+
+.desc-empty {
+    font-size: .72rem;
+    color: var(--text-3);
+    font-style: italic;
+}
+
+/* Amount cell */
+.td-amount { text-align: right; }
+
+.amount-main {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--text-1);
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+}
+
+/* Actions cell */
+.td-actions { text-align: center; }
+
+.action-btn {
+    width: 34px; height: 34px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1.5px solid var(--border);
+    border-radius: var(--r-md);
+    background: white;
+    color: var(--text-3);
+    cursor: pointer;
+    transition: all var(--ease);
+    text-decoration: none;
+    font-size: .85rem;
+}
+
+.action-btn:hover {
+    background: var(--danger-bg);
+    border-color: var(--danger);
+    color: var(--danger);
+    transform: scale(1.08);
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+}
+
+.empty-icon {
+    width: 72px; height: 72px;
+    background: var(--bg-page);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 18px;
+    font-size: 1.75rem;
+    color: var(--text-3);
+    border: 2px dashed var(--border);
+}
+
+.empty-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-1);
+    margin: 0 0 6px;
+}
+
+.empty-desc {
+    font-size: .82rem;
+    color: var(--text-3);
+    margin: 0 0 18px;
+}
+
+.btn-empty-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    background: var(--primary);
+    color: white;
+    border-radius: var(--r-full);
+    font-size: .82rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all var(--ease);
+}
+
+.btn-empty-cta:hover { background: var(--primary-dark); color: white; transform: translateY(-1px); }
+
+/* Responsive */
+@media (max-width: 992px) {
+    .trn-page { padding: 1rem; }
+    .trn-header { flex-direction: column; align-items: flex-start; }
+    .filter-card-body { flex-direction: column; align-items: stretch; }
+    .bank-filter-group { flex-wrap: wrap; }
+    .filter-actions { justify-content: flex-end; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 576px) {
+    .stats-row { grid-template-columns: 1fr; }
+    .bank-tag { max-width: 100px; }
+}
+
+/* Scrollbar */
+.table-scroll::-webkit-scrollbar { height: 5px; }
+.table-scroll::-webkit-scrollbar-track { background: transparent; }
+.table-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+</style>
+
+<div class="trn-page">
+<div class="trn-container">
+
+    <!-- Header -->
+    <div class="trn-header">
+        <div class="trn-header-left">
+            <div class="trn-header-icon">
+                <i class="bi bi-arrow-left-right"></i>
+            </div>
+            <div>
+                <h1 class="trn-header-title">Bank Transfers</h1>
+                <p class="trn-header-sub">Track and manage internal liquidity movement</p>
+            </div>
         </div>
-        <a href="{% url 'transfer_create' %}" class="btn btn-primary rounded-3 px-4 shadow-sm fw-bold">
-            <i class="bi bi-plus-lg me-2"></i> New Transfer
+        <a href="{% url 'transfer_create' %}" class="btn-new-transfer">
+            <i class="bi bi-plus-lg"></i>
+            New Transfer
         </a>
     </div>
 
-    <div class="card border-0 shadow-sm rounded-4 mb-4">
-        <div class="card-body p-3">
-            <form method="GET" class="row g-2 align-items-center">
-                <div class="col-md-4">
-                    <div class="input-group">
-                        <span class="input-group-text bg-transparent border-end-0 text-muted">
-                            <i class="bi bi-search"></i>
-                        </span>
-                        <input type="text" name="q" class="form-control border-start-0 ps-0" placeholder="Search by amount or notes...">
+    <!-- Stats -->
+    <div class="stats-row">
+        <div class="stat-pill sp-total">
+            <div class="stat-pill-icon"><i class="bi bi-arrow-left-right"></i></div>
+            <div class="stat-pill-info">
+                <div class="stat-pill-label">Total Transfers</div>
+                <div class="stat-pill-value">{{ transfers|length }}</div>
+            </div>
+        </div>
+        <div class="stat-pill sp-volume">
+            <div class="stat-pill-icon"><i class="bi bi-cash-stack"></i></div>
+            <div class="stat-pill-info">
+                <div class="stat-pill-label">Total Volume</div>
+                <div class="stat-pill-value" id="statVolume">
+                    ₹{% for t in transfers %}{% if forloop.first %}—{% endif %}{% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="stat-pill sp-in">
+            <div class="stat-pill-icon"><i class="bi bi-bank2"></i></div>
+            <div class="stat-pill-info">
+                <div class="stat-pill-label">Banks Active</div>
+                <div class="stat-pill-value">{{ banks|length }}</div>
+            </div>
+        </div>
+        <div class="stat-pill sp-out">
+            <div class="stat-pill-icon"><i class="bi bi-calendar3"></i></div>
+            <div class="stat-pill-info">
+                <div class="stat-pill-label">Latest Transfer</div>
+                <div class="stat-pill-value" style="font-size:.78rem;">
+                    {% if transfers %}{{ transfers.0.transfer_date|date:"d M Y" }}{% else %}—{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="filter-card">
+        <div class="filter-card-body">
+            <form method="GET" id="filterForm" style="display:contents;">
+
+                <!-- Search -->
+                <div class="filter-search-wrap">
+                    <i class="bi bi-search filter-search-icon"></i>
+                    <input type="text" name="q" class="filter-search-input"
+                           placeholder="Search by amount or notes..."
+                           value="{{ request.GET.q|default:'' }}">
+                </div>
+
+                <!-- Bank Filter Group -->
+                <div class="bank-filter-group">
+                    <select name="from_bank" id="fromBankFilter" class="bank-filter-select from">
+                        <option value="">↑ From: All Banks</option>
+                        {% for b in banks %}
+                        <option value="{{ b.id }}"
+                            {% if request.GET.from_bank == b.id|stringformat:"s" %}selected{% endif %}>
+                            {{ b.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+
+                    <div class="bank-arrow-sep">
+                        <i class="bi bi-arrow-right"></i>
                     </div>
-                </div>
 
-                <div class="col-md-2">
-                    <select name="from_bank" class="form-select border-danger bg-light bg-opacity-50">
-                        <option value="">From: All Banks</option>
+                    <select name="to_bank" id="toBankFilter" class="bank-filter-select to">
+                        <option value="">↓ To: All Banks</option>
                         {% for b in banks %}
-                        <option value="{{ b.id }}" {% if request.GET.from_bank == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
+                        <option value="{{ b.id }}"
+                            {% if request.GET.to_bank == b.id|stringformat:"s" %}selected{% endif %}>
+                            {{ b.name }}
+                        </option>
                         {% endfor %}
                     </select>
                 </div>
 
-                <div class="col-md-1 text-center d-none d-md-block bg-primary  rounded-3 ">
-                    <i class="bi bi-arrow-right text-white"></i>
-                </div>
-
-                <div class="col-md-2">
-                    <select name="to_bank" class="form-select border-success bg-light bg-opacity-50">
-                        <option value="">To: All Banks</option>
-                        {% for b in banks %}
-                        <option value="{{ b.id }}" {% if request.GET.to_bank == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="col-md-3 d-flex gap-2">
-                    <button type="submit" class="btn btn-dark w-100 rounded-3">Apply Filters</button>
-                    <a href="{% url 'transfer_list' %}" class="btn btn-outline-secondary rounded-3" title="Reset">
+                <!-- Actions -->
+                <div class="filter-actions">
+                    <button type="submit" class="btn-apply">
+                        <i class="bi bi-funnel me-1"></i> Apply
+                    </button>
+                    <a href="{% url 'transfer_list' %}" class="btn-reset" title="Reset filters">
                         <i class="bi bi-arrow-counterclockwise"></i>
                     </a>
                 </div>
@@ -58,63 +736,101 @@
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="bg-light" style="position: sticky; top: 0; z-index: 10;">
+    <!-- Table Card -->
+    <div class="table-card">
+        <div class="table-card-header">
+            <div class="table-card-title">
+                <i class="bi bi-list-ul"></i>
+                Transfer Records
+                <span class="count-badge">{{ transfers|length }} entries</span>
+            </div>
+            <div class="live-dot-wrap">
+                <span class="live-dot"></span>
+                <span>Live</span>
+            </div>
+        </div>
+
+        <div class="table-scroll" style="overflow-x:auto;">
+            <table class="trn-table">
+                <thead>
                     <tr>
-                        <th class="ps-4 py-3 text-uppercase small fw-bold text-muted">Date</th>
-                        <th class="py-3 text-uppercase small fw-bold text-muted text-center">Transfer Direction</th>
-                        <th class="py-3 text-uppercase small fw-bold text-muted text-end">Amount</th>
-                        <th class="py-3 text-center text-uppercase small fw-bold text-muted">Actions</th>
+                        <th>Date</th>
+                        <th class="text-center">Transfer Route</th>
+                        <th>Description</th>
+                        <th class="text-end">Amount</th>
+                        <th class="text-center">Action</th>
                     </tr>
                 </thead>
-
                 <tbody>
                     {% for t in transfers %}
-                    <tr>
-                        <td class="ps-4">
-                            <div class="fw-bold text-dark">{{ t.transfer_date|date:"d M, Y" }}</div>
-                            <div class="text-muted small">Ref: #TRN-{{ t.id }}</div>
+                    <tr class="trn-row"
+                        data-amount="{{ t.amount }}"
+                        data-from="{{ t.from_bank.name|lower }}"
+                        data-to="{{ t.to_bank.name|lower }}"
+                        data-desc="{{ t.description|lower|default:'' }}">
+
+                        <!-- Date -->
+                        <td class="td-date">
+                            <div class="date-main">{{ t.transfer_date|date:"d M, Y" }}</div>
+                            <div class="date-ref">#TRN-{{ t.id|stringformat:"04d" }}</div>
                         </td>
-                        <td>
-                            <div class="d-flex align-items-center justify-content-center gap-3">
-                                <div class="text-end">
-                                    <span class="badge bg-danger bg-opacity-10 text-danger px-2 py-1 rounded-2 fw-medium">
-                                        {{ t.from_bank.name }}
-                                    </span>
+
+                        <!-- Direction -->
+                        <td style="text-align:center;">
+                            <div class="direction-cell">
+                                <div class="bank-tag from-tag">
+                                    <i class="bi bi-box-arrow-up"></i>
+                                    {{ t.from_bank.name }}
                                 </div>
-                                <div class="transfer-arrow px-2">
-                                    <i class="bi bi-arrow-right-circle-fill text-primary fs-5"></i>
+                                <div class="dir-arrow">
+                                    <i class="bi bi-arrow-right"></i>
                                 </div>
-                                <div class="text-start">
-                                    <span class="badge bg-success bg-opacity-10 text-success px-2 py-1 rounded-2 fw-medium">
-                                        {{ t.to_bank.name }}
-                                    </span>
+                                <div class="bank-tag to-tag">
+                                    <i class="bi bi-box-arrow-in-down"></i>
+                                    {{ t.to_bank.name }}
                                 </div>
                             </div>
                         </td>
-                        <td class="text-end pe-4">
-                            <span class="fw-black text-dark fs-6">₹{{ t.amount }}</span>
-                        </td>
-                        <td class="text-center pe-4">
-                            <div class="dropdown">
-                                <button class="btn btn-light btn-sm rounded-pill shadow-none" data-bs-toggle="dropdown">
-                                    <i class="bi bi-three-dots-vertical"></i>
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-3">
-                                    <li><a class="dropdown-item py-2 text-danger fw-bold" href="{% url 'transfer_delete' t.id %}">
-                                        <i class="bi bi-trash3 me-2"></i> Delete Record
-                                    </a></li>
-                                </ul>
+
+                        <!-- Description -->
+                        <td class="td-desc">
+                            {% if t.description %}
+                            <div class="desc-text" title="{{ t.description }}">
+                                {{ t.description|truncatechars:60 }}
                             </div>
+                            {% else %}
+                            <span class="desc-empty">No note added</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Amount -->
+                        <td class="td-amount">
+                            <span class="amount-main">₹{{ t.amount|floatformat:0 }}</span>
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="td-actions">
+                            <a href="{% url 'transfer_delete' t.id %}"
+                               class="action-btn"
+                               title="Delete transfer"
+                               onclick="return confirm('Delete this transfer?')">
+                                <i class="bi bi-trash3"></i>
+                            </a>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="text-center py-5">
-                            <i class="bi bi-inbox fs-1 text-muted opacity-25"></i>
-                            <p class="text-muted mt-2">No bank transfers found.</p>
+                        <td colspan="5">
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="bi bi-arrow-left-right"></i>
+                                </div>
+                                <h4 class="empty-title">No transfers found</h4>
+                                <p class="empty-desc">No bank transfers match your filters or have been created yet.</p>
+                                <a href="{% url 'transfer_create' %}" class="btn-empty-cta">
+                                    <i class="bi bi-plus-lg"></i> Create First Transfer
+                                </a>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -122,97 +838,74 @@
             </table>
         </div>
     </div>
+
+</div>
 </div>
 
-
-
 <script>
+document.addEventListener('DOMContentLoaded', function () {
 
-const fromSelect = document.querySelector('[name="from_bank"]')
-const toSelect = document.querySelector('[name="to_bank"]')
+    // ── Prevent same bank selection ──
+    const fromFilter = document.getElementById('fromBankFilter');
+    const toFilter   = document.getElementById('toBankFilter');
 
-function preventSameBank(){
+    function preventSameBank() {
+        const fv = fromFilter.value;
+        const tv = toFilter.value;
 
-    const fromVal = fromSelect.value
-    const toVal = toSelect.value
+        [...fromFilter.options].forEach(o => o.disabled = false);
+        [...toFilter.options].forEach(o => o.disabled = false);
 
-    // Reset disabled options first
-    Array.from(toSelect.options).forEach(opt => opt.disabled = false)
-    Array.from(fromSelect.options).forEach(opt => opt.disabled = false)
+        if (fv) { const o = toFilter.querySelector(`option[value="${fv}"]`); if (o) o.disabled = true; }
+        if (tv) { const o = fromFilter.querySelector(`option[value="${tv}"]`); if (o) o.disabled = true; }
 
-    if(fromVal){
-        // Disable same option in TO
-        const opt = toSelect.querySelector(`option[value="${fromVal}"]`)
-        if(opt) opt.disabled = true
+        if (fv && tv && fv === tv) {
+            toFilter.value = '';
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    toast: true, position: 'top-end',
+                    icon: 'warning', title: 'Same bank not allowed',
+                    showConfirmButton: false, timer: 2000
+                });
+            }
+        }
     }
 
-    if(toVal){
-        // Disable same option in FROM
-        const opt = fromSelect.querySelector(`option[value="${toVal}"]`)
-        if(opt) opt.disabled = true
+    fromFilter?.addEventListener('change', preventSameBank);
+    toFilter?.addEventListener('change', preventSameBank);
+    preventSameBank();
+
+    // ── Compute total volume from rows ──
+    const volEl = document.getElementById('statVolume');
+    if (volEl) {
+        let total = 0;
+        document.querySelectorAll('.trn-row').forEach(row => {
+            total += parseFloat(row.dataset.amount || 0);
+        });
+        volEl.textContent = total > 0
+            ? '₹' + total.toLocaleString('en-IN', { maximumFractionDigits: 0 })
+            : '₹0';
     }
 
-    // 🚨 If both selected same (manual case)
-    if(fromVal && toVal && fromVal === toVal){
+    // ── Animate rows ──
+    document.querySelectorAll('.trn-row').forEach((row, i) => {
+        row.style.opacity = '0';
+        row.style.transform = 'translateY(6px)';
+        row.style.transition = `opacity .25s ease ${i * 30}ms, transform .25s ease ${i * 30}ms`;
+        setTimeout(() => {
+            row.style.opacity = '1';
+            row.style.transform = 'translateY(0)';
+        }, 80);
+    });
 
-        // Reset TO selection
-        toSelect.value = ""
-
-        // Sweet alert
-        Swal.fire({
-            toast: true,
-            position: 'top-end',
-            icon: 'warning',
-            title: 'Same bank not allowed',
-            text: 'Please select different banks',
-            showConfirmButton: false,
-            timer: 2500
-        })
-    }
-}
-
-// Event listeners
-fromSelect.addEventListener("change", preventSameBank)
-toSelect.addEventListener("change", preventSameBank)
-
-// Run once on load (for prefilled values)
-document.addEventListener("DOMContentLoaded", preventSameBank)
-
+    // ── Keyboard shortcut ──
+    document.addEventListener('keydown', e => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            document.querySelector('.filter-search-input')?.focus();
+        }
+    });
+});
 </script>
 
-
-
-<style>
-    .fw-black { font-weight: 900; }
-    
-    .table thead th {
-        border-bottom: none;
-        letter-spacing: 0.05rem;
-    }
-
-    .transfer-arrow {
-        position: relative;
-        z-index: 1;
-    }
-
-    .transfer-arrow::after {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: -10px;
-        right: -10px;
-        height: 1px;
-        background: #e2e8f0;
-        z-index: -1;
-    }
-
-    .dropdown-item:active {
-        background-color: #ef4444;
-    }
-
-    .form-control:focus, .form-select:focus {
-        border-color: #4361ee;
-        box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.1);
-    }
-</style>
 {% endblock %}

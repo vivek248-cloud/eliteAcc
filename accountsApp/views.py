@@ -1038,7 +1038,7 @@ def clear_alerts(request):
 
 # accountsApp/views.py
 
-from datetime import timedelta
+from datetime import date, timedelta
 
 
 
@@ -1609,11 +1609,15 @@ def client_create(request):
         # ACTIVITY LOG
         # =====================================================
 
-        ActivityLog.objects.create(
+        log_activity(
 
-            action="Created Client",
+    request=request,
 
-            description=f"""
+    action="Created Client",
+
+    action_type='Created',
+
+    description=f"""
 Client Created Successfully
 
 Client:
@@ -1627,11 +1631,8 @@ Rs. {client.budget}
 
 Company:
 {company.name}
-
-Created By:
-{request.user.username}
 """
-        )
+)
 
         # =====================================================
         # SUCCESS MESSAGE
@@ -1862,38 +1863,38 @@ def client_update(request, pk):
         # =====================================================
         # ACTIVITY LOG
         # =====================================================
+        log_activity(
 
-        ActivityLog.objects.create(
+            request=request,
 
             action="Updated Client",
 
+            action_type='Updated',
+
             description=f"""
-Client Updated Successfully
+        Client Updated Successfully
 
-Old Name:
-{old_name}
+        Old Name:
+        {old_name}
 
-New Name:
-{client.name}
+        New Name:
+        {client.name}
 
-Old Location:
-{old_location or 'N/A'}
+        Old Location:
+        {old_location or 'N/A'}
 
-New Location:
-{client.location or 'N/A'}
+        New Location:
+        {client.location or 'N/A'}
 
-Old Budget:
-Rs. {old_budget}
+        Old Budget:
+        Rs. {old_budget}
 
-New Budget:
-Rs. {client.budget}
+        New Budget:
+        Rs. {client.budget}
 
-Company:
-{company.name}
-
-Updated By:
-{request.user.username}
-"""
+        Company:
+        {company.name}
+        """
         )
 
         # =====================================================
@@ -1965,11 +1966,15 @@ def client_delete(request, pk):
         # ACTIVITY LOG
         # =========================================
 
-        ActivityLog.objects.create(
+        log_activity(
 
-            action="Deleted Client",
+    request=request,
 
-            description=f"""
+    action="Deleted Client",
+
+    action_type='Deleted',
+
+    description=f"""
 Client Deleted Successfully
 
 Client:
@@ -1983,12 +1988,8 @@ Rs. {client.budget}
 
 Company:
 {client.company.name}
-
-Deleted By:
-{request.user.username}
 """
-        )
-
+)
         # =========================================
         # DELETE CLIENT
         # =========================================
@@ -3762,30 +3763,34 @@ def bank_create(request):
         # =====================================================
         # ACTIVITY LOG
         # =====================================================
-
-        ActivityLog.objects.create(
-
-            action="Created Bank",
-
-            description=f"""
-Bank Created Successfully
-
-Bank Name:
-{bank.name}
-
-Opening Balance:
-Rs. {bank.opening_balance}
-
-Available Balance:
-Rs. {bank.available_balance}
-
-Company ID:
-{selected_company_id}
-
-Created By:
-{request.user.username}
-"""
+        company = Company.objects.get(
+            id=selected_company_id
         )
+
+        log_activity(
+
+        request=request,
+
+        action="Created Bank",
+
+        action_type='Created',
+
+        description=f"""
+    Bank Created Successfully
+
+    Bank Name:
+    {bank.name}
+
+    Opening Balance:
+    Rs. {bank.opening_balance}
+
+    Available Balance:
+    Rs. {bank.available_balance}
+
+    Company name:
+    {company.name}
+    """
+    )
 
         # =====================================================
         # SUCCESS MESSAGE
@@ -3810,54 +3815,6 @@ Created By:
 
 
 
-# from django.shortcuts import get_object_or_404
-
-
-# def bank_update(request, pk):
-
-#     selected_company_id = request.session.get('selected_company_id')
-
-#     if not selected_company_id:
-#         return redirect('dashboard')
-
-#     # 🔐 Ensure bank belongs to selected company
-#     bank = get_object_or_404(
-#         Bank,
-#         pk=pk,
-#         company_id=selected_company_id
-#     )
-
-#     if request.method == 'POST':
-
-#         name = request.POST.get('name', '').strip()
-#         opening_balance = Decimal(request.POST.get('opening_balance') or 0)
-
-#         if not name:
-#             messages.error(request, "Bank name is required.")
-#             return redirect('bank_update', pk=bank.id)
-
-#         # 🔐 Prevent duplicate rename
-#         if Bank.objects.filter(
-#             company_id=selected_company_id,
-#             name__iexact=name,
-#             is_active=True
-#         ).exclude(id=bank.id).exists():
-#             messages.error(request, "Another bank with this name already exists.")
-#             return redirect('bank_update', pk=bank.id)
-
-#         bank.name = name
-#         bank.opening_balance = opening_balance
-#         bank.save(update_fields=['name', 'opening_balance'])
-
-#         # 🔁 Always recalc after updating opening balance
-#         bank.recalculate_balance()
-
-#         messages.success(request, "Bank updated successfully.")
-#         return redirect('bank_index')
-
-#     return render(request, 'bank/update.html', {
-#         'bank': bank
-#     })
 
 from django.shortcuts import get_object_or_404
 
@@ -3968,39 +3925,43 @@ def bank_update(request, pk):
         # =====================================================
         # ACTIVITY LOG
         # =====================================================
-
-        ActivityLog.objects.create(
-
-            action="Updated Bank",
-
-            description=f"""
-Bank Updated Successfully
-
-Old Bank Name:
-{old_name}
-
-New Bank Name:
-{bank.name}
-
-Old Opening Balance:
-Rs. {old_opening_balance}
-
-New Opening Balance:
-Rs. {bank.opening_balance}
-
-Old Available Balance:
-Rs. {old_available_balance}
-
-New Available Balance:
-Rs. {bank.available_balance}
-
-Company ID:
-{selected_company_id}
-
-Updated By:
-{request.user.username}
-"""
+        company = Company.objects.get(
+            id=selected_company_id
         )
+                
+        log_activity(
+
+        request=request,
+
+        action="Updated Bank",
+
+        action_type='Updated',
+
+        description=f"""
+    Bank Updated Successfully
+
+    Old Bank Name:
+    {old_name}
+
+    New Bank Name:
+    {bank.name}
+
+    Old Opening Balance:
+    Rs. {old_opening_balance}
+
+    New Opening Balance:
+    Rs. {bank.opening_balance}
+
+    Old Available Balance:
+    Rs. {old_available_balance}
+
+    New Available Balance:
+    Rs. {bank.available_balance}
+
+    Company:
+    {company.name}
+    """
+    )
 
         # =====================================================
         # SUCCESS MESSAGE
@@ -4067,29 +4028,35 @@ def bank_delete(request, pk):
         # ACTIVITY LOG
         # =====================================================
 
-        ActivityLog.objects.create(
-
-            action="Deleted Bank",
-
-            description=f"""
-Bank Deleted Successfully
-
-Bank Name:
-{bank_name}
-
-Opening Balance:
-Rs. {opening_balance}
-
-Available Balance:
-Rs. {available_balance}
-
-Company ID:
-{selected_company_id}
-
-Deleted By:
-{request.user.username}
-"""
+        company = Company.objects.get(
+            id=selected_company_id
         )
+
+        log_activity(
+
+        request=request,
+
+        action="Deleted Bank",
+
+        action_type='Deleted',
+
+        description=f"""
+    Bank Deleted Successfully
+
+    Bank Name:
+    {bank_name}
+
+    Opening Balance:
+    Rs. {opening_balance}
+
+    Available Balance:
+    Rs. {available_balance}
+
+    Company:
+    {company.name}
+    """
+    )
+        
 
         # =====================================================
         # DELETE BANK
@@ -4820,81 +4787,6 @@ def transfer_list(request):
 
 
 
-# def transfer_create(request):
-
-#     selected_company_id = request.session.get('selected_company_id')
-#     if not selected_company_id:
-#         return redirect('dashboard')
-
-#     banks = Bank.objects.filter(company_id=selected_company_id,is_active=True)
-
-#     if request.method == 'POST':
-
-#         from_bank_id = request.POST.get('from_bank')
-#         to_bank_id = request.POST.get('to_bank')
-#         transfer_date = request.POST.get('transfer_date')
-#         amount_raw = request.POST.get('amount')
-
-#         # =========================
-#         # 🔐 VALIDATION
-#         # =========================
-#         if not amount_raw:
-#             messages.error(request, "Amount is required")
-#             return redirect('transfer_create')
-
-#         try:
-#             amount = Decimal(str(amount_raw).replace(',', '').strip())
-#         except:
-#             messages.error(request, "Invalid amount format")
-#             return redirect('transfer_create')
-
-#         if amount <= 0:
-#             messages.error(request, "Amount must be greater than zero")
-#             return redirect('transfer_create')
-
-#         from_bank = banks.filter(id=from_bank_id).first()
-#         to_bank = banks.filter(id=to_bank_id).first()
-
-#         if not from_bank or not to_bank:
-#             messages.error(request, "Invalid bank selection")
-#             return redirect('transfer_create')
-
-#         if from_bank.id == to_bank.id:
-#             messages.error(request, "Cannot transfer to the same bank")
-#             return redirect('transfer_create')
-
-#         # 🚨 OPTIONAL: Prevent overdraft
-#         if from_bank.available_balance < amount:
-#             messages.error(
-#                 request,
-#                 f"Insufficient balance in {from_bank.name}"
-#             )
-#             return redirect('transfer_create')
-
-#         # =========================
-#         # 💾 SAVE TRANSFER
-#         # =========================
-#         with transaction.atomic():
-
-#             BankTransfer.objects.create(
-#                 from_bank=from_bank,
-#                 to_bank=to_bank,
-#                 amount=amount,
-#                 transfer_date=transfer_date
-#             )
-
-#             # ✅ ONLY recalculate (NO manual +/-)
-#             from_bank.recalculate_balance()
-#             to_bank.recalculate_balance()
-
-#         messages.success(request, "Transfer created successfully")
-#         return redirect('transfer_list')
-
-#     return render(request, 'transfer/create.html', {
-#         'banks': banks
-#     })
-
-
 
 from decimal import Decimal
 from django.db import transaction
@@ -4907,6 +4799,10 @@ from .models import (
     BankTransfer,
     ActivityLog
 )
+
+
+
+
 
 
 @login_required(login_url='login')
@@ -4942,9 +4838,19 @@ def transfer_create(request):
 
         to_bank_id = request.POST.get('to_bank')
 
-        transfer_date = request.POST.get('transfer_date')
+        # ✅ NEW DESCRIPTION FIELD
+        description = request.POST.get(
+            'description',
+            ''
+        ).strip()
 
-        amount_raw = request.POST.get('amount')
+        transfer_date = request.POST.get(
+            'transfer_date'
+        )
+
+        amount_raw = request.POST.get(
+            'amount'
+        )
 
         # =====================================================
         # VALIDATION
@@ -5046,6 +4952,9 @@ def transfer_create(request):
 
                 amount=amount,
 
+                # ✅ SAVE DESCRIPTION
+                description=description,
+
                 transfer_date=transfer_date
             )
 
@@ -5053,25 +4962,34 @@ def transfer_create(request):
             # RECALCULATE BALANCES
             # =====================================================
 
-            from_bank.recalculate_balance()
+            recalculate_banks(
+                from_bank,
+                to_bank
+            )
 
-            to_bank.recalculate_balance()
-
-            # Refresh balances
+            # Refresh latest balances
             from_bank.refresh_from_db()
 
             to_bank.refresh_from_db()
+
 
             # =====================================================
             # ACTIVITY LOG
             # =====================================================
 
-            ActivityLog.objects.create(
+            log_activity(
 
-                action="Created Bank Transfer",
+    request=request,
 
-                description=f"""
+    action="Created Bank Transfer",
+
+    action_type='Created',
+
+    description=f"""
 Bank Transfer Created Successfully
+
+Transfer ID:
+{transfer.id}
 
 From Bank:
 {from_bank.name}
@@ -5082,6 +5000,9 @@ To Bank:
 Transfer Amount:
 Rs. {amount}
 
+Transfer Note:
+{description or 'N/A'}
+
 Transfer Date:
 {transfer_date}
 
@@ -5091,13 +5012,12 @@ Rs. {from_bank.available_balance}
 To Bank Balance After Transfer:
 Rs. {to_bank.available_balance}
 
-Transfer ID:
-{transfer.id}
-
-Created By:
-{request.user.username}
+Company:
+{from_bank.company.name}
 """
-            )
+)
+            
+
 
         # =====================================================
         # SUCCESS MESSAGE
@@ -5118,46 +5038,12 @@ Created By:
         request,
         'transfer/create.html',
         {
+            'today_date': timezone.now().date().strftime('%Y-%m-%d'),
             'banks': banks
         }
     )
 
 
-
-# def transfer_delete(request, pk):
-
-#     selected_company_id = request.session.get('selected_company_id')
-
-#     transfer = get_object_or_404(
-#         BankTransfer,
-#         pk=pk,
-#         from_bank__company_id=selected_company_id
-#     )
-
-#     if request.method == 'POST':
-
-#         with transaction.atomic():
-
-#             from_bank = transfer.from_bank
-#             to_bank = transfer.to_bank
-#             amount = transfer.amount
-
-#             # 🔁 REVERSE TRANSFER EFFECT (IMPORTANT)
-#             from_bank.available_balance += amount
-#             to_bank.available_balance -= amount
-
-#             from_bank.save(update_fields=['available_balance'])
-#             to_bank.save(update_fields=['available_balance'])
-
-#             transfer.delete()
-
-#         messages.success(request, "Transfer deleted successfully")
-#         return redirect('transfer_list')
-
-#     # 👉 GET → show confirm page
-#     return render(request, 'transfer/delete.html', {
-#         'transfer': transfer
-#     })
 
 
 
@@ -5176,7 +5062,7 @@ def transfer_delete(request, pk):
         return redirect('dashboard')
 
     # =====================================================
-    # FETCH TRANSFER FROM COMPANY
+    # FETCH TRANSFER
     # =====================================================
 
     transfer = get_object_or_404(
@@ -5204,69 +5090,17 @@ def transfer_delete(request, pk):
 
             transfer_date = transfer.transfer_date
 
-            # Store balances before delete
+            description = transfer.description
+
+            transfer_id = transfer.id
+
+            # =====================================================
+            # STORE OLD BALANCES
+            # =====================================================
+
             old_from_balance = from_bank.available_balance
+
             old_to_balance = to_bank.available_balance
-
-            # =====================================================
-            # REVERSE TRANSFER EFFECT
-            # =====================================================
-
-            from_bank.available_balance += amount
-
-            to_bank.available_balance -= amount
-
-            from_bank.save(
-                update_fields=['available_balance']
-            )
-
-            to_bank.save(
-                update_fields=['available_balance']
-            )
-
-            # Refresh balances
-            from_bank.refresh_from_db()
-            to_bank.refresh_from_db()
-
-            # =====================================================
-            # ACTIVITY LOG
-            # =====================================================
-
-            ActivityLog.objects.create(
-
-                action="Deleted Bank Transfer",
-
-                description=f"""
-Bank Transfer Deleted Successfully
-
-From Bank:
-{from_bank.name}
-
-To Bank:
-{to_bank.name}
-
-Transfer Amount:
-Rs. {amount}
-
-Transfer Date:
-{transfer_date}
-
-Old From Bank Balance:
-Rs. {old_from_balance}
-
-New From Bank Balance:
-Rs. {from_bank.available_balance}
-
-Old To Bank Balance:
-Rs. {old_to_balance}
-
-New To Bank Balance:
-Rs. {to_bank.available_balance}
-
-Deleted By:
-{request.user.username}
-"""
-            )
 
             # =====================================================
             # DELETE TRANSFER
@@ -5274,6 +5108,69 @@ Deleted By:
 
             transfer.delete()
 
+            # =====================================================
+            # RECALCULATE BANKS
+            # =====================================================
+
+            recalculate_banks(
+                from_bank,
+                to_bank
+            )
+
+            # Refresh latest balances
+            from_bank.refresh_from_db()
+
+            to_bank.refresh_from_db()
+
+            # =====================================================
+            # ACTIVITY LOG
+            # =====================================================
+
+            log_activity(
+
+        request=request,
+
+        action="Deleted Bank Transfer",
+
+        action_type='Deleted',
+
+        description=f"""
+    Bank Transfer Deleted Successfully
+
+    Transfer ID:
+    {transfer_id}
+
+    From Bank:
+    {from_bank.name}
+
+    To Bank:
+    {to_bank.name}
+
+    Transfer Amount:
+    Rs. {amount}
+
+    Transfer Note:
+    {description or 'N/A'}
+
+    Transfer Date:
+    {transfer_date}
+
+    Old From Bank Balance:
+    Rs. {old_from_balance}
+
+    New From Bank Balance:
+    Rs. {from_bank.available_balance}
+
+    Old To Bank Balance:
+    Rs. {old_to_balance}
+
+    New To Bank Balance:
+    Rs. {to_bank.available_balance}
+
+    Company:
+    {from_bank.company.name}
+    """
+    )
         # =====================================================
         # SUCCESS MESSAGE
         # =====================================================
@@ -5296,7 +5193,6 @@ Deleted By:
             'transfer': transfer
         }
     )
-
 
 
 
@@ -5858,7 +5754,7 @@ from django.db.models import Sum
 from django.contrib import messages
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-
+from .utils import *
 from .models import (
     Client,
     Bank,
@@ -6010,41 +5906,45 @@ def payment_create(request):
                 # ACTIVITY LOG
                 # =====================================================
 
-                ActivityLog.objects.create(
+                log_activity(
 
-                    action="Created Cash Payment",
+                request=request,
 
-                    description=f"""
-Cash Payment Added Successfully
+                action="Created Cash Payment",
 
-Client:
-{client.name}
+                action_type='Created',
 
-Location:
-{client.location or 'N/A'}
+                description=f"""
+            Cash Payment Added Successfully
 
-Amount:
-Rs. {amount}
+            Payment ID:
+            {payment.id}
 
-Payment Date:
-{payment_date}
+            Client:
+            {client.name}
 
-Payment Mode:
-Cash
+            Location:
+            {client.location or 'N/A'}
 
-Bank:
-{cash_bank.name}
+            Amount:
+            Rs. {amount}
 
-Updated Bank Balance:
-Rs. {cash_bank.available_balance}
+            Payment Date:
+            {payment_date}
 
-Payment ID:
-{payment.id}
+            Payment Mode:
+            Cash
 
-Created By:
-{request.user.username}
-"""
-                )
+            Bank:
+            {cash_bank.name}
+
+            Updated Bank Balance:
+            Rs. {cash_bank.available_balance}
+
+            Company:
+            {client.company.name}
+            """
+            )
 
             # =====================================================
             # CHEQUE PAYMENT
@@ -6095,42 +5995,45 @@ Created By:
                 # ACTIVITY LOG
                 # =====================================================
 
-                ActivityLog.objects.create(
+                log_activity(
 
-                    action="Created Cheque Payment",
+            request=request,
 
-                    description=f"""
-Cheque Payment Added Successfully
+            action="Created Cheque Payment",
 
-Client:
-{client.name}
+            action_type='Created',
 
-Location:
-{client.location or 'N/A'}
+            description=f"""
+        Cheque Payment Added Successfully
 
-Amount:
-Rs. {amount}
+        Payment ID:
+        {payment.id}
 
-Payment Date:
-{payment_date}
+        Client:
+        {client.name}
 
-Payment Mode:
-Cheque
+        Location:
+        {client.location or 'N/A'}
 
-Bank:
-{bank.name}
+        Amount:
+        Rs. {amount}
 
-Updated Bank Balance:
-Rs. {bank.available_balance}
+        Payment Date:
+        {payment_date}
 
-Payment ID:
-{payment.id}
+        Payment Mode:
+        Cheque
 
-Created By:
-{request.user.username}
-"""
-                )
+        Bank:
+        {bank.name}
 
+        Updated Bank Balance:
+        Rs. {bank.available_balance}
+
+        Company:
+        {client.company.name}
+        """
+        )
         # =====================================================
         # SUCCESS MESSAGE
         # =====================================================
@@ -6159,112 +6062,7 @@ Created By:
 
 
 
-# def payment_update(request, pk):
 
-#     selected_company_id = request.session.get('selected_company_id')
-
-#     payment = get_object_or_404(
-#         Payment,
-#         pk=pk,
-#         client__company_id=selected_company_id
-#     )
-
-#     clients = Client.objects.filter(company_id=selected_company_id,is_active=True)
-#     banks = Bank.objects.filter(
-#         company_id=selected_company_id,
-#         is_active=True
-#     ).order_by('name')
-
-
-#     old_bank = payment.bank
-
-#     if request.method == 'POST':
-
-#         client_id = request.POST.get('client')
-#         bank_id = request.POST.get('bank')
-#         new_amount = Decimal(request.POST.get('amount'))
-#         new_mode = request.POST.get('payment_mode')
-#         new_date = request.POST.get('payment_date')
-
-#         client = get_object_or_404(
-#             Client,
-#             id=client_id,
-#             company_id=selected_company_id
-#         )
-
-#         # 🔥 Get total paid EXCLUDING this payment
-#         total_paid = client.payments.exclude(id=payment.id).aggregate(
-#             total=Sum('amount')
-#         )['total'] or Decimal('0.00')
-
-#         new_total = total_paid + new_amount
-
-#         # ❌ VALIDATION
-#         if new_total > client.budget:
-#             remaining_allowed = client.budget - total_paid
-#             messages.error(
-#                 request,
-#                 f"❌ Payment exceeds project value! "
-#                 f"Remaining allowed: ₹ {remaining_allowed:,.2f}"
-#             )
-#             return render(request, 'payment/update.html', {
-#                 'payment': payment,
-#                 'clients': clients,
-#                 'banks': banks
-#             })
-
-#         with transaction.atomic():
-
-#             # 🔁 Remove old bank effect
-#             if old_bank:
-#                 old_bank.recalculate_balance()
-
-#             # 💵 CASH MODE
-#             if new_mode == Payment.CASH:
-
-#                 cash_bank = Bank.objects.get(
-#                     name__iexact='cash',
-#                     company_id=selected_company_id
-#                 )
-
-#                 payment.bank = cash_bank
-#                 payment.payment_mode = Payment.CASH
-
-#             # 🏦 CHEQUE MODE
-#             elif new_mode == Payment.CHEQUE:
-
-#                 if not bank_id:
-#                     messages.error(request, "Select bank for cheque payment")
-#                     return render(request, 'payment/update.html', {
-#                         'payment': payment,
-#                         'clients': clients,
-#                         'banks': banks
-#                     })
-
-#                 bank = Bank.objects.get(
-#                     id=bank_id,
-#                     company_id=selected_company_id,is_active=True
-#                 )
-
-#                 payment.bank = bank
-#                 payment.payment_mode = Payment.CHEQUE
-
-#             payment.client = client
-#             payment.amount = new_amount
-#             payment.payment_date = new_date
-#             payment.save()
-
-#             # 🔁 Apply new bank effect
-#             payment.bank.recalculate_balance()
-
-#         messages.success(request, "✅ Payment updated successfully")
-#         return redirect('payment_index')
-
-#     return render(request, 'payment/update.html', {
-#         'payment': payment,
-#         'clients': clients,
-#         'banks': banks
-#     })
 
 
 
@@ -6405,11 +6203,10 @@ def payment_update(request, pk):
         with transaction.atomic():
 
             # =====================================================
-            # RECALCULATE OLD BANK
+            # STORE OLD BANK
             # =====================================================
 
-            if old_bank:
-                old_bank.recalculate_balance()
+            previous_bank = payment.bank
 
             # =====================================================
             # CASH MODE
@@ -6472,64 +6269,72 @@ def payment_update(request, pk):
             payment.save()
 
             # =====================================================
-            # RECALCULATE NEW BANK
+            # RECALCULATE BANKS
             # =====================================================
 
-            payment.bank.recalculate_balance()
+            recalculate_banks(
+                previous_bank,
+                payment.bank
+            )
 
+            # Refresh latest balance
             payment.bank.refresh_from_db()
 
             # =====================================================
             # ACTIVITY LOG
             # =====================================================
 
-            ActivityLog.objects.create(
+            log_activity(
 
-                action="Updated Payment",
+            request=request,
 
-                description=f"""
-Payment Updated Successfully
+            action="Updated Payment",
 
-Old Client:
-{old_client.name}
+            action_type='Updated',
 
-New Client:
-{client.name}
+            description=f"""
+        Payment Updated Successfully
 
-Old Amount:
-Rs. {old_amount}
+        Payment ID:
+        {payment.id}
 
-New Amount:
-Rs. {new_amount}
+        Old Client:
+        {old_client.name}
 
-Old Payment Mode:
-{old_mode}
+        New Client:
+        {client.name}
 
-New Payment Mode:
-{new_mode}
+        Old Amount:
+        Rs. {old_amount}
 
-Old Bank:
-{old_bank.name if old_bank else 'N/A'}
+        New Amount:
+        Rs. {new_amount}
 
-New Bank:
-{payment.bank.name}
+        Old Payment Mode:
+        {old_mode}
 
-Old Payment Date:
-{old_date}
+        New Payment Mode:
+        {new_mode}
 
-New Payment Date:
-{new_date}
+        Old Bank:
+        {old_bank.name if old_bank else 'N/A'}
 
-Updated Bank Balance:
-Rs. {payment.bank.available_balance}
+        New Bank:
+        {payment.bank.name}
 
-Payment ID:
-{payment.id}
+        Old Payment Date:
+        {old_date}
 
-Updated By:
-{request.user.username}
-"""
-            )
+        New Payment Date:
+        {new_date}
+
+        Updated Bank Balance:
+        Rs. {payment.bank.available_balance}
+
+        Company:
+        {client.company.name}
+        """
+        )
 
         # =====================================================
         # SUCCESS MESSAGE
@@ -6582,13 +6387,23 @@ def payment_delete(request, pk):
 
     bank = payment.bank
 
-    # Store values before delete
+    # =====================================================
+    # STORE VALUES BEFORE DELETE
+    # =====================================================
+
     client_name = payment.client.name
+
     client_location = payment.client.location
+
     amount = payment.amount
+
     payment_mode = payment.payment_mode
+
     payment_date = payment.payment_date
+
     bank_name = bank.name if bank else 'N/A'
+
+    payment_id = payment.id
 
     # =====================================================
     # DELETE PAYMENT
@@ -6598,47 +6413,17 @@ def payment_delete(request, pk):
 
         with transaction.atomic():
 
-            # Store old balance
+            # =====================================================
+            # STORE OLD BANK BALANCE
+            # =====================================================
+
             old_balance = (
+
                 bank.available_balance
-                if bank else Decimal('0.00')
-            )
 
-            # =====================================================
-            # ACTIVITY LOG
-            # =====================================================
+                if bank
 
-            ActivityLog.objects.create(
-
-                action="Deleted Payment",
-
-                description=f"""
-Payment Deleted Successfully
-
-Client:
-{client_name}
-
-Location:
-{client_location or 'N/A'}
-
-Amount:
-Rs. {amount}
-
-Payment Mode:
-{payment_mode}
-
-Payment Date:
-{payment_date}
-
-Bank:
-{bank_name}
-
-Old Bank Balance:
-Rs. {old_balance}
-
-Deleted By:
-{request.user.username}
-"""
+                else Decimal('0.00')
             )
 
             # =====================================================
@@ -6648,28 +6433,62 @@ Deleted By:
             payment.delete()
 
             # =====================================================
-            # RECALCULATE BANK BALANCE
+            # RECALCULATE BANK
             # =====================================================
 
-            if bank:
+            recalculate_banks(bank)
 
-                bank.recalculate_balance()
+            # Refresh latest balance
+            if bank:
 
                 bank.refresh_from_db()
 
-                # =====================================================
-                # UPDATE LOG WITH NEW BALANCE
-                # =====================================================
+            # =====================================================
+            # ACTIVITY LOG
+            # =====================================================
 
-                latest_log = ActivityLog.objects.latest('id')
+            log_activity(
 
-                latest_log.description += f"""
+        request=request,
 
-New Bank Balance:
-Rs. {bank.available_balance}
-"""
+        action="Deleted Payment",
 
-                latest_log.save()
+        action_type='Deleted',
+
+        description=f"""
+    Payment Deleted Successfully
+
+    Payment ID:
+    {payment_id}
+
+    Client:
+    {client_name}
+
+    Location:
+    {client_location or 'N/A'}
+
+    Amount:
+    Rs. {amount}
+
+    Payment Mode:
+    {payment_mode}
+
+    Payment Date:
+    {payment_date}
+
+    Bank:
+    {bank_name}
+
+    Old Bank Balance:
+    Rs. {old_balance}
+
+    New Bank Balance:
+    Rs. {bank.available_balance if bank else '0.00'}
+
+    Company:
+    {payment.client.company.name}
+    """
+    )
 
         # =====================================================
         # SUCCESS MESSAGE
@@ -6722,43 +6541,6 @@ def worker_index(request):
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-
-# def worker_create(request):
-
-#     company_id = request.session.get('selected_company_id')
-
-#     if not company_id:
-#         return redirect('dashboard')
-
-#     if request.method == 'POST':
-#         name = request.POST.get('name', '').strip()
-
-#         if not name:
-#             messages.error(request, "Worker name is required")
-
-#         else:
-
-#             # 🔎 Duplicate check (case insensitive)
-#             if Worker.objects.filter(
-#                 company_id=company_id,
-#                 name__iexact=name
-#             ).exists():
-
-#                 messages.warning(request, "This worker Team already exists for this company.")
-#                 return redirect('worker_create')
-
-#             Worker.objects.create(
-#                 name=name,
-#                 company_id=company_id
-#             )
-
-#             messages.success(request, "Worker added successfully")
-#             return redirect('worker_index')
-
-#     return render(request, 'worker/create.html', {
-#         'title': 'Add Worker',
-#         'company': get_object_or_404(Company, id=company_id)
-#     })
 
 
 
@@ -6836,26 +6618,27 @@ def worker_create(request):
             # ACTIVITY LOG
             # =====================================================
 
-            ActivityLog.objects.create(
+            log_activity(
 
-                action="Created Worker",
+            request=request,
 
-                description=f"""
-Worker Team Created Successfully
+            action="Created Worker",
 
-Worker Team:
-{worker.name}
+            action_type='Created',
 
-Company:
-{company.name}
+            description=f"""
+        Worker Team Created Successfully
 
-Worker ID:
-{worker.id}
+        Worker Team:
+        {worker.name}
 
-Created By:
-{request.user.username}
-"""
-            )
+        Company:
+        {company.name}
+
+        Worker ID:
+        {worker.id}
+        """
+        )
 
             # =====================================================
             # SUCCESS MESSAGE
@@ -6883,50 +6666,6 @@ Created By:
 
 
 
-# def worker_update(request, pk):
-
-#     company_id = request.session.get('selected_company_id')
-
-#     if not company_id:
-#         return redirect('dashboard')
-
-#     worker = get_object_or_404(
-#         Worker,
-#         pk=pk,
-#         company_id=company_id
-#     )
-
-#     if request.method == 'POST':
-
-#         name = request.POST.get('name', '').strip()
-
-#         if not name:
-#             messages.error(request, "Worker name is required")
-
-#         else:
-
-#             # 🔎 Duplicate check (excluding current worker)
-#             duplicate = Worker.objects.filter(
-#                 company_id=company_id,
-#                 name__iexact=name
-#             ).exclude(pk=worker.pk).exists()
-
-#             if duplicate:
-#                 messages.warning(request, "Another worker Team with this name already exists.")
-#                 return redirect('worker_update', pk=pk)
-
-#             worker.name = name
-#             worker.company_id = company_id
-#             worker.save()
-
-#             messages.success(request, "Worker updated successfully")
-#             return redirect('worker_index')
-
-#     return render(request, 'worker/update.html', {
-#         'title': 'Update Worker',
-#         'worker': worker,
-#         'company': get_object_or_404(Company, id=company_id)
-#     })
 
 
 
@@ -7024,29 +6763,30 @@ def worker_update(request, pk):
             # ACTIVITY LOG
             # =====================================================
 
-            ActivityLog.objects.create(
+            log_activity(
 
-                action="Updated Worker",
+        request=request,
 
-                description=f"""
-Worker Team Updated Successfully
+        action="Updated Worker",
 
-Old Worker Team:
-{old_name}
+        action_type='Updated',
 
-New Worker Team:
-{worker.name}
+        description=f"""
+    Worker Team Updated Successfully
 
-Company:
-{company.name}
+    Old Worker Team:
+    {old_name}
 
-Worker ID:
-{worker.id}
+    New Worker Team:
+    {worker.name}
 
-Updated By:
-{request.user.username}
-"""
-            )
+    Company:
+    {company.name}
+
+    Worker ID:
+    {worker.id}
+    """
+    )
 
             # =====================================================
             # SUCCESS MESSAGE
@@ -7120,25 +6860,26 @@ def worker_delete(request, pk):
         # ACTIVITY LOG
         # =====================================================
 
-        ActivityLog.objects.create(
+        log_activity(
+
+            request=request,
 
             action="Deleted Worker",
 
+            action_type='Deleted',
+
             description=f"""
-Worker Team Deleted Successfully
+        Worker Team Deleted Successfully
 
-Worker Team:
-{worker_name}
+        Worker Team:
+        {worker_name}
 
-Worker ID:
-{worker_id}
+        Worker ID:
+        {worker_id}
 
-Company:
-{company.name}
-
-Deleted By:
-{request.user.username}
-"""
+        Company:
+        {company.name}
+        """
         )
 
         # =====================================================
@@ -7198,50 +6939,6 @@ def worker_name_index(request):
     })
 
 
-
-# def worker_name_create(request):
-
-#     selected_company_id = request.session.get('selected_company_id')
-#     if not selected_company_id:
-#         return redirect('dashboard')
-
-#     workers = Worker.objects.filter(company_id=selected_company_id)
-
-#     if request.method == 'POST':
-#         worker_id = request.POST.get('worker')
-#         name = request.POST.get('name', '').strip()
-
-#         if not worker_id or not name:
-#             messages.error(request, "Worker and name are required")
-#             return redirect('worker_name_create')
-
-#         # 🔐 Ensure worker belongs to selected company
-#         worker = get_object_or_404(
-#             Worker,
-#             id=worker_id,
-#             company_id=selected_company_id
-#         )
-
-#         # 🔎 Duplicate check
-#         if WorkerName.objects.filter(
-#             worker=worker,
-#             name__iexact=name
-#         ).exists():
-
-#             messages.warning(request, "This worker name already exists for this worker Team.")
-#             return redirect('worker_name_create')
-
-#         WorkerName.objects.create(
-#             worker=worker,
-#             name=name
-#         )
-
-#         messages.success(request, "Worker name added successfully")
-#         return redirect('worker_name_index')
-
-#     return render(request, 'worker_name/create.html', {
-#         'workers': workers
-#     })
 
 
 
@@ -7384,53 +7081,6 @@ Created By:
 
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
-
-# def worker_name_update(request, pk):
-
-#     selected_company_id = request.session.get('selected_company_id')
-#     if not selected_company_id:
-#         return redirect('dashboard')
-
-#     worker_name = get_object_or_404(WorkerName, pk=pk)
-
-#     workers = Worker.objects.filter(company_id=selected_company_id)
-
-#     if request.method == 'POST':
-
-#         worker_id = request.POST.get('worker')
-#         name = request.POST.get('name', '').strip()
-
-#         if not worker_id or not name:
-#             messages.error(request, "Worker and name are required")
-#             return redirect('worker_name_update', pk=pk)
-
-#         worker = get_object_or_404(
-#             Worker,
-#             id=worker_id,
-#             company_id=selected_company_id
-#         )
-
-#         # 🔎 Duplicate check (exclude current record)
-#         duplicate = WorkerName.objects.filter(
-#             worker=worker,
-#             name__iexact=name
-#         ).exclude(pk=worker_name.pk).exists()
-
-#         if duplicate:
-#             messages.warning(request, "Another worker with this name already exists.")
-#             return redirect('worker_name_update', pk=pk)
-
-#         worker_name.worker = worker
-#         worker_name.name = name
-#         worker_name.save()
-
-#         messages.success(request, "Worker name updated successfully")
-#         return redirect('worker_name_index')
-
-#     return render(request, 'worker_name/update.html', {
-#         'worker_name': worker_name,
-#         'workers': workers,
-#     })
 
 
 @login_required(login_url='login')
@@ -8404,7 +8054,7 @@ def expense_index(request):
     # 🏦 BANK FILTER
     # =========================
     if bank_id:
-        expenses = expenses.filter(bank_id=bank_id)
+        expenses = expenses.filter(bank_id=bank_id, client__company_id=selected_company_id)
 
     # =========================
     # 👷 SALARY TEAM FILTER
@@ -8450,7 +8100,10 @@ def expense_index(request):
         name__iexact='cash'
     ).first()
 
-    banks = Bank.objects.exclude(
+    banks = Bank.objects.filter(
+        company_id=selected_company_id,
+        is_active=True
+    ).exclude(
         name__iexact='cash'
     )
 
@@ -9036,168 +8689,6 @@ from django.contrib import messages
 from django.shortcuts import redirect, render
 
 
-# def expense_create(request):
-
-#     # 🏢 COMPANY FROM SESSION
-#     selected_company_id = request.session.get('selected_company_id')
-#     if not selected_company_id:
-#         return redirect('dashboard')
-
-#     # =========================
-#     # 📋 DROPDOWNS
-#     # =========================
-#     clients = Client.objects.filter(company_id=selected_company_id,is_active=True)
-
-#     categories = ExpenseCategory.objects.filter(
-#         company_id=selected_company_id
-#     )
-
-#     subcategories = ExpenseSubCategory.objects.filter(
-#         category__company_id=selected_company_id
-#     )
-
-#     workers = Worker.objects.filter(company_id=selected_company_id)
-
-#     banks = Bank.objects.filter(
-#         company_id=selected_company_id,
-#         is_active=True
-#     ).order_by('name')
-
-#     cash_bank = Bank.objects.filter(
-#         company_id=selected_company_id,
-#         name__iexact='cash'
-#     ).first()
-
-#     worker_names = WorkerName.objects.filter(
-#         worker__company_id=selected_company_id,is_active=True
-#     ).select_related('worker')
-
-#     # =========================
-#     # 📩 POST
-#     # =========================
-#     if request.method == 'POST':
-
-#         client_id = request.POST.get('client')
-#         bank_id = request.POST.get('bank')
-#         category_id = request.POST.get('category')
-#         subcategory_id = request.POST.get('subcategory')
-#         salary_to_id = request.POST.get('salary_to')
-#         worker_name_id = request.POST.get('worker_name')
-#         description = request.POST.get('description', '').strip()
-#         spend_mode = request.POST.get('spend_mode')
-#         expense_date = request.POST.get('expense_date')
-
-#         amount_raw = request.POST.get('amount')
-
-#         if not amount_raw:
-#             messages.error(request, "Amount is required")
-#             return redirect('expense_create')
-
-#         try:
-#             amount = Decimal(str(amount_raw).replace(',', '').strip())
-#         except:
-#             messages.error(request, "Invalid amount")
-#             return redirect('expense_create')
-
-#         # =========================
-#         # 🔐 VALIDATIONS
-#         # =========================
-#         client = clients.filter(id=client_id).first()
-#         if not client:
-#             messages.error(request, "Invalid client")
-#             return redirect('expense_create')
-
-#         category = categories.filter(id=category_id).first() if category_id else None
-
-#         subcategory = None
-#         if subcategory_id:
-#             subcategory = subcategories.filter(
-#                 id=subcategory_id,
-#                 category_id=category_id
-#             ).first()
-
-#             if not subcategory:
-#                 messages.error(request, "Invalid sub-category selection")
-#                 return redirect('expense_create')
-
-#         worker = workers.filter(id=salary_to_id).first() if salary_to_id else None
-
-#         # =========================
-#         # 🔎 DUPLICATE DETECTION
-#         # =========================
-
-#         duplicate_expense = Expense.objects.filter(
-#             client_id=client_id,
-#             client__company_id=selected_company_id,
-#             category_id=category_id,
-#             subcategory_id=subcategory_id,
-#             expense_date=expense_date,
-#             amount=amount
-#         ).first()
-
-#         duplicate_warning = False
-
-#         if duplicate_expense:
-#             duplicate_warning = True
-
-#         # =========================
-#         # 💾 SAVE EXPENSE
-#         # =========================
-#         with transaction.atomic():
-
-#             if spend_mode == Expense.CASH:
-#                 bank = cash_bank
-
-#             else:
-#                 bank = banks.filter(id=bank_id).first()
-#                 if not bank:
-#                     messages.error(request, "Invalid bank")
-#                     return redirect('expense_create')
-
-#             Expense.objects.create(
-#                 client=client,
-#                 bank=bank,
-#                 category=category,
-#                 subcategory=subcategory,
-#                 salary_to=worker,
-#                 worker_name_id=worker_name_id,
-#                 description=description,
-#                 amount=amount,
-#                 spend_mode=spend_mode,
-#                 expense_date=expense_date
-#             )
-
-#             bank.recalculate_balance()
-
-#         # =========================
-#         # 🔔 ALERT MESSAGE
-#         # =========================
-#         if duplicate_warning:
-#             messages.warning(
-#                 request,
-#                 "⚠ A similar expense already existed. This entry was saved anyway."
-#             )
-
-#         messages.success(request, "Expense added successfully")
-
-#         return redirect('expense_index')
-
-#     # =========================
-#     # GET PAGE
-#     # =========================
-#     return render(request, 'expense/create.html', {
-#         'clients': clients,
-#         'banks': banks,
-#         'cash_bank': cash_bank,
-#         'categories': categories,
-#         'subcategories': subcategories,
-#         'workers': workers,
-#         'selected_company_id': selected_company_id,
-#         'worker_names': worker_names,
-#     })
-
-
-
 
 @login_required(login_url='login')
 def expense_create(request):
@@ -9448,7 +8939,7 @@ def expense_create(request):
             # RECALCULATE BANK
             # =========================
 
-            bank.recalculate_balance()
+            recalculate_banks(bank)
 
             bank.refresh_from_db()
 
@@ -9456,12 +8947,19 @@ def expense_create(request):
             # ACTIVITY LOG
             # =========================
 
-            ActivityLog.objects.create(
+            log_activity(
 
-                action="Created Expense",
+    request=request,
 
-                description=f"""
+    action="Created Expense",
+
+    action_type='Created',
+
+    description=f"""
 Expense Created Successfully
+
+Expense ID:
+{expense.id}
 
 Client:
 {client.name}
@@ -9499,16 +8997,10 @@ Bank:
 Updated Bank Balance:
 Rs. {bank.available_balance}
 
-Expense ID:
-{expense.id}
-
 Company:
 {company.name}
-
-Created By:
-{request.user.username}
 """
-            )
+)
 
         # =========================
         # DUPLICATE WARNING
@@ -9559,182 +9051,6 @@ from django.db import transaction
 from django.contrib import messages
 from decimal import Decimal
 
-
-# def expense_update(request, pk):
-
-#     # 🏢 COMPANY FROM SESSION
-#     selected_company_id = request.session.get('selected_company_id')
-#     if not selected_company_id:
-#         return redirect('dashboard')
-
-#     expense = get_object_or_404(
-#         Expense,
-#         pk=pk,
-#         client__company_id=selected_company_id
-#     )
-
-#     # =========================
-#     # 📋 DROPDOWNS
-#     # =========================
-#     clients = Client.objects.filter(company_id=selected_company_id,is_active=True)
-
-#     categories = ExpenseCategory.objects.filter(
-#         company_id=selected_company_id
-#     )
-
-#     subcategories = ExpenseSubCategory.objects.filter(
-#         category__company_id=selected_company_id
-#     )
-
-#     workers = Worker.objects.filter(company_id=selected_company_id)
-
-#     worker_names = WorkerName.objects.filter(
-#         worker__company_id=selected_company_id,is_active=True
-#     ).select_related('worker')
-
-#     banks = Bank.objects.filter(
-#         company_id=selected_company_id,
-#         is_active=True
-#     ).order_by('name')
-
-#     cash_bank = Bank.objects.filter(
-#         company_id=selected_company_id,
-#         name__iexact='cash'
-#     ).first()
-
-#     old_bank = expense.bank
-
-#     # =========================
-#     # POST
-#     # =========================
-#     if request.method == "POST":
-
-#         client_id = request.POST.get('client')
-#         category_id = request.POST.get('category')
-#         subcategory_id = request.POST.get('subcategory')
-#         salary_to_id = request.POST.get('salary_to')
-#         worker_name_id = request.POST.get('worker_name')
-#         bank_id = request.POST.get('bank')
-#         description = request.POST.get('description', '').strip()
-#         spend_mode = request.POST.get('spend_mode')
-#         expense_date = request.POST.get('expense_date')
-
-#         try:
-#             new_amount = Decimal(request.POST.get('amount'))
-#         except:
-#             messages.error(request, "Invalid amount")
-#             return redirect('expense_update', pk=pk)
-
-#         # =========================
-#         # VALIDATIONS
-#         # =========================
-
-#         client = clients.filter(id=client_id).first()
-#         if not client:
-#             messages.error(request, "Invalid client")
-#             return redirect('expense_update', pk=pk)
-
-#         category = categories.filter(id=category_id).first() if category_id else None
-
-#         subcategory = None
-#         if subcategory_id:
-#             subcategory = subcategories.filter(
-#                 id=subcategory_id,
-#                 category_id=category_id
-#             ).first()
-
-#         worker = None
-#         worker_name = None
-
-#         if category and category.name.lower() == "salary":
-
-#             if salary_to_id:
-#                 worker = workers.filter(id=salary_to_id).first()
-
-#             if worker_name_id:
-#                 worker_name = worker_names.filter(
-#                     id=worker_name_id,
-#                     worker=worker
-#                 ).first()
-
-#         # =========================
-#         # DUPLICATE CHECK
-#         # =========================
-
-#         duplicate_expense = Expense.objects.filter(
-#             client_id=client_id,
-#             client__company_id=selected_company_id,
-#             category_id=category_id,
-#             subcategory_id=subcategory_id,
-#             expense_date=expense_date,
-#             amount=new_amount
-#         ).exclude(pk=expense.pk).first()
-
-#         duplicate_warning = False
-
-#         if duplicate_expense:
-#             duplicate_warning = True
-
-#         # =========================
-#         # UPDATE EXPENSE
-#         # =========================
-#         with transaction.atomic():
-
-#             if old_bank:
-#                 old_bank.recalculate_balance()
-
-#             if spend_mode == Expense.CASH:
-#                 bank = cash_bank
-#             else:
-#                 bank = banks.filter(id=bank_id).first()
-
-#                 if not bank:
-#                     messages.error(request, "Invalid bank")
-#                     return redirect('expense_update', pk=pk)
-
-#             expense.client = client
-#             expense.category = category
-#             expense.subcategory = subcategory
-#             expense.salary_to = worker
-#             expense.worker_name = worker_name
-#             expense.bank = bank
-#             expense.description = description
-#             expense.amount = new_amount
-#             expense.spend_mode = spend_mode
-#             expense.expense_date = expense_date
-
-#             expense.save()
-
-#             bank.recalculate_balance()
-
-#         # =========================
-#         # ALERT
-#         # =========================
-
-#         if duplicate_warning:
-#             messages.warning(
-#                 request,
-#                 "⚠ Similar expense already exists. Update saved anyway."
-#             )
-
-#         messages.success(request, "Expense updated successfully")
-
-#         return redirect('expense_index')
-
-#     # =========================
-#     # GET PAGE
-#     # =========================
-#     return render(request, "expense/update.html", {
-#         "expense": expense,
-#         "clients": clients,
-#         "banks": banks,
-#         "cash_bank": cash_bank,
-#         "categories": categories,
-#         "subcategories": subcategories,
-#         "workers": workers,
-#         "worker_names": worker_names,
-#         "selected_company_id": selected_company_id,
-#     })
 
 
 
@@ -9953,8 +9269,8 @@ def expense_update(request, pk):
             # RECALCULATE OLD BANK
             # =========================
 
-            if old_bank:
-                old_bank.recalculate_balance()
+            # if old_bank:
+            #     old_bank.recalculate_balance()
 
             # =========================
             # CASH MODE
@@ -9987,7 +9303,7 @@ def expense_update(request, pk):
                     )
 
             # =========================
-            # UPDATE EXPENSE
+            # SAVE EXPENSE
             # =========================
 
             expense.client = client
@@ -10004,113 +9320,128 @@ def expense_update(request, pk):
             expense.save()
 
             # =========================
+            # RECALCULATE OLD BANK
+            # =========================
+
+            if old_bank:
+
+                recalculate_banks(bank)
+
+                bank.refresh_from_db()
+
+            # =========================
             # RECALCULATE NEW BANK
             # =========================
 
-            bank.recalculate_balance()
+            if bank:
 
-            bank.refresh_from_db()
+                bank.refresh_from_db()
+
+                bank.recalculate_balance()
+
+                bank.refresh_from_db()
 
             # =========================
             # ACTIVITY LOG
             # =========================
 
-            ActivityLog.objects.create(
+            log_activity(
 
-                action="Updated Expense",
+        request=request,
 
-                description=f"""
-Expense Updated Successfully
+        action="Updated Expense",
 
-Expense ID:
-{expense.id}
+        action_type='Updated',
 
---------------------------------------------------
+        description=f"""
+    Expense Updated Successfully
 
-OLD VALUES
+    Expense ID:
+    {expense.id}
 
-Client:
-{old_client.name}
+    --------------------------------------------------
 
-Location:
-{old_client.location or 'N/A'}
+    OLD VALUES
 
-Category:
-{old_category.name if old_category else 'N/A'}
+    Client:
+    {old_client.name}
 
-Sub Category:
-{old_subcategory.name if old_subcategory else 'N/A'}
+    Location:
+    {old_client.location or 'N/A'}
 
-Worker Team:
-{old_worker.name if old_worker else 'N/A'}
+    Category:
+    {old_category.name if old_category else 'N/A'}
 
-Worker Name:
-{old_worker_name.name if old_worker_name else 'N/A'}
+    Sub Category:
+    {old_subcategory.name if old_subcategory else 'N/A'}
 
-Description:
-{old_description or 'N/A'}
+    Worker Team:
+    {old_worker.name if old_worker else 'N/A'}
 
-Amount:
-Rs. {old_amount}
+    Worker Name:
+    {old_worker_name.name if old_worker_name else 'N/A'}
 
-Spend Mode:
-{old_spend_mode}
+    Description:
+    {old_description or 'N/A'}
 
-Expense Date:
-{old_expense_date}
+    Amount:
+    Rs. {old_amount}
 
-Bank:
-{old_bank.name if old_bank else 'N/A'}
+    Spend Mode:
+    {old_spend_mode}
 
---------------------------------------------------
+    Expense Date:
+    {old_expense_date}
 
-NEW VALUES
+    Bank:
+    {old_bank.name if old_bank else 'N/A'}
 
-Client:
-{client.name}
+    --------------------------------------------------
 
-Location:
-{client.location or 'N/A'}
+    NEW VALUES
 
-Category:
-{category.name if category else 'N/A'}
+    Client:
+    {client.name}
 
-Sub Category:
-{subcategory.name if subcategory else 'N/A'}
+    Location:
+    {client.location or 'N/A'}
 
-Worker Team:
-{worker.name if worker else 'N/A'}
+    Category:
+    {category.name if category else 'N/A'}
 
-Worker Name:
-{worker_name.name if worker_name else 'N/A'}
+    Sub Category:
+    {subcategory.name if subcategory else 'N/A'}
 
-Description:
-{description or 'N/A'}
+    Worker Team:
+    {worker.name if worker else 'N/A'}
 
-Amount:
-Rs. {new_amount}
+    Worker Name:
+    {worker_name.name if worker_name else 'N/A'}
 
-Spend Mode:
-{spend_mode}
+    Description:
+    {description or 'N/A'}
 
-Expense Date:
-{expense_date}
+    Amount:
+    Rs. {new_amount}
 
-Bank:
-{bank.name if bank else 'Cash'}
+    Spend Mode:
+    {spend_mode}
 
-Updated Bank Balance:
-Rs. {bank.available_balance}
+    Expense Date:
+    {expense_date}
 
---------------------------------------------------
+    Bank:
+    {bank.name if bank else 'Cash'}
 
-Company:
-{company.name}
+    Updated Bank Balance:
+    Rs. {bank.available_balance}
 
-Updated By:
-{request.user.username}
-"""
-            )
+    --------------------------------------------------
+
+    Company:
+    {company.name}
+    """
+    )
 
         # =========================
         # DUPLICATE WARNING
@@ -10246,60 +9577,60 @@ def expense_delete(request, pk):
             # ACTIVITY LOG
             # =====================================================
 
-            ActivityLog.objects.create(
+            log_activity(
 
-                action="Deleted Expense",
+            request=request,
 
-                description=f"""
-Expense Deleted Successfully
+            action="Deleted Expense",
 
-Expense ID:
-{expense_id}
+            action_type='Deleted',
 
-Client:
-{client_name}
+            description=f"""
+        Expense Deleted Successfully
 
-Location:
-{client_location or 'N/A'}
+        Expense ID:
+        {expense_id}
 
-Category:
-{category_name}
+        Client:
+        {client_name}
 
-Sub Category:
-{subcategory_name}
+        Location:
+        {client_location or 'N/A'}
 
-Worker Team:
-{worker_team}
+        Category:
+        {category_name}
 
-Worker Name:
-{worker_person}
+        Sub Category:
+        {subcategory_name}
 
-Description:
-{description or 'N/A'}
+        Worker Team:
+        {worker_team}
 
-Expense Amount:
-Rs. {amount}
+        Worker Name:
+        {worker_person}
 
-Spend Mode:
-{spend_mode}
+        Description:
+        {description or 'N/A'}
 
-Expense Date:
-{expense_date}
+        Expense Amount:
+        Rs. {amount}
 
-Bank:
-{bank_name}
+        Spend Mode:
+        {spend_mode}
 
-Old Bank Balance:
-Rs. {old_balance}
+        Expense Date:
+        {expense_date}
 
-Company:
-{company.name}
+        Bank:
+        {bank_name}
 
-Deleted By:
-{request.user.username}
-"""
-            )
+        Old Bank Balance:
+        Rs. {old_balance}
 
+        Company:
+        {company.name}
+        """
+        )
             # =====================================================
             # DELETE EXPENSE
             # =====================================================
@@ -10312,7 +9643,7 @@ Deleted By:
 
             if bank:
 
-                bank.recalculate_balance()
+                recalculate_banks(bank)
 
                 bank.refresh_from_db()
 
@@ -11265,279 +10596,432 @@ from .models import (
 )
 
 
+# @login_required(login_url='login')
+# def activity_view(request):
+
+#     # =====================================================
+#     # COMPANY FROM SESSION
+#     # =====================================================
+
+#     selected_company_id = request.session.get(
+#         'selected_company_id'
+#     )
+
+#     if not selected_company_id:
+#         return redirect('dashboard')
+
+#     # =====================================================
+#     # INDIA TIMEZONE
+#     # =====================================================
+
+#     india_tz = ZoneInfo("Asia/Kolkata")
+
+#     current_time_ist = timezone.now().astimezone(india_tz)
+
+#     today = current_time_ist.date()
+
+#     current_month = current_time_ist.month
+
+#     current_year = current_time_ist.year
+
+#     # =====================================================
+#     # FILTERS
+#     # =====================================================
+
+#     search_query = request.GET.get(
+#         'q',
+#         ''
+#     ).strip()
+
+#     filter_type = request.GET.get(
+#         'filter',
+#         'today'
+#     )
+
+#     log_action = request.GET.get(
+#         'log_action',
+#         'all'
+#     )
+
+#     # =====================================================
+#     # PAYMENTS
+#     # =====================================================
+
+#     payments = Payment.objects.filter(
+#         client__company_id=selected_company_id
+#     ).select_related(
+#         'client',
+#         'bank'
+#     )
+
+#     # =====================================================
+#     # EXPENSES
+#     # =====================================================
+
+#     expenses = Expense.objects.filter(
+#         client__company_id=selected_company_id
+#     ).select_related(
+#         'client',
+#         'category',
+#         'bank'
+#     )
+
+#     # =====================================================
+#     # ACTIVITY LOGS
+#     # =====================================================
+
+#     activity_logs = ActivityLog.objects.all()
+
+#     # =====================================================
+#     # DATE FILTERS
+#     # =====================================================
+
+#     # TODAY
+#     if filter_type == 'today':
+
+#         payments = payments.filter(
+#             payment_date=today
+#         )
+
+#         expenses = expenses.filter(
+#             expense_date=today
+#         )
+
+#         # ✅ FIXED UTC → IST ISSUE
+#         activity_logs = activity_logs.filter(
+#             created_at__year=current_year,
+#             created_at__month=current_month,
+#             created_at__day=today.day
+#         )
+
+#     # MONTH
+#     elif filter_type == 'month':
+
+#         payments = payments.filter(
+#             payment_date__month=current_month,
+#             payment_date__year=current_year
+#         )
+
+#         expenses = expenses.filter(
+#             expense_date__month=current_month,
+#             expense_date__year=current_year
+#         )
+
+#         activity_logs = activity_logs.filter(
+#             created_at__month=current_month,
+#             created_at__year=current_year
+#         )
+
+#     # YEAR
+#     elif filter_type == 'year':
+
+#         payments = payments.filter(
+#             payment_date__year=current_year
+#         )
+
+#         expenses = expenses.filter(
+#             expense_date__year=current_year
+#         )
+
+#         activity_logs = activity_logs.filter(
+#             created_at__year=current_year
+#         )
+
+#     # =====================================================
+#     # ACTION FILTERS
+#     # =====================================================
+
+#     if log_action == 'created':
+
+#         activity_logs = activity_logs.filter(
+#             action__icontains='Created'
+#         )
+
+#     elif log_action == 'updated':
+
+#         activity_logs = activity_logs.filter(
+#             action__icontains='Updated'
+#         )
+
+#     elif log_action == 'deleted':
+
+#         activity_logs = activity_logs.filter(
+#             action__icontains='Deleted'
+#         )
+
+#     # =====================================================
+#     # SEARCH FILTER
+#     # =====================================================
+
+#     if search_query:
+
+#         payments = payments.filter(
+
+#             Q(client__name__icontains=search_query) |
+
+#             Q(bank__name__icontains=search_query) |
+
+#             Q(amount__icontains=search_query)
+#         )
+
+#         expenses = expenses.filter(
+
+#             Q(client__name__icontains=search_query) |
+
+#             Q(category__name__icontains=search_query) |
+
+#             Q(description__icontains=search_query) |
+
+#             Q(amount__icontains=search_query)
+#         )
+
+#         activity_logs = activity_logs.filter(
+
+#             Q(action__icontains=search_query) |
+
+#             Q(description__icontains=search_query) |
+
+#             Q(created_by__username__icontains=search_query) |
+
+#             Q(updated_by__username__icontains=search_query) |
+
+#             Q(deleted_by__username__icontains=search_query) |
+
+#             Q(ip_address__icontains=search_query)
+#         )
+
+#     # =====================================================
+#     # ORDERING
+#     # =====================================================
+
+#     payments = payments.order_by(
+#         '-payment_date',
+#         '-id'
+#     )
+
+#     expenses = expenses.order_by(
+#         '-expense_date',
+#         '-id'
+#     )
+
+#     activity_logs = activity_logs.order_by(
+#         '-created_at',
+#         '-id'
+#     )
+
+#     # =====================================================
+#     # TOTALS
+#     # =====================================================
+
+#     total_income = payments.aggregate(
+#         Sum('amount')
+#     )['amount__sum'] or 0
+
+#     total_expenses = expenses.aggregate(
+#         Sum('amount')
+#     )['amount__sum'] or 0
+
+#     balance = total_income - total_expenses
+
+#     # =====================================================
+#     # PAGE TITLE
+#     # =====================================================
+
+#     if filter_type == 'today':
+
+#         page_title = "Today's Activity"
+
+#     elif filter_type == 'month':
+
+#         page_title = "This Month Activity"
+
+#     elif filter_type == 'year':
+
+#         page_title = "This Year Activity"
+
+#     else:
+
+#         page_title = "Activity"
+
+#     # =====================================================
+#     # RENDER
+#     # =====================================================
+
+#     return render(
+#         request,
+#         'activity/today.html',
+#         {
+
+#             'payments': payments,
+
+#             'expenses': expenses,
+
+#             'activity_logs': activity_logs,
+
+#             'total_income': total_income,
+
+#             'total_expenses': total_expenses,
+
+#             'balance': balance,
+
+#             'today': today,
+
+#             'current_time_ist': current_time_ist,
+
+#             'search_query': search_query,
+
+#             'filter_type': filter_type,
+
+#             'log_action': log_action,
+
+#             'page_title': page_title,
+#         }
+#     )
+
+
+
+
 @login_required(login_url='login')
 def activity_view(request):
 
-    # =====================================================
-    # COMPANY FROM SESSION
-    # =====================================================
-
-    selected_company_id = request.session.get(
-        'selected_company_id'
-    )
-
+    selected_company_id = request.session.get('selected_company_id')
     if not selected_company_id:
         return redirect('dashboard')
 
-    # =====================================================
-    # INDIA TIMEZONE
-    # =====================================================
-
     india_tz = ZoneInfo("Asia/Kolkata")
-
     current_time_ist = timezone.now().astimezone(india_tz)
-
     today = current_time_ist.date()
-
     current_month = current_time_ist.month
-
     current_year = current_time_ist.year
 
-    # =====================================================
-    # FILTERS
-    # =====================================================
+    # Filters
+    search_query = request.GET.get('q', '').strip()
+    filter_type = request.GET.get('filter', 'today')
+    log_action = request.GET.get('log_action', 'all')
 
-    search_query = request.GET.get(
-        'q',
-        ''
-    ).strip()
-
-    filter_type = request.GET.get(
-        'filter',
-        'today'
-    )
-
-    log_action = request.GET.get(
-        'log_action',
-        'all'
-    )
-
-    # =====================================================
-    # PAYMENTS
-    # =====================================================
-
+    # Base querysets
     payments = Payment.objects.filter(
         client__company_id=selected_company_id
-    ).select_related(
-        'client',
-        'bank'
-    )
-
-    # =====================================================
-    # EXPENSES
-    # =====================================================
+    ).select_related('client', 'bank')
 
     expenses = Expense.objects.filter(
         client__company_id=selected_company_id
-    ).select_related(
-        'client',
-        'category',
-        'bank'
-    )
+    ).select_related('client', 'category', 'bank')
 
-    # =====================================================
-    # ACTIVITY LOGS
-    # =====================================================
+    activity_logs = ActivityLog.objects.select_related(
+        'created_by', 'updated_by', 'deleted_by'
+    ).all()
 
-    activity_logs = ActivityLog.objects.all()
-
-    # =====================================================
-    # DATE FILTERS
-    # =====================================================
-
-    # TODAY
+    # Date filters
     if filter_type == 'today':
-
-        payments = payments.filter(
-            payment_date=today
-        )
-
-        expenses = expenses.filter(
-            expense_date=today
-        )
-
-        # ✅ FIXED UTC → IST ISSUE
+        payments = payments.filter(payment_date=today)
+        expenses = expenses.filter(expense_date=today)
         activity_logs = activity_logs.filter(
-            created_at__year=current_year,
-            created_at__month=current_month,
-            created_at__day=today.day
+            created_at__date=today
         )
-
-    # MONTH
     elif filter_type == 'month':
-
         payments = payments.filter(
             payment_date__month=current_month,
             payment_date__year=current_year
         )
-
         expenses = expenses.filter(
             expense_date__month=current_month,
             expense_date__year=current_year
         )
-
         activity_logs = activity_logs.filter(
             created_at__month=current_month,
             created_at__year=current_year
         )
-
-    # YEAR
     elif filter_type == 'year':
+        payments = payments.filter(payment_date__year=current_year)
+        expenses = expenses.filter(expense_date__year=current_year)
+        activity_logs = activity_logs.filter(created_at__year=current_year)
 
-        payments = payments.filter(
-            payment_date__year=current_year
-        )
-
-        expenses = expenses.filter(
-            expense_date__year=current_year
-        )
-
-        activity_logs = activity_logs.filter(
-            created_at__year=current_year
-        )
-
-    # =====================================================
-    # ACTION FILTERS
-    # =====================================================
-
+    # Action filter
     if log_action == 'created':
-
-        activity_logs = activity_logs.filter(
-            action__icontains='Created'
-        )
-
+        activity_logs = activity_logs.filter(action__icontains='Created')
     elif log_action == 'updated':
-
-        activity_logs = activity_logs.filter(
-            action__icontains='Updated'
-        )
-
+        activity_logs = activity_logs.filter(action__icontains='Updated')
     elif log_action == 'deleted':
+        activity_logs = activity_logs.filter(action__icontains='Deleted')
 
-        activity_logs = activity_logs.filter(
-            action__icontains='Deleted'
-        )
-
-    # =====================================================
-    # SEARCH FILTER
-    # =====================================================
-
+    # Search
     if search_query:
-
         payments = payments.filter(
-
             Q(client__name__icontains=search_query) |
-
             Q(bank__name__icontains=search_query) |
-
             Q(amount__icontains=search_query)
         )
-
         expenses = expenses.filter(
-
             Q(client__name__icontains=search_query) |
-
             Q(category__name__icontains=search_query) |
-
             Q(description__icontains=search_query) |
-
             Q(amount__icontains=search_query)
         )
-
         activity_logs = activity_logs.filter(
-
             Q(action__icontains=search_query) |
-
-            Q(description__icontains=search_query)
+            Q(description__icontains=search_query) |
+            Q(created_by__username__icontains=search_query) |
+            Q(ip_address__icontains=search_query)
         )
 
-    # =====================================================
-    # ORDERING
-    # =====================================================
+    # Ordering
+    payments = payments.order_by('-payment_date', '-id')
+    expenses = expenses.order_by('-expense_date', '-id')
+    activity_logs = activity_logs.order_by('-created_at', '-id')
 
-    payments = payments.order_by(
-        '-payment_date',
-        '-id'
-    )
-
-    expenses = expenses.order_by(
-        '-expense_date',
-        '-id'
-    )
-
-    activity_logs = activity_logs.order_by(
-        '-created_at',
-        '-id'
-    )
-
-    # =====================================================
-    # TOTALS
-    # =====================================================
-
-    total_income = payments.aggregate(
-        Sum('amount')
-    )['amount__sum'] or 0
-
-    total_expenses = expenses.aggregate(
-        Sum('amount')
-    )['amount__sum'] or 0
-
+    # Totals
+    total_income = payments.aggregate(Sum('amount'))['amount__sum'] or 0
+    total_expenses = expenses.aggregate(Sum('amount'))['amount__sum'] or 0
     balance = total_income - total_expenses
 
-    # =====================================================
-    # PAGE TITLE
-    # =====================================================
-
+    # Action counts for badges
+    all_logs = ActivityLog.objects.all()
     if filter_type == 'today':
-
-        page_title = "Today's Activity"
-
+        all_logs = all_logs.filter(created_at__date=today)
     elif filter_type == 'month':
-
-        page_title = "This Month Activity"
-
+        all_logs = all_logs.filter(
+            created_at__month=current_month,
+            created_at__year=current_year
+        )
     elif filter_type == 'year':
+        all_logs = all_logs.filter(created_at__year=current_year)
 
-        page_title = "This Year Activity"
+    action_counts = {
+        'all': all_logs.count(),
+        'created': all_logs.filter(action__icontains='Created').count(),
+        'updated': all_logs.filter(action__icontains='Updated').count(),
+        'deleted': all_logs.filter(action__icontains='Deleted').count(),
+    }
 
-    else:
+    # Page title
+    titles = {
+        'today': "Today's Activity",
+        'month': "This Month's Activity",
+        'year': "This Year's Activity",
+    }
+    page_title = titles.get(filter_type, "Activity")
 
-        page_title = "Activity"
+    # Current user IP
+    x_forwarded = request.META.get('HTTP_X_FORWARDED_FOR')
+    current_ip = x_forwarded.split(',')[0].strip() if x_forwarded else request.META.get('REMOTE_ADDR', 'Unknown')
 
-    # =====================================================
-    # RENDER
-    # =====================================================
-
-    return render(
-        request,
-        'activity/today.html',
-        {
-
-            'payments': payments,
-
-            'expenses': expenses,
-
-            'activity_logs': activity_logs,
-
-            'total_income': total_income,
-
-            'total_expenses': total_expenses,
-
-            'balance': balance,
-
-            'today': today,
-
-            'search_query': search_query,
-
-            'filter_type': filter_type,
-
-            'log_action': log_action,
-
-            'page_title': page_title,
-        }
-    )
-
-
+    return render(request, 'activity/today.html', {
+        'payments': payments,
+        'expenses': expenses,
+        'activity_logs': activity_logs,
+        'total_income': total_income,
+        'total_expenses': total_expenses,
+        'balance': balance,
+        'today': today,
+        'current_time_ist': current_time_ist,
+        'search_query': search_query,
+        'filter_type': filter_type,
+        'log_action': log_action,
+        'page_title': page_title,
+        'action_counts': action_counts,
+        'current_ip': current_ip,
+    })
 
 
 

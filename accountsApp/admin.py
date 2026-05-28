@@ -20,27 +20,45 @@ from .models import (
 # COMPANY ADMIN
 # =====================================================
 
+# @admin.register(Company)
+# class CompanyAdmin(admin.ModelAdmin):
+
+#     list_display = (
+#         'id',
+#         'name',
+#         'is_active',
+#     )
+
+#     search_fields = (
+#         'name',
+#     )
+
+#     list_filter = (
+#         'is_active',
+#     )
+
+#     ordering = (
+#         '-id',
+#     )
+
+
 @admin.register(Company)
 class CompanyAdmin(admin.ModelAdmin):
 
     list_display = (
         'id',
         'name',
-        'is_active',
     )
 
     search_fields = (
         'name',
     )
 
-    list_filter = (
-        'is_active',
-    )
-
     ordering = (
         '-id',
     )
 
+    
 
 # =====================================================
 # CLIENT ADMIN
