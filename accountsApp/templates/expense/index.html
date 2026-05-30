@@ -3,6 +3,21 @@
 
 {% block content %}
 
+<!-- Page Loading Overlay -->
+<div class="sp-page-loader" id="pageLoader">
+    <div class="sp-loader-content">
+        <div class="sp-loader-ring">
+            <div class="sp-loader-dot"></div>
+        </div>
+        <div class="sp-loader-text">
+            <span>Loading</span>
+            <div class="sp-loader-dots">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="spending-page-wrapper">
 
     <!-- Page Header -->
@@ -16,56 +31,51 @@
                 <p class="sp-subtitle">Monitor, filter, and export all your expenses</p>
             </div>
         </div>
-        <div class="pm-header-right">
-                <!-- Hint Tooltip Chip -->
-                <div class="pm-hint-chip" id="pmHintChip">
-                    <div class="pm-hint-icon-wrap">
-                        <i class="bi bi-cursor-fill"></i>
-                    </div>
-                    <div class="pm-hint-content">
-                        <span class="pm-hint-title">Selection Mode</span>
-                        <span class="pm-hint-desc">Click amount cells to calculate total</span>
-                    </div>
-                    <button class="pm-hint-close" onclick="dismissHint()" title="Dismiss">
-                        <i class="bi bi-x"></i>
-                    </button>
 
-                    <!-- Animated Steps -->
-                    <div class="pm-hint-steps" id="hintSteps">
-                        <div class="pm-hint-step">
-                            <div class="pm-step-icon pm-step-click">
-                                <i class="bi bi-mouse2"></i>
-                            </div>
-                            <span>Click / Drag to select</span>
+        <div class="sp-header-right">
+            <!-- Hint Chip -->
+            <div class="pm-hint-chip" id="pmHintChip">
+                <div class="pm-hint-icon-wrap">
+                    <i class="bi bi-cursor-fill"></i>
+                </div>
+                <div class="pm-hint-content">
+                    <span class="pm-hint-title">Selection Mode</span>
+                    <span class="pm-hint-desc">Click amount cells to calculate total</span>
+                </div>
+                <button class="pm-hint-close" onclick="dismissHint()" title="Dismiss">
+                    <i class="bi bi-x"></i>
+                </button>
+                <div class="pm-hint-steps">
+                    <div class="pm-hint-step">
+                        <div class="pm-step-icon pm-step-click">
+                            <i class="bi bi-mouse2"></i>
                         </div>
-                        <div class="pm-hint-step-divider">
-                            <i class="bi bi-arrow-right"></i>
+                        <span>Click / Drag</span>
+                    </div>
+                    <div class="pm-hint-step-divider"><i class="bi bi-arrow-right"></i></div>
+                    <div class="pm-hint-step">
+                        <div class="pm-step-icon pm-step-ctrl">
+                            <i class="bi bi-command"></i>
                         </div>
-                        <div class="pm-hint-step">
-                            <div class="pm-step-icon pm-step-ctrl">
-                                <i class="bi bi-command"></i>
-                            </div>
-                            <span>Ctrl + Right-click to toggle</span>
+                        <span>Ctrl + Right-click</span>
+                    </div>
+                    <div class="pm-hint-step-divider"><i class="bi bi-arrow-right"></i></div>
+                    <div class="pm-hint-step">
+                        <div class="pm-step-icon pm-step-undo">
+                            <i class="bi bi-backspace"></i>
                         </div>
-                        <div class="pm-hint-step-divider">
-                            <i class="bi bi-arrow-right"></i>
-                        </div>
-                        <div class="pm-hint-step">
-                            <div class="pm-step-icon pm-step-undo">
-                                <i class="bi bi-backspace"></i>
-                            </div>
-                            <span>Backspace to undo last</span>
-                        </div>
+                        <span>Backspace to undo</span>
                     </div>
                 </div>
-
-                <a href="{% url 'expense_create' %}" class="sp-btn sp-btn-primary sp-btn-sm mt-4">
-                    <i class="bi bi-plus-lg me-2"></i> Add Expense
-                </a>
             </div>
+
+            <a href="{% url 'expense_create' %}" class="sp-btn sp-btn-primary">
+                <i class="bi bi-plus-lg me-2"></i> New Expense
+            </a>
+        </div>
     </div>
 
-    <!-- Floating Total Bar -->
+    <!-- Floating Total -->
     <div class="sp-floating-total" id="floatingTotal">
         <div class="sp-total-inner">
             <div class="sp-total-icon-wrap">
@@ -75,9 +85,10 @@
                 <span class="sp-total-label">Selected Total</span>
                 <span class="sp-total-amount">₹ <span id="selectedTotal">0.00</span></span>
             </div>
+            <div class="sp-total-divider"></div>
             <div class="sp-total-hint">
-                <i class="bi bi-info-circle me-1"></i>
-                Click cells to select
+                <kbd class="sp-kbd"><i class="bi bi-mouse2"></i></kbd> Click &nbsp;
+                <kbd class="sp-kbd">⌫</kbd> Undo
             </div>
         </div>
     </div>
@@ -87,7 +98,7 @@
         <div class="sp-filter-toggle" onclick="toggleFilterPanel()">
             <div class="d-flex align-items-center gap-2">
                 <div class="sp-filter-icon-badge">
-                    <i class="bi bi-sliders"></i>
+                    <i class="bi bi-sliders2"></i>
                 </div>
                 <div>
                     <span class="sp-filter-title">Filters & Search</span>
@@ -101,17 +112,13 @@
             <form method="get" id="filterForm">
                 <div class="sp-filter-grid">
 
-                    <!-- Client -->
                     <div class="sp-filter-item">
-                        <label class="sp-filter-label">
-                            <i class="bi bi-person me-1"></i> Client
-                        </label>
+                        <label class="sp-filter-label"><i class="bi bi-person me-1"></i>Client</label>
                         <div class="sp-select-wrap">
                             <select name="client" class="sp-select">
                                 <option value="">All Clients</option>
                                 {% for c in clients %}
-                                <option value="{{ c.id }}"
-                                    {% if selected_client == c.id|stringformat:"s" %}selected{% endif %}>
+                                <option value="{{ c.id }}" {% if selected_client == c.id|stringformat:"s" %}selected{% endif %}>
                                     {{ c.name }} ({{ c.location }})
                                 </option>
                                 {% endfor %}
@@ -120,17 +127,13 @@
                         </div>
                     </div>
 
-                    <!-- Category -->
                     <div class="sp-filter-item">
-                        <label class="sp-filter-label">
-                            <i class="bi bi-tag me-1"></i> Category
-                        </label>
+                        <label class="sp-filter-label"><i class="bi bi-tag me-1"></i>Category</label>
                         <div class="sp-select-wrap">
                             <select name="category" id="categorySelect" class="sp-select">
                                 <option value="">All Categories</option>
                                 {% for cat in categories %}
-                                <option value="{{ cat.id }}"
-                                    data-name="{{ cat.name|lower }}"
+                                <option value="{{ cat.id }}" data-name="{{ cat.name|lower }}"
                                     {% if selected_category == cat.id|stringformat:"s" %}selected{% endif %}>
                                     {{ cat.name }}
                                 </option>
@@ -140,18 +143,13 @@
                         </div>
                     </div>
 
-                    <!-- Sub Category -->
                     <div class="sp-filter-item">
-                        <label class="sp-filter-label">
-                            <i class="bi bi-tags me-1"></i> Sub Category
-                        </label>
+                        <label class="sp-filter-label"><i class="bi bi-tags me-1"></i>Sub Category</label>
                         <div class="sp-select-wrap">
                             <select name="subcategory" id="subcategorySelect" class="sp-select">
                                 <option value="">All Sub Categories</option>
                                 {% for sub in subcategories %}
-                                <option value="{{ sub.id }}"
-                                    data-category="{{ sub.category.id }}"
-                                    data-name="{{ sub.name|lower }}"
+                                <option value="{{ sub.id }}" data-category="{{ sub.category.id }}" data-name="{{ sub.name|lower }}"
                                     {% if selected_subcategory == sub.id|stringformat:"s" %}selected{% endif %}>
                                     {{ sub.name }}
                                 </option>
@@ -161,17 +159,13 @@
                         </div>
                     </div>
 
-                    <!-- Salary Team (Hidden by default) -->
                     <div class="sp-filter-item d-none" id="workerFilter">
-                        <label class="sp-filter-label">
-                            <i class="bi bi-people me-1"></i> Salary Team
-                        </label>
+                        <label class="sp-filter-label"><i class="bi bi-people me-1"></i>Salary Team</label>
                         <div class="sp-select-wrap">
                             <select name="worker" id="workerSelect" class="sp-select">
                                 <option value="">All Teams</option>
                                 {% for w in workers %}
-                                <option value="{{ w.id }}"
-                                    {% if selected_worker == w.id|stringformat:"s" %}selected{% endif %}>
+                                <option value="{{ w.id }}" {% if selected_worker == w.id|stringformat:"s" %}selected{% endif %}>
                                     {{ w.name }}
                                 </option>
                                 {% endfor %}
@@ -180,17 +174,13 @@
                         </div>
                     </div>
 
-                    <!-- Salary Worker (Hidden by default) -->
                     <div class="sp-filter-item d-none" id="workerNameFilter">
-                        <label class="sp-filter-label">
-                            <i class="bi bi-person-badge me-1"></i> Worker
-                        </label>
+                        <label class="sp-filter-label"><i class="bi bi-person-badge me-1"></i>Worker</label>
                         <div class="sp-select-wrap">
                             <select name="worker_name" id="workerNameSelect" class="sp-select">
                                 <option value="">All Workers</option>
                                 {% for wn in worker_names %}
-                                <option value="{{ wn.id }}"
-                                    data-worker="{{ wn.worker.id }}"
+                                <option value="{{ wn.id }}" data-worker="{{ wn.worker.id }}"
                                     {% if selected_worker_name == wn.id|stringformat:"s" %}selected{% endif %}>
                                     {{ wn.name }}
                                 </option>
@@ -200,11 +190,8 @@
                         </div>
                     </div>
 
-                    <!-- Spend Mode -->
                     <div class="sp-filter-item">
-                        <label class="sp-filter-label">
-                            <i class="bi bi-wallet2 me-1"></i> Spend Mode
-                        </label>
+                        <label class="sp-filter-label"><i class="bi bi-wallet2 me-1"></i>Spend Mode</label>
                         <div class="sp-select-wrap">
                             <select name="spend_mode" id="spendModeSelect" class="sp-select">
                                 <option value="">All Modes</option>
@@ -215,11 +202,8 @@
                         </div>
                     </div>
 
-                    <!-- Bank -->
                     <div class="sp-filter-item">
-                        <label class="sp-filter-label">
-                            <i class="bi bi-bank me-1"></i> Bank
-                        </label>
+                        <label class="sp-filter-label"><i class="bi bi-bank me-1"></i>Bank</label>
                         <div class="sp-select-wrap">
                             <select name="bank" id="bankSelect" class="sp-select">
                                 <option value="">All Banks</option>
@@ -240,28 +224,24 @@
                         </div>
                     </div>
 
-                    <!-- Start Date -->
                     <div class="sp-filter-item">
-                        <label class="sp-filter-label">
-                            <i class="bi bi-calendar-event me-1"></i> Start Date
-                        </label>
+                        <label class="sp-filter-label"><i class="bi bi-calendar-event me-1"></i>Start Date</label>
                         <input type="date" name="start_date" value="{{ start_date }}" class="sp-input">
                     </div>
 
-                    <!-- End Date -->
                     <div class="sp-filter-item">
-                        <label class="sp-filter-label">
-                            <i class="bi bi-calendar-check me-1"></i> End Date
-                        </label>
+                        <label class="sp-filter-label"><i class="bi bi-calendar-check me-1"></i>End Date</label>
                         <input type="date" name="end_date" value="{{ end_date }}" class="sp-input">
                     </div>
 
                 </div>
 
-                <!-- Filter Actions -->
                 <div class="sp-filter-actions">
-                    <button type="submit" class="sp-btn sp-btn-primary sp-btn-sm">
-                        <i class="bi bi-search me-1"></i> Apply Filters
+                    <button type="submit" class="sp-btn sp-btn-primary sp-btn-sm" id="applyFilterBtn">
+                        <span class="btn-normal-state"><i class="bi bi-search me-1"></i> Apply Filters</span>
+                        <span class="btn-loading-state d-none">
+                            <span class="sp-btn-spinner"></span> Applying...
+                        </span>
                     </button>
                     <a href="{% url 'expense_index' %}" class="sp-btn sp-btn-ghost sp-btn-sm">
                         <i class="bi bi-arrow-counterclockwise me-1"></i> Reset All
@@ -271,27 +251,58 @@
         </div>
     </div>
 
-    <!-- Export Bar -->
-    <div class="sp-export-bar">
-        <div class="sp-export-left">
-            <span class="sp-result-count">
-                <i class="bi bi-receipt me-1"></i>
-                <strong>{{ expenses|length }}</strong> Recent expense{{ expenses|length|pluralize }} found
-            </span>
+    <!-- Export & Stats Bar -->
+    <div class="sp-toolbar">
+        <div class="sp-toolbar-left">
+            <div class="sp-stat-chip">
+                <div class="sp-stat-icon">
+                    <i class="bi bi-receipt"></i>
+                </div>
+                <div>
+                    <span class="sp-stat-value">{{ expenses|length }}</span>
+                    <span class="sp-stat-label">Expense{{ expenses|length|pluralize }}</span>
+                </div>
+            </div>
         </div>
-        <div class="sp-export-right">
-            <a href="{% url 'expense_pdf_export' %}?{{ request.GET.urlencode }}" class="sp-btn sp-btn-export sp-btn-pdf">
+        <div class="sp-toolbar-right">
+            <a href="{% url 'expense_pdf_export' %}?{{ request.GET.urlencode }}"
+               class="sp-btn sp-btn-export sp-btn-pdf" onclick="showExportLoader(this)">
                 <i class="bi bi-file-earmark-pdf me-1"></i> PDF
             </a>
-            <a href="{% url 'expense_excel_export' %}?{{ request.GET.urlencode }}" class="sp-btn sp-btn-export sp-btn-excel">
+            <a href="{% url 'expense_excel_export' %}?{{ request.GET.urlencode }}"
+               class="sp-btn sp-btn-export sp-btn-excel" onclick="showExportLoader(this)">
                 <i class="bi bi-file-earmark-excel me-1"></i> Excel
             </a>
         </div>
     </div>
 
-    <!-- Data Table -->
-    <div class="sp-table-card">
-        <div class="sp-table-responsive custom-scrollbar" style="max-height: 60vh;">
+    <!-- Table -->
+    <div class="sp-table-card" id="tableCard">
+        <!-- Table Skeleton (shown during load) -->
+        <div class="sp-table-skeleton" id="tableSkeleton" style="display:none;">
+            <div class="sp-skeleton-header">
+                {% for i in "12345678901" %}
+                <div class="sp-skeleton-th"></div>
+                {% endfor %}
+            </div>
+            {% for i in "12345678" %}
+            <div class="sp-skeleton-row">
+                <div class="sp-skeleton-cell sp-sk-narrow"></div>
+                <div class="sp-skeleton-cell sp-sk-wide"></div>
+                <div class="sp-skeleton-cell sp-sk-mid"></div>
+                <div class="sp-skeleton-cell sp-sk-mid"></div>
+                <div class="sp-skeleton-cell sp-sk-mid"></div>
+                <div class="sp-skeleton-cell sp-sk-wide"></div>
+                <div class="sp-skeleton-cell sp-sk-mid"></div>
+                <div class="sp-skeleton-cell sp-sk-narrow"></div>
+                <div class="sp-skeleton-cell sp-sk-mid"></div>
+                <div class="sp-skeleton-cell sp-sk-mid"></div>
+                <div class="sp-skeleton-cell sp-sk-narrow"></div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="sp-table-responsive custom-scrollbar" style="max-height: 60vh;" id="tableContent">
             <table class="sp-table">
                 <thead>
                     <tr>
@@ -310,14 +321,14 @@
                 </thead>
                 <tbody>
                     {% for expense in expenses %}
-                    <tr class="sp-table-row">
-                        <td class="ps-4 text-muted fw-medium">{{ forloop.counter }}</td>
+                    <tr class="sp-table-row" style="animation-delay: {{ forloop.counter0 }}00ms">
+                        <td class="ps-4">
+                            <span class="sp-row-num">{{ forloop.counter }}</span>
+                        </td>
 
                         <td>
                             <div class="sp-client-cell">
-                                <div class="sp-client-avatar">
-                                    {{ expense.client.name|first }}
-                                </div>
+                                <div class="sp-client-avatar">{{ expense.client.name|first }}</div>
                                 <div>
                                     <span class="sp-client-name">{{ expense.client.name }}</span>
                                     <span class="sp-client-location">{{ expense.client.location }}</span>
@@ -328,33 +339,29 @@
                         <td>
                             {% if expense.category %}
                             <span class="sp-tag sp-tag-category">{{ expense.category.name }}</span>
-                            {% else %}
-                            <span class="sp-tag sp-tag-empty">—</span>
-                            {% endif %}
+                            {% else %}<span class="sp-no-data">—</span>{% endif %}
                         </td>
 
                         <td>
                             {% if expense.subcategory %}
                             <span class="sp-tag sp-tag-sub">{{ expense.subcategory.name }}</span>
-                            {% else %}
-                            <span class="sp-tag sp-tag-empty">—</span>
-                            {% endif %}
+                            {% else %}<span class="sp-no-data">—</span>{% endif %}
                         </td>
 
                         <td>
                             {% if expense.salary_to %}
                             <div class="sp-salary-cell">
                                 <span class="sp-salary-team">{{ expense.salary_to.name }}</span>
-                                <span class="sp-salary-divider">/</span>
+                                <span class="sp-salary-sep">/</span>
                                 <span class="sp-salary-worker">{{ expense.worker_name.name|default:"—" }}</span>
                             </div>
-                            {% else %}
-                            <span class="sp-tag sp-tag-empty">—</span>
-                            {% endif %}
+                            {% else %}<span class="sp-no-data">—</span>{% endif %}
                         </td>
 
                         <td>
-                            <span class="sp-desc-text">{{ expense.description|truncatewords:8 }}</span>
+                            <span class="sp-desc-text" title="{{ expense.description }}">
+                                {{ expense.description|truncatewords:6 }}
+                            </span>
                         </td>
 
                         <td>
@@ -364,7 +371,10 @@
                         </td>
 
                         <td class="text-end selectable-amount" data-amount="{{ expense.amount }}" data-col="amount">
-                            <span class="sp-amount-value">₹ {{ expense.amount|floatformat:2 }}</span>
+                            <div class="sp-amount-wrap">
+                                <span class="sp-amount-value">₹ {{ expense.amount|floatformat:2 }}</span>
+                                <div class="sp-amount-check"><i class="bi bi-check-circle-fill"></i></div>
+                            </div>
                         </td>
 
                         <td>
@@ -386,10 +396,12 @@
 
                         <td class="text-center">
                             <div class="sp-action-group">
-                                <a href="{% url 'expense_update' expense.id %}" class="sp-action-btn sp-action-edit" data-bs-toggle="tooltip" title="Edit">
+                                <a href="{% url 'expense_update' expense.id %}" class="sp-action-btn sp-action-edit"
+                                   data-bs-toggle="tooltip" title="Edit">
                                     <i class="bi bi-pencil-square"></i>
                                 </a>
-                                <a href="{% url 'expense_delete' expense.id %}" class="sp-action-btn sp-action-delete" data-bs-toggle="tooltip" title="Delete">
+                                <a href="{% url 'expense_delete' expense.id %}" class="sp-action-btn sp-action-delete"
+                                   data-bs-toggle="tooltip" title="Delete">
                                     <i class="bi bi-trash3"></i>
                                 </a>
                             </div>
@@ -399,13 +411,17 @@
                     <tr>
                         <td colspan="11">
                             <div class="sp-empty-state">
-                                <div class="sp-empty-icon">
-                                    <i class="bi bi-receipt-cutoff"></i>
+                                <div class="sp-empty-icon-wrap">
+                                    <div class="sp-empty-icon">
+                                        <i class="bi bi-receipt-cutoff"></i>
+                                    </div>
+                                    <div class="sp-empty-ring sp-empty-ring-1"></div>
+                                    <div class="sp-empty-ring sp-empty-ring-2"></div>
                                 </div>
                                 <h5>No Expenses Found</h5>
-                                <p>Try adjusting your filters or add a new expense</p>
+                                <p>Try adjusting your filters or add a new expense to get started</p>
                                 <a href="{% url 'expense_create' %}" class="sp-btn sp-btn-primary sp-btn-sm">
-                                    <i class="bi bi-plus-lg me-1"></i> Add Expense
+                                    <i class="bi bi-plus-lg me-1"></i> Add First Expense
                                 </a>
                             </div>
                         </td>
@@ -414,14 +430,166 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- Pagination -->
+        {% if expenses.has_other_pages %}
+        <div class="sp-pagination-wrapper">
+            <div class="sp-pagination-info">
+                <span>Page <strong>{{ expenses.number }}</strong> of <strong>{{ expenses.paginator.num_pages }}</strong></span>
+                <span class="sp-pagination-sep">•</span>
+                <span>{{ expenses.paginator.count }} total records</span>
+            </div>
+
+            <div class="sp-pagination">
+                {% if expenses.has_previous %}
+                <a href="?page=1{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}"
+                   class="sp-page-btn sp-page-nav" title="First page" onclick="showPaginationLoader()">
+                    <i class="bi bi-chevron-double-left"></i>
+                </a>
+                <a href="?page={{ expenses.previous_page_number }}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}"
+                   class="sp-page-btn sp-page-nav" title="Previous" onclick="showPaginationLoader()">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+                {% else %}
+                <span class="sp-page-btn sp-page-nav sp-page-disabled"><i class="bi bi-chevron-double-left"></i></span>
+                <span class="sp-page-btn sp-page-nav sp-page-disabled"><i class="bi bi-chevron-left"></i></span>
+                {% endif %}
+
+                <!-- Page Number Bubbles -->
+                {% for num in expenses.paginator.page_range %}
+                    {% if expenses.number == num %}
+                    <span class="sp-page-btn sp-page-active">{{ num }}</span>
+                    {% elif num >= expenses.number|add:"-2" and num <= expenses.number|add:"2" %}
+                    <a href="?page={{ num }}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}"
+                       class="sp-page-btn" onclick="showPaginationLoader()">{{ num }}</a>
+                    {% elif num == 1 or num == expenses.paginator.num_pages %}
+                    <a href="?page={{ num }}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}"
+                       class="sp-page-btn" onclick="showPaginationLoader()">{{ num }}</a>
+                    {% elif num == expenses.number|add:"-3" or num == expenses.number|add:"3" %}
+                    <span class="sp-page-ellipsis">…</span>
+                    {% endif %}
+                {% endfor %}
+
+                {% if expenses.has_next %}
+                <a href="?page={{ expenses.next_page_number }}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}"
+                   class="sp-page-btn sp-page-nav" title="Next" onclick="showPaginationLoader()">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+                <a href="?page={{ expenses.paginator.num_pages }}{% for k,v in request.GET.items %}{% if k != 'page' %}&{{ k }}={{ v }}{% endif %}{% endfor %}"
+                   class="sp-page-btn sp-page-nav" title="Last page" onclick="showPaginationLoader()">
+                    <i class="bi bi-chevron-double-right"></i>
+                </a>
+                {% else %}
+                <span class="sp-page-btn sp-page-nav sp-page-disabled"><i class="bi bi-chevron-right"></i></span>
+                <span class="sp-page-btn sp-page-nav sp-page-disabled"><i class="bi bi-chevron-double-right"></i></span>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
     </div>
 
 </div>
 
-<!-- ========== SCRIPTS ========== -->
+<!-- Pagination Loading Overlay -->
+<div class="sp-pagination-loader" id="paginationLoader">
+    <div class="sp-pag-loader-inner">
+        <div class="sp-pag-spinner">
+            <svg viewBox="0 0 50 50">
+                <circle cx="25" cy="25" r="20" fill="none" stroke-width="4"></circle>
+            </svg>
+        </div>
+        <span>Loading page...</span>
+    </div>
+</div>
 
-<!-- Filter Logic -->
+<!-- ===================== SCRIPTS ===================== -->
 <script>
+// ---- Page Loader ----
+window.addEventListener('load', function () {
+    const loader = document.getElementById('pageLoader');
+    if (loader) {
+        loader.classList.add('sp-loader-fade');
+        setTimeout(() => loader.style.display = 'none', 500);
+    }
+});
+
+// ---- Hint Dismiss ----
+function dismissHint() {
+    const chip = document.getElementById('pmHintChip');
+    if (!chip) return;
+    chip.classList.add('pm-hint-dismissed');
+    setTimeout(() => chip.style.display = 'none', 400);
+    localStorage.setItem('spHintDismissed', 'true');
+}
+
+// ---- Pagination Loader ----
+function showPaginationLoader() {
+    const loader = document.getElementById('paginationLoader');
+    const tableCard = document.getElementById('tableCard');
+    if (loader) loader.classList.add('sp-pag-loader-visible');
+    if (tableCard) tableCard.classList.add('sp-table-loading');
+}
+
+// ---- Export Loader ----
+function showExportLoader(el) {
+    const original = el.innerHTML;
+    el.innerHTML = '<span class="sp-btn-spinner"></span> Exporting...';
+    el.style.pointerEvents = 'none';
+    setTimeout(() => {
+        el.innerHTML = original;
+        el.style.pointerEvents = '';
+    }, 3000);
+}
+
+// ---- Filter Panel Toggle ----
+function toggleFilterPanel() {
+    const body = document.getElementById('filterBody');
+    const chevron = document.getElementById('filterChevron');
+    body.classList.toggle('sp-filter-open');
+    chevron.classList.toggle('sp-chevron-rotated');
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    // Auto-dismiss hint if previously dismissed
+    if (localStorage.getItem('spHintDismissed') === 'true') {
+        const chip = document.getElementById('pmHintChip');
+        if (chip) chip.style.display = 'none';
+    }
+
+    // Active filter counter
+    const form = document.getElementById('filterForm');
+    if (form) {
+        let count = 0;
+        form.querySelectorAll('select, input[type="date"]').forEach(el => {
+            if (el.value && el.value !== '') count++;
+        });
+        const badge = document.getElementById('activeFilterCount');
+        if (count > 0 && badge) {
+            badge.textContent = count + ' active';
+            badge.classList.add('sp-filter-count-active');
+            document.getElementById('filterBody').classList.add('sp-filter-open');
+            document.getElementById('filterChevron').classList.add('sp-chevron-rotated');
+        }
+    }
+
+    // Apply filter button loading state
+    const filterForm = document.getElementById('filterForm');
+    const applyBtn = document.getElementById('applyFilterBtn');
+    if (filterForm && applyBtn) {
+        filterForm.addEventListener('submit', function () {
+            applyBtn.querySelector('.btn-normal-state').classList.add('d-none');
+            applyBtn.querySelector('.btn-loading-state').classList.remove('d-none');
+            applyBtn.disabled = true;
+            showPaginationLoader();
+        });
+    }
+
+    // Tooltips
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => new bootstrap.Tooltip(el));
+});
+
+// ---- Filter Logic ----
 document.addEventListener('DOMContentLoaded', function () {
     const categorySelect = document.getElementById('categorySelect');
     const subcategorySelect = document.getElementById('subcategorySelect');
@@ -431,215 +599,113 @@ document.addEventListener('DOMContentLoaded', function () {
     const workerNameSelect = document.getElementById('workerNameSelect');
 
     function toggleSalaryFilters() {
-        const selectedCategory = categorySelect.options[categorySelect.selectedIndex]?.dataset.name || '';
-        const selectedSubcategory = subcategorySelect.options[subcategorySelect.selectedIndex]?.dataset.name || '';
-        const isSalary = selectedCategory === 'salary' || selectedSubcategory === 'salary';
-
-        if (isSalary) {
-            workerFilter.classList.remove('d-none');
-            workerNameFilter.classList.remove('d-none');
-        } else {
-            workerFilter.classList.add('d-none');
-            workerNameFilter.classList.add('d-none');
-            workerSelect.value = '';
-            workerNameSelect.value = '';
-        }
+        const cat = categorySelect.options[categorySelect.selectedIndex]?.dataset.name || '';
+        const sub = subcategorySelect.options[subcategorySelect.selectedIndex]?.dataset.name || '';
+        const isSalary = cat === 'salary' || sub === 'salary';
+        workerFilter.classList.toggle('d-none', !isSalary);
+        workerNameFilter.classList.toggle('d-none', !isSalary);
+        if (!isSalary) { workerSelect.value = ''; workerNameSelect.value = ''; }
     }
 
     function filterSubcategories() {
-        const categoryId = categorySelect.value;
-        Array.from(subcategorySelect.options).forEach(option => {
-            if (!option.dataset.category) return;
-            const match = option.dataset.category === categoryId;
-            option.hidden = !match;
-            option.disabled = !match;
+        const catId = categorySelect.value;
+        Array.from(subcategorySelect.options).forEach(o => {
+            if (!o.dataset.category) return;
+            o.hidden = o.disabled = o.dataset.category !== catId;
         });
         toggleSalaryFilters();
     }
 
     function filterWorkerNames() {
         const teamId = workerSelect.value;
-        Array.from(workerNameSelect.options).forEach(option => {
-            if (!option.dataset.worker) return;
-            const match = option.dataset.worker === teamId;
-            option.hidden = !match;
-            option.disabled = !match;
+        Array.from(workerNameSelect.options).forEach(o => {
+            if (!o.dataset.worker) return;
+            o.hidden = o.disabled = o.dataset.worker !== teamId;
         });
     }
 
     categorySelect.addEventListener('change', filterSubcategories);
     subcategorySelect.addEventListener('change', toggleSalaryFilters);
     workerSelect.addEventListener('change', filterWorkerNames);
-
-    filterSubcategories();
-    filterWorkerNames();
-    toggleSalaryFilters();
+    filterSubcategories(); filterWorkerNames(); toggleSalaryFilters();
 });
-</script>
 
-<!-- Bank Filter -->
-<script>
+// ---- Bank Filter ----
 document.addEventListener('DOMContentLoaded', function () {
     const modeSelect = document.getElementById('spendModeSelect');
     const bankSelect = document.getElementById('bankSelect');
-
     function filterBanks() {
         const mode = modeSelect.value;
         Array.from(bankSelect.options).forEach(opt => {
             if (!opt.value) return;
-            const type = opt.dataset.type;
-            if (mode === 'cash') { opt.hidden = type !== 'cash'; }
-            else if (mode === 'cheque') { opt.hidden = type !== 'cheque'; }
-            else { opt.hidden = false; }
+            opt.hidden = mode === 'cash' ? opt.dataset.type !== 'cash' :
+                         mode === 'cheque' ? opt.dataset.type !== 'cheque' : false;
         });
-        const selected = bankSelect.selectedOptions[0];
-        if (selected && selected.hidden) { bankSelect.value = ''; }
+        if (bankSelect.selectedOptions[0]?.hidden) bankSelect.value = '';
     }
-
     filterBanks();
     modeSelect.addEventListener('change', filterBanks);
 });
-</script>
 
-<!-- Selection & Total -->
-<script>
+// ---- Selection & Total ----
 document.addEventListener('DOMContentLoaded', function () {
-    let total = 0;
-    let isDragging = false;
-    let activeColumn = null;
+    let total = 0, isDragging = false, activeColumn = null;
     const totalEl = document.getElementById('selectedTotal');
     const floatingBar = document.getElementById('floatingTotal');
     const selectionStack = [];
 
     function updateTotal(amount, add = true) {
-        total += add ? amount : -amount;
+        total = Math.max(0, total + (add ? amount : -amount));
         totalEl.textContent = total.toFixed(2);
-        if (total > 0) {
-            floatingBar.classList.add('sp-total-visible');
-        } else {
-            floatingBar.classList.remove('sp-total-visible');
-        }
+        floatingBar.classList.toggle('sp-total-visible', total > 0);
     }
 
     function selectCell(cell) {
-        if (!cell.classList.contains('sp-cell-selected')) {
-            cell.classList.add('sp-cell-selected');
-            const amount = parseFloat(cell.dataset.amount || 0);
-            updateTotal(amount, true);
-            selectionStack.push(cell);
-        }
+        if (cell.classList.contains('sp-cell-selected')) return;
+        cell.classList.add('sp-cell-selected');
+        updateTotal(parseFloat(cell.dataset.amount || 0), true);
+        selectionStack.push(cell);
     }
 
     function unselectCell(cell) {
-        if (cell.classList.contains('sp-cell-selected')) {
-            cell.classList.remove('sp-cell-selected');
-            const amount = parseFloat(cell.dataset.amount || 0);
-            updateTotal(amount, false);
-        }
+        if (!cell.classList.contains('sp-cell-selected')) return;
+        cell.classList.remove('sp-cell-selected');
+        updateTotal(parseFloat(cell.dataset.amount || 0), false);
     }
 
     document.querySelectorAll('.selectable-amount').forEach(td => {
-        const column = td.dataset.col;
+        const col = td.dataset.col;
         td.addEventListener('contextmenu', e => e.preventDefault());
-
         td.addEventListener('mousedown', function (e) {
             if (e.ctrlKey && e.button === 2) {
                 e.preventDefault();
                 if (this.classList.contains('sp-cell-selected')) {
                     unselectCell(this);
-                    const index = selectionStack.indexOf(this);
-                    if (index !== -1) selectionStack.splice(index, 1);
-                } else {
-                    selectCell(this);
-                }
+                    selectionStack.splice(selectionStack.indexOf(this), 1);
+                } else selectCell(this);
             }
-            if (e.button === 0) {
-                isDragging = true;
-                activeColumn = column;
-                selectCell(this);
-            }
+            if (e.button === 0) { isDragging = true; activeColumn = col; selectCell(this); }
         });
-
         td.addEventListener('mouseenter', function () {
-            if (isDragging && column === activeColumn) {
-                selectCell(this);
-            }
+            if (isDragging && col === activeColumn) selectCell(this);
         });
     });
 
-    document.addEventListener('mouseup', function () {
-        isDragging = false;
-        activeColumn = null;
-    });
-
-    document.addEventListener('keydown', function (e) {
+    document.addEventListener('mouseup', () => { isDragging = false; activeColumn = null; });
+    document.addEventListener('keydown', e => {
         if (e.key === 'Backspace') {
             e.preventDefault();
-            const lastCell = selectionStack.pop();
-            if (lastCell) { unselectCell(lastCell); }
+            const last = selectionStack.pop();
+            if (last) unselectCell(last);
         }
     });
 });
 </script>
 
-<!-- Filter Panel Toggle -->
-<script>
-function toggleFilterPanel() {
-    const body = document.getElementById('filterBody');
-    const chevron = document.getElementById('filterChevron');
-    body.classList.toggle('sp-filter-open');
-    chevron.classList.toggle('sp-chevron-rotated');
-}
-
-document.addEventListener('DOMContentLoaded', function () {
-    // Count active filters
-    const form = document.getElementById('filterForm');
-    if (form) {
-        let count = 0;
-        form.querySelectorAll('select, input').forEach(el => {
-            if (el.value && el.value !== '') count++;
-        });
-        const badge = document.getElementById('activeFilterCount');
-        if (count > 0) {
-            badge.textContent = count + ' active';
-            badge.classList.add('sp-filter-count-active');
-            document.getElementById('filterBody').classList.add('sp-filter-open');
-            document.getElementById('filterChevron').classList.add('sp-chevron-rotated');
-        }
-    }
-
-    // Tooltips
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
-});
-
-
-//auto dismiss hint after 8 seconds
-function dismissHint() {
-
-    const chip = document.getElementById(
-        'pmHintChip'
-    );
-
-    if (!chip) return;
-
-    chip.classList.add(
-        'pm-hint-dismissed'
-    );
-
-    setTimeout(() => {
-
-        chip.style.display = 'none';
-
-    }, 400);
-}
-
-
-
-</script>
-
-<!-- ========== STYLES ========== -->
 <style>
+/* =============================================
+   SPENDING PAGE – SAAS LEVEL V2 STYLESHEET
+   ============================================= */
 :root {
     --sp-primary: #4f46e5;
     --sp-primary-light: #eef2ff;
@@ -659,26 +725,160 @@ function dismissHint() {
     --sp-gray-600: #475569;
     --sp-gray-700: #334155;
     --sp-gray-800: #1e293b;
-    --sp-gray-900: #0f172a;
     --sp-radius-sm: 8px;
     --sp-radius-md: 12px;
     --sp-radius-lg: 16px;
-    --sp-radius-xl: 20px;
-    --sp-shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
-    --sp-shadow-md: 0 4px 6px -1px rgba(0,0,0,0.06), 0 2px 4px -2px rgba(0,0,0,0.04);
-    --sp-shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04);
-    --sp-transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    --sp-radius-xl: 22px;
+    --sp-shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+    --sp-shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.04);
+    --sp-shadow-lg: 0 10px 25px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04);
+    --sp-transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
 }
 
-.spending-page-wrapper {
-    max-width: 1500px;
-    margin: 0 auto;
+/* ---- Page Loader ---- */
+.sp-page-loader {
+    position: fixed;
+    inset: 0;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    transition: opacity 0.5s ease;
 }
+
+.sp-loader-fade { opacity: 0; pointer-events: none; }
+
+.sp-loader-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.sp-loader-ring {
+    width: 56px;
+    height: 56px;
+    border: 3px solid var(--sp-gray-200);
+    border-top-color: var(--sp-primary);
+    border-radius: 50%;
+    animation: sp-spin 0.8s linear infinite;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sp-loader-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--sp-primary);
+    border-radius: 50%;
+    animation: sp-pulse 0.8s ease-in-out infinite;
+}
+
+.sp-loader-text {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--sp-gray-600);
+}
+
+.sp-loader-dots {
+    display: flex;
+    gap: 3px;
+}
+
+.sp-loader-dots span {
+    width: 4px;
+    height: 4px;
+    background: var(--sp-gray-400);
+    border-radius: 50%;
+    animation: sp-dot-bounce 1.2s ease-in-out infinite;
+}
+
+.sp-loader-dots span:nth-child(2) { animation-delay: 0.2s; }
+.sp-loader-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes sp-spin { to { transform: rotate(360deg); } }
+@keyframes sp-pulse { 0%,100% { transform: scale(0.8); opacity: 0.6; } 50% { transform: scale(1.1); opacity: 1; } }
+@keyframes sp-dot-bounce { 0%,80%,100% { transform: translateY(0); } 40% { transform: translateY(-4px); } }
+
+/* ---- Pagination Loader ---- */
+.sp-pagination-loader {
+    position: fixed;
+    inset: 0;
+    background: rgba(248,250,252,0.85);
+    backdrop-filter: blur(6px);
+    z-index: 9000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.sp-pagination-loader.sp-pag-loader-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.sp-pag-loader-inner {
+    background: white;
+    border: 1px solid var(--sp-gray-200);
+    border-radius: var(--sp-radius-xl);
+    padding: 28px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    box-shadow: var(--sp-shadow-lg);
+}
+
+.sp-pag-spinner {
+    width: 48px;
+    height: 48px;
+}
+
+.sp-pag-spinner svg {
+    animation: sp-spin 1s linear infinite;
+    width: 100%;
+    height: 100%;
+}
+
+.sp-pag-spinner circle {
+    stroke: var(--sp-primary);
+    stroke-linecap: round;
+    stroke-dasharray: 80;
+    stroke-dashoffset: 60;
+    animation: sp-dash 1.5s ease-in-out infinite;
+}
+
+@keyframes sp-dash {
+    0% { stroke-dashoffset: 80; }
+    50% { stroke-dashoffset: 20; }
+    100% { stroke-dashoffset: 80; }
+}
+
+.sp-pag-loader-inner span {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--sp-gray-600);
+}
+
+.sp-table-loading { opacity: 0.5; pointer-events: none; transition: opacity 0.3s; }
+
+/* ---- Wrapper ---- */
+.spending-page-wrapper { max-width: 1500px; margin: 0 auto; }
 
 /* ---- Header ---- */
 .sp-page-header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 16px;
     margin-bottom: 24px;
@@ -689,6 +889,13 @@ function dismissHint() {
     display: flex;
     align-items: center;
     gap: 16px;
+}
+
+.sp-header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
 }
 
 .sp-header-icon {
@@ -702,10 +909,11 @@ function dismissHint() {
     color: white;
     font-size: 1.3rem;
     box-shadow: 0 4px 14px rgba(79,70,229,0.3);
+    flex-shrink: 0;
 }
 
 .sp-title {
-    font-size: 1.5rem;
+    font-size: 1.45rem;
     font-weight: 700;
     color: var(--sp-gray-800);
     margin: 0;
@@ -713,9 +921,9 @@ function dismissHint() {
 }
 
 .sp-subtitle {
-    font-size: 0.85rem;
+    font-size: 0.83rem;
     color: var(--sp-gray-500);
-    margin: 2px 0 0;
+    margin: 3px 0 0;
 }
 
 /* ---- Buttons ---- */
@@ -732,6 +940,7 @@ function dismissHint() {
     transition: var(--sp-transition);
     text-decoration: none;
     gap: 4px;
+    white-space: nowrap;
 }
 
 .sp-btn-primary {
@@ -740,95 +949,186 @@ function dismissHint() {
     box-shadow: 0 4px 12px rgba(79,70,229,0.25);
 }
 
-.sp-btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(79,70,229,0.35);
-    color: white;
-}
+.sp-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(79,70,229,0.35); color: white; }
+.sp-btn-primary:active { transform: translateY(0); }
 
 .sp-btn-ghost {
     background: white;
     color: var(--sp-gray-600);
-    border: 1px solid var(--sp-gray-300);
+    border: 1.5px solid var(--sp-gray-200);
 }
 
-.sp-btn-ghost:hover {
-    background: var(--sp-gray-50);
-    color: var(--sp-gray-800);
-    border-color: var(--sp-gray-400);
+.sp-btn-ghost:hover { background: var(--sp-gray-50); color: var(--sp-gray-800); border-color: var(--sp-gray-300); }
+.sp-btn-sm { padding: 8px 18px; font-size: 0.8rem; border-radius: var(--sp-radius-sm); }
+
+/* Spinner inside btn */
+.sp-btn-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: white;
+    border-radius: 50%;
+    display: inline-block;
+    animation: sp-spin 0.7s linear infinite;
+    margin-right: 4px;
 }
 
-.sp-btn-sm {
-    padding: 8px 18px;
-    font-size: 0.8rem;
+/* ---- Hint Chip ---- */
+.pm-hint-chip {
+    position: relative;
+    background: white;
+    border: 1.5px solid #e0e7ff;
+    border-radius: 14px;
+    padding: 10px 14px 10px 12px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    box-shadow: 0 4px 6px -1px rgba(79,70,229,0.06), 0 0 0 4px rgba(79,70,229,0.04);
+    transition: var(--sp-transition);
+    max-width: 540px;
+    animation: hintSlideIn 0.5s ease both;
+    overflow: hidden;
 }
+
+.pm-hint-chip::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #4f46e5, #7c3aed, #0ea5e9);
+    border-radius: 14px 14px 0 0;
+}
+
+.pm-hint-chip:hover {
+    border-color: #c7d2fe;
+    box-shadow: 0 8px 20px -2px rgba(79,70,229,0.12), 0 0 0 4px rgba(79,70,229,0.06);
+    transform: translateY(-1px);
+}
+
+.pm-hint-icon-wrap {
+    width: 36px; height: 36px; min-width: 36px;
+    background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+    border: 1px solid #c7d2fe;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    color: #4f46e5; font-size: 0.95rem; position: relative;
+}
+
+.pm-hint-icon-wrap::after {
+    content: '';
+    position: absolute; inset: 0;
+    border-radius: 10px;
+    background: radial-gradient(circle, rgba(79,70,229,0.08), transparent);
+    animation: iconPulse 2s ease-in-out infinite;
+}
+
+@keyframes iconPulse { 0%,100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 1; transform: scale(1.1); } }
+
+.pm-hint-content { flex: 1; min-width: 0; }
+
+.pm-hint-title {
+    display: block; font-size: 0.7rem; font-weight: 700;
+    color: #4f46e5; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 1px;
+}
+
+.pm-hint-desc {
+    display: block; font-size: 0.79rem; color: #64748b; font-weight: 500;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.pm-hint-close {
+    width: 22px; height: 22px; min-width: 22px;
+    border: 1px solid #e2e8f0; border-radius: 50%;
+    background: white; display: flex; align-items: center; justify-content: center;
+    color: #94a3b8; font-size: 0.7rem; cursor: pointer;
+    transition: all 0.2s ease; padding: 0;
+}
+
+.pm-hint-close:hover {
+    background: #fef2f2; border-color: #fca5a5; color: #dc2626; transform: rotate(90deg);
+}
+
+.pm-hint-steps {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 8px; padding-top: 10px;
+    border-top: 1px dashed #e2e8f0;
+    width: 100%; flex-basis: 100%; order: 10;
+    flex-wrap: wrap;
+}
+
+.pm-hint-step {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.72rem; color: #475569; font-weight: 500; white-space: nowrap;
+}
+
+.pm-hint-step-divider { color: #cbd5e1; font-size: 0.65rem; flex-shrink: 0; }
+
+.pm-step-icon {
+    width: 26px; height: 26px; min-width: 26px;
+    border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem;
+}
+
+.pm-step-click { background: #ecfdf5; color: #059669; border: 1px solid #bbf7d0; }
+.pm-step-ctrl  { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+.pm-step-undo  { background: #fff7ed; color: #d97706; border: 1px solid #fed7aa; }
+
+.pm-hint-dismissed { animation: hintSlideOut 0.4s ease forwards; }
+
+@keyframes hintSlideIn { from { opacity:0; transform: translateY(-10px) scale(0.97); } to { opacity:1; transform: translateY(0) scale(1); } }
+@keyframes hintSlideOut { from { opacity:1; transform: translateY(0) scale(1); } to { opacity:0; transform: translateY(-10px) scale(0.96); } }
 
 /* ---- Floating Total ---- */
 .sp-floating-total {
-    position: sticky;
-    top: 76px;
-    z-index: 1050;
-    display: flex;
-    justify-content: center;
+    position: sticky; top: 76px; z-index: 1050;
+    display: flex; justify-content: center;
     margin-bottom: 20px;
-    opacity: 0;
-    transform: translateY(-20px);
-    pointer-events: none;
-    transition: var(--sp-transition);
+    opacity: 0; transform: translateY(-16px);
+    pointer-events: none; transition: var(--sp-transition);
 }
 
 .sp-floating-total.sp-total-visible {
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto;
+    opacity: 1; transform: translateY(0); pointer-events: auto;
 }
 
 .sp-total-inner {
-    display: flex;
-    align-items: center;
-    gap: 16px;
+    display: flex; align-items: center; gap: 16px;
     padding: 10px 28px;
     background: linear-gradient(135deg, var(--sp-primary), var(--sp-primary-dark));
     border-radius: 50px;
-    box-shadow: 0 8px 32px rgba(79,70,229,0.35);
-    border: 1px solid rgba(255,255,255,0.15);
+    box-shadow: 0 8px 32px rgba(79,70,229,0.35), 0 0 0 1px rgba(255,255,255,0.1);
 }
 
 .sp-total-icon-wrap {
-    width: 34px;
-    height: 34px;
-    background: rgba(255,255,255,0.15);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 0.95rem;
+    width: 34px; height: 34px;
+    background: rgba(255,255,255,0.15); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 0.95rem;
 }
 
 .sp-total-label {
-    display: block;
-    font-size: 0.65rem;
-    color: rgba(255,255,255,0.7);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    font-weight: 600;
+    display: block; font-size: 0.62rem; color: rgba(255,255,255,0.7);
+    text-transform: uppercase; letter-spacing: 0.07em; font-weight: 700;
 }
 
 .sp-total-amount {
-    display: block;
-    font-size: 1.2rem;
-    font-weight: 800;
-    color: white;
-    font-family: 'Monaco', 'Menlo', monospace;
-    letter-spacing: -0.02em;
+    display: block; font-size: 1.15rem; font-weight: 800; color: white;
+    font-family: 'Monaco', 'Menlo', monospace; letter-spacing: -0.02em;
+}
+
+.sp-total-divider {
+    width: 1px; height: 30px; background: rgba(255,255,255,0.2);
 }
 
 .sp-total-hint {
-    font-size: 0.7rem;
-    color: rgba(255,255,255,0.5);
-    border-left: 1px solid rgba(255,255,255,0.2);
-    padding-left: 16px;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.7rem; color: rgba(255,255,255,0.55);
+}
+
+.sp-kbd {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 4px; padding: 1px 6px; font-size: 0.65rem;
+    color: rgba(255,255,255,0.75); font-family: monospace;
 }
 
 /* ---- Filter Panel ---- */
@@ -842,814 +1142,395 @@ function dismissHint() {
 }
 
 .sp-filter-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 20px;
-    cursor: pointer;
-    transition: var(--sp-transition);
-    user-select: none;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px; cursor: pointer; user-select: none; transition: var(--sp-transition);
 }
 
-.sp-filter-toggle:hover {
-    background: var(--sp-gray-50);
-}
+.sp-filter-toggle:hover { background: var(--sp-gray-50); }
 
 .sp-filter-icon-badge {
-    width: 34px;
-    height: 34px;
-    background: var(--sp-primary-light);
-    color: var(--sp-primary);
+    width: 34px; height: 34px;
+    background: var(--sp-primary-light); color: var(--sp-primary);
     border-radius: var(--sp-radius-sm);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.9rem;
+    display: flex; align-items: center; justify-content: center; font-size: 0.9rem;
 }
 
-.sp-filter-title {
-    font-weight: 600;
-    color: var(--sp-gray-700);
-    font-size: 0.9rem;
-    margin-left: 4px;
-}
+.sp-filter-title { font-weight: 600; color: var(--sp-gray-700); font-size: 0.9rem; margin-left: 4px; }
 
 .sp-filter-count {
-    font-size: 0.7rem;
-    font-weight: 600;
-    margin-left: 8px;
-    padding: 2px 8px;
-    border-radius: 10px;
-    display: none;
+    font-size: 0.7rem; font-weight: 600; margin-left: 8px;
+    padding: 2px 8px; border-radius: 10px; display: none;
 }
 
-.sp-filter-count-active {
-    display: inline-block;
-    background: var(--sp-primary);
-    color: white;
-}
+.sp-filter-count-active { display: inline-block; background: var(--sp-primary); color: white; }
 
-.sp-chevron {
-    transition: transform 0.3s ease;
-    color: var(--sp-gray-400);
-}
-
-.sp-chevron-rotated {
-    transform: rotate(180deg);
-}
+.sp-chevron { transition: transform 0.3s ease; color: var(--sp-gray-400); }
+.sp-chevron-rotated { transform: rotate(180deg); }
 
 .sp-filter-body {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.4s ease, padding 0.3s ease;
-    padding: 0 20px;
+    max-height: 0; overflow: hidden;
+    transition: max-height 0.4s ease, padding 0.3s ease; padding: 0 20px;
 }
 
 .sp-filter-body.sp-filter-open {
-    max-height: 600px;
-    padding: 0 20px 20px;
+    max-height: 700px; padding: 4px 20px 20px;
     border-top: 1px solid var(--sp-gray-100);
 }
 
 .sp-filter-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 14px;
-    margin-bottom: 16px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 14px; margin-bottom: 16px; padding-top: 16px;
 }
 
 .sp-filter-label {
-    display: block;
-    font-size: 0.7rem;
-    font-weight: 700;
-    color: var(--sp-gray-600);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin-bottom: 6px;
+    display: block; font-size: 0.68rem; font-weight: 700;
+    color: var(--sp-gray-600); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;
 }
 
-.sp-select-wrap {
-    position: relative;
+.sp-select-wrap { position: relative; }
+
+.sp-select, .sp-input {
+    width: 100%; padding: 9px 14px;
+    border: 1.5px solid var(--sp-gray-200); border-radius: var(--sp-radius-sm);
+    font-size: 0.85rem; color: var(--sp-gray-800); background: white;
+    transition: var(--sp-transition); appearance: none; -webkit-appearance: none;
 }
 
-.sp-select,
-.sp-input {
-    width: 100%;
-    padding: 9px 14px;
-    border: 1.5px solid var(--sp-gray-200);
-    border-radius: var(--sp-radius-sm);
-    font-size: 0.85rem;
-    color: var(--sp-gray-800);
-    background: white;
-    transition: var(--sp-transition);
-    appearance: none;
-    -webkit-appearance: none;
-}
+.sp-select { padding-right: 36px; }
 
-.sp-select {
-    padding-right: 36px;
-}
-
-.sp-select:focus,
-.sp-input:focus {
-    outline: none;
-    border-color: var(--sp-primary);
+.sp-select:focus, .sp-input:focus {
+    outline: none; border-color: var(--sp-primary);
     box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
 }
 
 .sp-select-arrow {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--sp-gray-400);
-    font-size: 0.65rem;
-    pointer-events: none;
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    color: var(--sp-gray-400); font-size: 0.65rem; pointer-events: none;
 }
 
 .sp-filter-actions {
-    display: flex;
-    gap: 10px;
-    padding-top: 8px;
+    display: flex; gap: 10px; padding-top: 12px;
     border-top: 1px solid var(--sp-gray-100);
 }
 
-/* ---- Export Bar ---- */
-.sp-export-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 0;
-    margin-bottom: 4px;
-    flex-wrap: wrap;
-    gap: 10px;
+/* ---- Toolbar ---- */
+.sp-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0; margin-bottom: 8px; flex-wrap: wrap; gap: 10px;
 }
 
-.sp-result-count {
-    font-size: 0.85rem;
-    color: var(--sp-gray-600);
+.sp-stat-chip {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 16px;
+    background: white; border: 1px solid var(--sp-gray-200);
+    border-radius: var(--sp-radius-sm); box-shadow: var(--sp-shadow-sm);
 }
 
-.sp-export-right {
-    display: flex;
-    gap: 8px;
+.sp-stat-icon {
+    width: 30px; height: 30px;
+    background: var(--sp-primary-light); color: var(--sp-primary);
+    border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem;
 }
+
+.sp-stat-value { display: block; font-weight: 700; color: var(--sp-gray-800); font-size: 0.9rem; }
+.sp-stat-label { display: block; font-size: 0.68rem; color: var(--sp-gray-500); text-transform: uppercase; letter-spacing: 0.04em; }
+
+.sp-toolbar-right { display: flex; gap: 8px; }
 
 .sp-btn-export {
-    padding: 7px 16px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    border-radius: var(--sp-radius-sm);
-    border: 1px solid transparent;
+    padding: 8px 18px; font-size: 0.8rem; font-weight: 600;
+    border-radius: var(--sp-radius-sm); border: 1.5px solid transparent;
 }
 
 .sp-btn-pdf {
-    background: var(--sp-danger-light);
-    color: var(--sp-danger);
+    background: var(--sp-danger-light); color: var(--sp-danger);
     border-color: rgba(220,38,38,0.15);
 }
 
-.sp-btn-pdf:hover {
-    background: var(--sp-danger);
-    color: white;
-    box-shadow: 0 4px 12px rgba(220,38,38,0.25);
-}
+.sp-btn-pdf:hover { background: var(--sp-danger); color: white; box-shadow: 0 4px 12px rgba(220,38,38,0.25); }
 
 .sp-btn-excel {
-    background: var(--sp-success-light);
-    color: var(--sp-success);
+    background: var(--sp-success-light); color: var(--sp-success);
     border-color: rgba(5,150,105,0.15);
 }
 
-.sp-btn-excel:hover {
-    background: var(--sp-success);
-    color: white;
-    box-shadow: 0 4px 12px rgba(5,150,105,0.25);
-}
+.sp-btn-excel:hover { background: var(--sp-success); color: white; box-shadow: 0 4px 12px rgba(5,150,105,0.25); }
 
-/* ---- Table ---- */
+/* ---- Table Card ---- */
 .sp-table-card {
-    background: white;
-    border: 1px solid var(--sp-gray-200);
-    border-radius: var(--sp-radius-lg);
-    overflow: hidden;
-    box-shadow: var(--sp-shadow-md);
+    background: white; border: 1px solid var(--sp-gray-200);
+    border-radius: var(--sp-radius-lg); overflow: hidden;
+    box-shadow: var(--sp-shadow-md); transition: opacity 0.3s ease;
 }
 
-.sp-table-responsive {
-    overflow: auto;
-}
+.sp-table-responsive { overflow: auto; }
 
-.custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+.custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: var(--sp-gray-100); }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--sp-gray-300); border-radius: 10px; }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--sp-gray-400); }
 
-.sp-table {
-    width: 100%;
-    font-size: 0.85rem;
-    border-collapse: collapse;
+/* ---- Skeleton ---- */
+.sp-table-skeleton { padding: 0 16px; }
+
+.sp-skeleton-header {
+    display: flex; gap: 12px; padding: 14px 0;
+    border-bottom: 2px solid var(--sp-gray-100); margin-bottom: 4px;
 }
 
-.sp-table thead {
-    position: sticky;
-    top: 0;
-    z-index: 10;
+.sp-skeleton-th {
+    height: 10px; border-radius: 4px;
+    background: linear-gradient(90deg, var(--sp-gray-100) 25%, var(--sp-gray-200) 50%, var(--sp-gray-100) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.4s infinite; flex: 1;
 }
 
-.sp-table thead tr {
-    background: var(--sp-gray-50);
-    border-bottom: 2px solid var(--sp-gray-200);
+.sp-skeleton-row {
+    display: flex; gap: 12px; padding: 14px 0;
+    border-bottom: 1px solid var(--sp-gray-100);
 }
+
+.sp-skeleton-cell {
+    height: 14px; border-radius: 6px;
+    background: linear-gradient(90deg, var(--sp-gray-100) 25%, var(--sp-gray-200) 50%, var(--sp-gray-100) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.4s infinite;
+}
+
+.sp-sk-narrow { flex: 0.5; }
+.sp-sk-mid    { flex: 1; }
+.sp-sk-wide   { flex: 1.5; }
+
+@keyframes skeleton-shimmer { to { background-position: -200% 0; } }
+
+/* ---- Table ---- */
+.sp-table { width: 100%; font-size: 0.85rem; border-collapse: collapse; }
+
+.sp-table thead { position: sticky; top: 0; z-index: 10; }
+
+.sp-table thead tr { background: var(--sp-gray-50); border-bottom: 2px solid var(--sp-gray-200); }
 
 .sp-table thead th {
-    font-size: 0.68rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--sp-gray-500);
-    padding: 12px 14px;
-    white-space: nowrap;
-    border: none;
-    background: var(--sp-gray-50);
+    font-size: 0.67rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--sp-gray-500); padding: 12px 14px;
+    white-space: nowrap; border: none; background: var(--sp-gray-50);
 }
 
-.sp-table tbody tr {
-    border-bottom: 1px solid var(--sp-gray-100);
-    transition: var(--sp-transition);
-}
-
-.sp-table tbody tr:hover {
-    background: var(--sp-primary-light);
-}
-
+.sp-table tbody tr { border-bottom: 1px solid var(--sp-gray-100); transition: var(--sp-transition); }
+.sp-table tbody tr:hover { background: var(--sp-primary-light); }
 .sp-table tbody tr:last-child { border-bottom: none; }
 
-.sp-table tbody td {
-    padding: 12px 14px;
-    vertical-align: middle;
-    border: none;
-    color: var(--sp-gray-700);
-}
+.sp-table tbody td { padding: 12px 14px; vertical-align: middle; border: none; color: var(--sp-gray-700); }
 
 .th-narrow { width: 44px; }
 
-/* ---- Client Cell ---- */
-.sp-client-cell {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+.sp-table-row { animation: fadeInUp 0.3s ease both; }
+.sp-table-row:nth-child(1)  { animation-delay: 0.03s; }
+.sp-table-row:nth-child(2)  { animation-delay: 0.06s; }
+.sp-table-row:nth-child(3)  { animation-delay: 0.09s; }
+.sp-table-row:nth-child(4)  { animation-delay: 0.12s; }
+.sp-table-row:nth-child(5)  { animation-delay: 0.15s; }
+.sp-table-row:nth-child(6)  { animation-delay: 0.18s; }
+.sp-table-row:nth-child(7)  { animation-delay: 0.21s; }
+.sp-table-row:nth-child(8)  { animation-delay: 0.24s; }
+.sp-table-row:nth-child(9)  { animation-delay: 0.27s; }
+.sp-table-row:nth-child(10) { animation-delay: 0.30s; }
+
+@keyframes fadeInUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+.sp-row-num {
+    width: 24px; height: 24px; background: var(--sp-gray-100);
+    border-radius: 6px; display: inline-flex; align-items: center; justify-content: center;
+    font-size: 0.72rem; font-weight: 600; color: var(--sp-gray-500);
 }
+
+/* ---- Cell Styles ---- */
+.sp-client-cell { display: flex; align-items: center; gap: 10px; }
 
 .sp-client-avatar {
-    width: 34px;
-    height: 34px;
-    min-width: 34px;
+    width: 34px; height: 34px; min-width: 34px;
     background: linear-gradient(135deg, var(--sp-primary-light), #ddd6fe);
-    border-radius: var(--sp-radius-sm);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    color: var(--sp-primary);
-    font-size: 0.85rem;
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: var(--sp-primary); font-size: 0.85rem;
 }
 
-.sp-client-name {
-    display: block;
-    font-weight: 600;
-    color: var(--sp-gray-800);
-    font-size: 0.85rem;
-    line-height: 1.3;
-}
+.sp-client-name { display: block; font-weight: 600; color: var(--sp-gray-800); font-size: 0.85rem; line-height: 1.3; }
+.sp-client-location { display: block; font-size: 0.7rem; color: var(--sp-gray-400); }
 
-.sp-client-location {
-    display: block;
-    font-size: 0.7rem;
-    color: var(--sp-gray-400);
-}
+.sp-tag { display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
+.sp-tag-category { background: #f0f9ff; color: #0369a1; }
+.sp-tag-sub { background: #faf5ff; color: #7c3aed; }
+.sp-no-data { color: var(--sp-gray-300); font-size: 0.85rem; }
 
-/* ---- Tags ---- */
-.sp-tag {
-    display: inline-block;
-    padding: 3px 10px;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    font-weight: 600;
-}
+.sp-salary-cell { display: flex; align-items: center; gap: 4px; font-size: 0.8rem; }
+.sp-salary-team { font-weight: 600; color: var(--sp-primary); }
+.sp-salary-sep { color: var(--sp-gray-300); }
+.sp-salary-worker { color: var(--sp-gray-600); }
 
-.sp-tag-category {
-    background: #f0f9ff;
-    color: #0369a1;
-}
-
-.sp-tag-sub {
-    background: #faf5ff;
-    color: #7c3aed;
-}
-
-.sp-tag-empty {
-    color: var(--sp-gray-400);
-    font-weight: 400;
-    background: none;
-    padding: 0;
-}
-
-/* ---- Salary Cell ---- */
-.sp-salary-cell {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 0.8rem;
-}
-
-.sp-salary-team {
-    font-weight: 600;
-    color: var(--sp-primary);
-}
-
-.sp-salary-divider {
-    color: var(--sp-gray-300);
-}
-
-.sp-salary-worker {
-    color: var(--sp-gray-600);
-}
-
-/* ---- Description ---- */
 .sp-desc-text {
-    font-size: 0.82rem;
-    color: var(--sp-gray-600);
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    font-size: 0.82rem; color: var(--sp-gray-500);
+    max-width: 160px; display: block;
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
 }
 
-/* ---- Bank Badge ---- */
 .sp-bank-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 4px 10px;
-    background: var(--sp-gray-100);
-    border-radius: 6px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--sp-gray-600);
+    display: inline-flex; align-items: center; padding: 4px 10px;
+    background: var(--sp-gray-100); border-radius: 6px;
+    font-size: 0.74rem; font-weight: 500; color: var(--sp-gray-600);
 }
 
-/* ---- Amount ---- */
+/* ---- Amount Selectable ---- */
+.selectable-amount {
+    cursor: pointer; user-select: none; position: relative; transition: var(--sp-transition);
+}
+
+.selectable-amount:hover { background: rgba(79,70,229,0.04); }
+
+.sp-amount-wrap {
+    display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
+}
+
 .sp-amount-value {
-    font-weight: 700;
-    color: var(--sp-danger);
-    font-variant-numeric: tabular-nums;
-    font-size: 0.9rem;
+    font-weight: 700; color: var(--sp-danger);
+    font-size: 0.9rem; font-variant-numeric: tabular-nums; transition: var(--sp-transition);
+}
+
+.sp-amount-check {
+    display: none; font-size: 0.65rem; color: var(--sp-primary);
+}
+
+.sp-cell-selected { background: rgba(79,70,229,0.07) !important; }
+.sp-cell-selected .sp-amount-value { color: var(--sp-primary) !important; }
+.sp-cell-selected .sp-amount-check { display: block; }
+.sp-cell-selected::after {
+    content: '';
+    position: absolute; left: 0; top: 0; width: 3px; height: 100%;
+    background: var(--sp-primary); border-radius: 0 2px 2px 0;
 }
 
 /* ---- Mode Badge ---- */
 .sp-mode-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 0.72rem;
-    font-weight: 600;
+    display: inline-flex; align-items: center; padding: 4px 10px;
+    border-radius: 6px; font-size: 0.72rem; font-weight: 600;
 }
 
-.sp-mode-cash {
-    background: var(--sp-success-light);
-    color: var(--sp-success);
-}
+.sp-mode-cash { background: var(--sp-success-light); color: var(--sp-success); }
+.sp-mode-cheque { background: #eff6ff; color: #2563eb; }
 
-.sp-mode-cheque {
-    background: #eff6ff;
-    color: #2563eb;
-}
-
-/* ---- Date Cell ---- */
 .sp-date-cell {
-    display: inline-flex;
-    align-items: center;
-    font-size: 0.78rem;
-    color: var(--sp-gray-500);
-    white-space: nowrap;
+    display: inline-flex; align-items: center; font-size: 0.77rem;
+    color: var(--sp-gray-500); white-space: nowrap;
+    padding: 3px 8px; background: var(--sp-gray-100); border-radius: 6px;
 }
 
 /* ---- Action Buttons ---- */
-.sp-action-group {
-    display: flex;
-    gap: 6px;
-    justify-content: center;
-}
+.sp-action-group { display: flex; gap: 6px; justify-content: center; }
 
 .sp-action-btn {
-    width: 32px;
-    height: 32px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--sp-radius-sm);
-    border: 1px solid var(--sp-gray-200);
-    background: white;
-    color: var(--sp-gray-500);
-    font-size: 0.85rem;
-    transition: var(--sp-transition);
-    text-decoration: none;
+    width: 32px; height: 32px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 8px; border: 1px solid var(--sp-gray-200);
+    background: white; color: var(--sp-gray-500); font-size: 0.85rem;
+    transition: var(--sp-transition); text-decoration: none;
 }
 
-.sp-action-edit:hover {
-    background: var(--sp-warning-light);
-    color: var(--sp-warning);
-    border-color: var(--sp-warning);
-}
-
-.sp-action-delete:hover {
-    background: var(--sp-danger-light);
-    color: var(--sp-danger);
-    border-color: var(--sp-danger);
-}
-
-/* ---- Selected Cell ---- */
-.sp-cell-selected {
-    background: rgba(79, 70, 229, 0.08) !important;
-    position: relative;
-}
-
-.sp-cell-selected .sp-amount-value {
-    color: var(--sp-primary) !important;
-}
-
-.sp-cell-selected::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 3px;
-    height: 100%;
-    background: var(--sp-primary);
-    border-radius: 0 2px 2px 0;
-}
-
-.selectable-amount {
-    cursor: pointer;
-    user-select: none;
-    transition: var(--sp-transition);
-    position: relative;
-}
-
-.selectable-amount:hover {
-    background: rgba(79, 70, 229, 0.04);
-}
+.sp-action-edit:hover { background: var(--sp-warning-light); color: var(--sp-warning); border-color: var(--sp-warning); }
+.sp-action-delete:hover { background: var(--sp-danger-light); color: var(--sp-danger); border-color: var(--sp-danger); }
 
 /* ---- Empty State ---- */
-.sp-empty-state {
-    text-align: center;
-    padding: 48px 24px;
-}
+.sp-empty-state { text-align: center; padding: 56px 24px; }
+
+.sp-empty-icon-wrap { position: relative; display: inline-block; margin-bottom: 20px; }
 
 .sp-empty-icon {
-    width: 72px;
-    height: 72px;
-    background: var(--sp-gray-100);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 16px;
-    font-size: 1.8rem;
-    color: var(--sp-gray-400);
+    width: 72px; height: 72px; background: var(--sp-gray-100); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem; color: var(--sp-gray-400); position: relative; z-index: 2;
 }
 
-.sp-empty-state h5 {
-    font-weight: 700;
-    color: var(--sp-gray-700);
-    margin-bottom: 6px;
+.sp-empty-ring {
+    position: absolute; border-radius: 50%; border: 1.5px solid var(--sp-gray-200);
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
 }
 
-.sp-empty-state p {
-    color: var(--sp-gray-500);
-    font-size: 0.875rem;
-    margin-bottom: 16px;
+.sp-empty-ring-1 { width: 90px; height: 90px; animation: sp-ring-pulse 2s ease-in-out infinite; }
+.sp-empty-ring-2 { width: 110px; height: 110px; animation: sp-ring-pulse 2s ease-in-out infinite 0.5s; }
+
+@keyframes sp-ring-pulse { 0%,100% { opacity:0.3; transform: translate(-50%,-50%) scale(0.95); } 50% { opacity:0.8; transform: translate(-50%,-50%) scale(1.05); } }
+
+.sp-empty-state h5 { font-weight: 700; color: var(--sp-gray-700); margin-bottom: 6px; }
+.sp-empty-state p { color: var(--sp-gray-500); font-size: 0.875rem; margin-bottom: 20px; }
+
+/* ---- Pagination ---- */
+.sp-pagination-wrapper {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; border-top: 1px solid var(--sp-gray-100);
+    background: var(--sp-gray-50); flex-wrap: wrap; gap: 12px;
+}
+
+.sp-pagination-info {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 0.8rem; color: var(--sp-gray-500);
+}
+
+.sp-pagination-sep { color: var(--sp-gray-300); }
+
+.sp-pagination {
+    display: flex; align-items: center; gap: 4px;
+}
+
+.sp-page-btn {
+    width: 34px; height: 34px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 8px; font-size: 0.82rem; font-weight: 600;
+    text-decoration: none; transition: var(--sp-transition);
+    border: 1.5px solid var(--sp-gray-200); background: white; color: var(--sp-gray-600);
+}
+
+.sp-page-btn:hover {
+    background: var(--sp-primary-light); border-color: var(--sp-primary); color: var(--sp-primary);
+}
+
+.sp-page-active {
+    background: var(--sp-primary) !important; border-color: var(--sp-primary) !important;
+    color: white !important; box-shadow: 0 4px 10px rgba(79,70,229,0.3);
+    cursor: default;
+}
+
+.sp-page-nav {
+    background: white; color: var(--sp-gray-500);
+}
+
+.sp-page-disabled {
+    opacity: 0.35; cursor: not-allowed; pointer-events: none;
+}
+
+.sp-page-ellipsis {
+    width: 34px; text-align: center; color: var(--sp-gray-400); font-size: 0.9rem; letter-spacing: 2px;
 }
 
 /* ---- Responsive ---- */
 @media (max-width: 768px) {
-    .sp-page-header {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .sp-header-actions {
-        width: 100%;
-    }
-
-    .sp-header-actions .sp-btn {
-        width: 100%;
-    }
-
-    .sp-filter-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .sp-total-inner {
-        padding: 10px 20px;
-        gap: 12px;
-    }
-
-    .sp-total-hint {
-        display: none;
-    }
-
-    .sp-export-bar {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .sp-export-right {
-        width: 100%;
-    }
-
-    .sp-export-right .sp-btn-export {
-        flex: 1;
-    }
+    .sp-page-header { flex-direction: column; align-items: flex-start; }
+    .sp-header-right { align-items: flex-start; width: 100%; }
+    .sp-btn-primary { width: 100%; }
+    .pm-hint-chip { max-width: 100%; }
+    .sp-filter-grid { grid-template-columns: 1fr; }
+    .sp-total-hint { display: none; }
+    .sp-total-inner { padding: 10px 18px; gap: 10px; }
+    .sp-toolbar { flex-direction: column; align-items: flex-start; }
+    .sp-toolbar-right { width: 100%; }
+    .sp-toolbar-right .sp-btn-export { flex: 1; }
+    .sp-pagination-wrapper { flex-direction: column; align-items: flex-start; }
+    .pm-hint-steps { gap: 4px; }
+    .pm-hint-step-divider { display: none; }
 }
 
 @media (max-width: 576px) {
-    .sp-filter-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .sp-filter-actions {
-        flex-direction: column;
-    }
-
-    .sp-filter-actions .sp-btn {
-        width: 100%;
-    }
+    .sp-filter-actions { flex-direction: column; }
+    .sp-filter-actions .sp-btn { width: 100%; }
+    .sp-pagination { flex-wrap: wrap; }
 }
-
-/* ---- Animations ---- */
-@keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-{% comment %} .sp-table-row {
-    animation: fadeInUp 0.3s ease forwards;
-} {% endcomment %}
-
-
-/* ---- Hint Chip ---- */
-.pm-hint-chip {
-    position: relative;
-    background: white;
-    border: 1.5px solid #e0e7ff;
-    border-radius: 14px;
-    padding: 10px 14px 10px 12px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    box-shadow:
-        0 4px 6px -1px rgba(79, 70, 229, 0.06),
-        0 0 0 4px rgba(79, 70, 229, 0.04);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    max-width: 520px;
-    animation: hintSlideIn 0.5s ease forwards;
-    overflow: hidden;
-}
-
-.pm-hint-chip::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, #4f46e5, #7c3aed, #0ea5e9);
-    border-radius: 14px 14px 0 0;
-}
-
-.pm-hint-chip:hover {
-    border-color: #c7d2fe;
-    box-shadow:
-        0 8px 16px -2px rgba(79, 70, 229, 0.1),
-        0 0 0 4px rgba(79, 70, 229, 0.06);
-    transform: translateY(-1px);
-}
-
-/* Dismiss animation */
-.pm-hint-dismissed {
-    opacity: 0;
-    transform: translateY(-12px) scale(0.96);
-    pointer-events: none;
-}
-
-/* ---- Hint Icon ---- */
-.pm-hint-icon-wrap {
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
-    background: linear-gradient(135deg, #eef2ff, #e0e7ff);
-    border: 1px solid #c7d2fe;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #4f46e5;
-    font-size: 0.95rem;
-    position: relative;
-}
-
-.pm-hint-icon-wrap::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 10px;
-    background: radial-gradient(circle, rgba(79,70,229,0.08), transparent);
-    animation: iconPulse 2s ease-in-out infinite;
-}
-
-@keyframes iconPulse {
-    0%, 100% { opacity: 0.5; transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.08); }
-}
-
-/* ---- Hint Content ---- */
-.pm-hint-content {
-    flex: 1;
-    min-width: 0;
-}
-
-.pm-hint-title {
-    display: block;
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: #4f46e5;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin-bottom: 1px;
-}
-
-.pm-hint-desc {
-    display: block;
-    font-size: 0.8rem;
-    color: #64748b;
-    font-weight: 500;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-/* ---- Close Button ---- */
-.pm-hint-close {
-    width: 22px;
-    height: 22px;
-    min-width: 22px;
-    border: 1px solid #e2e8f0;
-    border-radius: 50%;
-    background: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #94a3b8;
-    font-size: 0.7rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    padding: 0;
-    line-height: 1;
-}
-
-.pm-hint-close:hover {
-    background: #fef2f2;
-    border-color: #fca5a5;
-    color: #dc2626;
-    transform: rotate(90deg);
-}
-
-/* ---- Steps Bar ---- */
-.pm-hint-steps {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px dashed #e2e8f0;
-    width: 100%;
-    flex-basis: 100%;
-    order: 10;
-}
-
-/* Make chip wrap steps below */
-.pm-hint-chip {
-    flex-wrap: wrap;
-}
-
-.pm-hint-step {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.72rem;
-    color: #475569;
-    font-weight: 500;
-    white-space: nowrap;
-}
-
-.pm-hint-step-divider {
-    color: #cbd5e1;
-    font-size: 0.65rem;
-    flex-shrink: 0;
-}
-
-.pm-step-icon {
-    width: 26px;
-    height: 26px;
-    min-width: 26px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.7rem;
-}
-
-.pm-step-click {
-    background: #ecfdf5;
-    color: #059669;
-    border: 1px solid #bbf7d0;
-}
-
-.pm-step-ctrl {
-    background: #eff6ff;
-    color: #2563eb;
-    border: 1px solid #bfdbfe;
-}
-
-.pm-step-undo {
-    background: #fff7ed;
-    color: #d97706;
-    border: 1px solid #fed7aa;
-}
-
-/* ---- Entry Animation ---- */
-@keyframes hintSlideIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px) scale(0.98);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
-
-/* ---- Exit Animation ---- */
-@keyframes hintSlideOut {
-    from {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-
-    to {
-        opacity: 0;
-        transform: translateY(-8px) scale(0.96);
-    }
-}
-
-.pm-hint-dismissed {
-    animation: hintSlideOut 0.4s ease forwards;
-}
-
-
-
-/* ---- Responsive ---- */
-@media (max-width: 768px) {
-    .pm-page-header {
-        flex-direction: column;
-    }
-
-    .pm-header-right {
-        align-items: flex-start;
-        width: 100%;
-    }
-
-    .pm-hint-chip {
-        max-width: 100%;
-        width: 100%;
-    }
-
-    .pm-hint-steps {
-        flex-wrap: wrap;
-        gap: 6px;
-    }
-
-    .pm-hint-step-divider {
-        display: none;
-    }
-
-    .pm-btn-primary {
-        width: 100%;
-    }
-}
-
 </style>
 
 {% endblock %}

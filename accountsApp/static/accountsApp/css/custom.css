@@ -901,14 +901,14 @@ aside .text-muted {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(12px); /* Glassmorphism */
-    -webkit-backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     z-index: 99999;
     align-items: center;
     justify-content: center;
     opacity: 0;
-    transition: opacity 0.4s ease;
+    transition: opacity 0.4s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .company-switch-overlay.active {
@@ -918,29 +918,44 @@ aside .text-muted {
 
 .overlay-content {
     text-align: center;
-    transform: translateY(20px);
-    transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+    max-width: 320px;
+    padding: 40px 32px;
+    border-radius: 20px;
+    /* background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.15);
+    border: 1px solid rgba(255,255,255,0.8); */
+    transform: scale(0.95) translateY(20px);
+    transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .company-switch-overlay.active .overlay-content {
-    transform: translateY(0);
+    transform: scale(1) translateY(0);
 }
 
-/* Iconic Loader */
-.loader-wrapper {
+/* Premium Loader */
+.icon-container {
     position: relative;
-    width: 80px;
-    height: 80px;
+    width: 88px;
+    height: 88px;
     margin: 0 auto;
 }
 
-.loader-circle {
+.loader-ring {
+    position: absolute;
+    inset: -6px;
+    border: 3px solid rgba(79, 70, 229, 0.15);
+    border-radius: 50%;
+    animation: ring-rotate 1.8s linear infinite;
+}
+
+.loader-ring-inner {
     position: absolute;
     inset: 0;
-    border: 3px solid #eef2f7;
-    border-top-color: #4facfe;
+    border: 3px solid transparent;
+    border-top-color: #4f46e5;
+    border-right-color: #6366f1;
     border-radius: 50%;
-    animation: spinner-spin 1s linear infinite;
+    animation: ring-spin 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 .loader-icon {
@@ -948,40 +963,71 @@ aside .text-muted {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 1.8rem;
-    animation: icon-pulse 2s infinite ease-in-out;
+    font-size: 2.1rem;
+    color: #4f46e5;
+    animation: icon-breathe 3s ease-in-out infinite;
 }
 
-/* Subtle Progress Bar */
-.loader-progress {
-    width: 160px;
-    height: 4px;
-    background: #000000;
-    border-radius: 10px;
+/* Progress Bar */
+.progress-container {
+    width: 100%;
+    max-width: 240px;
     margin: 0 auto;
-    overflow: hidden;
 }
 
-.loader-progress-fill {
-    width: 0%;
+.progress-bar {
+    height: 3px;
+    background: #e5e7eb;
+    border-radius: 9999px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, #4facfe, #00f2fe);
-    animation: loader-fill 0.8s ease-out forwards;
+    width: 0%;
+    background: linear-gradient(90deg, #4f46e5, #818cf8, #4f46e5);
+    background-size: 200% 100%;
+    animation: progress-loading 1.4s linear infinite;
+    border-radius: 9999px;
+}
+
+/* Text */
+#status-text {
+    min-height: 20px;
+    font-size: 0.75rem;
+    transition: opacity 0.3s;
 }
 
 /* Animations */
-@keyframes spinner-spin {
+@keyframes ring-rotate {
+    from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
 
-@keyframes icon-pulse {
-    0%, 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-    50% { opacity: 0.5; transform: translate(-50%, -50%) scale(0.9); }
+@keyframes ring-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
-@keyframes loader-fill {
-    to { width: 100%; }
+@keyframes icon-breathe {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -50%) scale(1.08); }
 }
+
+@keyframes progress-loading {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(600%); }
+}
+
+
+
+
+
+
+
+
+
 
 .tracking-tight { letter-spacing: -0.5px; }
 

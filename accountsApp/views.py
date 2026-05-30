@@ -5451,6 +5451,14 @@ def available_amount(request):
     total_cash = Decimal('0.00')
     last_cash_date = None
 
+    # =========================
+    # CASH FLOW STATS
+    # =========================
+
+    cash_inflows = Decimal('0.00')
+    cash_outflows = Decimal('0.00')
+
+
     if cash_bank:
 
         # ✅ ALWAYS use model logic
@@ -5464,6 +5472,18 @@ def available_amount(request):
                 cash_bank.transfers_out.aggregate(d=Max('transfer_date'))['d'],
             ]),
             default=None
+        )
+
+        cash_inflows = (
+            cash_bank.payments.aggregate(
+                total=Sum('amount')
+            )['total'] or Decimal('0.00')
+        )
+
+        cash_outflows = (
+            cash_bank.expenses.aggregate(
+                total=Sum('amount')
+            )['total'] or Decimal('0.00')
         )
 
     # =========================
@@ -5498,6 +5518,8 @@ def available_amount(request):
         'last_cash_date': last_cash_date,
         'cheque_banks': cheque_banks,
         'total_bank': total_bank,
+        'cash_inflows': cash_inflows,
+        'cash_outflows': cash_outflows,
     })
 
 
@@ -7977,7 +7999,7 @@ def expense_subcategory_delete(request, pk):
 
 from django.shortcuts import render, redirect
 from django.utils.dateparse import parse_date
-
+from django.core.paginator import Paginator
 
 def expense_index(request):
 
@@ -8069,12 +8091,26 @@ def expense_index(request):
         expenses = expenses.filter(worker_name_id=worker_name_id)
 
     # =========================
-    # 📅 ORDERING + LIMIT 100 per page
+    # 📅 ORDERING
     # =========================
     expenses = expenses.order_by(
         '-expense_date',
         '-id'
-    )[:100]
+    )
+
+    # =========================
+    # 📄 PAGINATION
+    # =========================
+    paginator = Paginator(
+        expenses,
+        10  # 100 records per page
+    )
+
+    page_number = request.GET.get('page')
+
+    expenses = paginator.get_page(
+        page_number
+    )
 
     # =========================
     # 📋 DROPDOWN DATA
