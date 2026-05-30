@@ -103,7 +103,9 @@
                         <i class="bi bi-arrow-down-left"></i>
                     </div>
                     <div class="stat-info">
-                        <span class="stat-value">+₹0.00</span>
+                        <span class="stat-value text-success">
+                            +₹{{ cash_inflows|floatformat:2 }}
+                        </span>
                         <span class="stat-label">Cash Inflows</span>
                     </div>
                 </div>
@@ -114,7 +116,9 @@
                         <i class="bi bi-arrow-up-right"></i>
                     </div>
                     <div class="stat-info">
-                        <span class="stat-value">-₹0.00</span>
+                        <span class="stat-value text-danger">
+                            -₹{{ cash_outflows|floatformat:2 }}
+                        </span>
                         <span class="stat-label">Cash Outflows</span>
                     </div>
                 </div>
