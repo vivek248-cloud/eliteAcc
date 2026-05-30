@@ -8069,9 +8069,12 @@ def expense_index(request):
         expenses = expenses.filter(worker_name_id=worker_name_id)
 
     # =========================
-    # 📅 ORDERING
+    # 📅 ORDERING + LIMIT 100 per page
     # =========================
-    expenses = expenses.order_by('-expense_date')
+    expenses = expenses.order_by(
+        '-expense_date',
+        '-id'
+    )[:100]
 
     # =========================
     # 📋 DROPDOWN DATA
