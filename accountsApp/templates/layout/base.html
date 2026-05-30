@@ -103,7 +103,7 @@
 
 
 <!-- Premium SaaS Page Loader -->
-<div id="pageLoader" class="page-loader-overlay active">
+<div id="pageLoader" class="page-loader-overlay">
     <div class="loader-content">
         
 
@@ -265,6 +265,12 @@ let pageStatusInterval = null;
 
 function animateCompanyChange(url) {
 
+    // Remember across page navigation
+    sessionStorage.setItem(
+        'companySwitching',
+        'true'
+    );
+
     isCompanySwitching = true;
 
     const companyOverlay =
@@ -343,7 +349,18 @@ function animateCompanyChange(url) {
 
 function showPageLoader() {
 
-    if (isCompanySwitching) return;
+    // Skip page loader after company switch
+    if (
+        sessionStorage.getItem(
+            'companySwitching'
+        ) === 'true'
+    ) {
+        return;
+    }
+
+    if (isCompanySwitching) {
+        return;
+    }
 
     const pageLoader =
         document.getElementById('pageLoader');
@@ -425,12 +442,44 @@ function hidePageLoader() {
 }
 
 // =====================================================
+// INITIAL PAGE LOAD
+// =====================================================
+
+document.addEventListener(
+    'DOMContentLoaded',
+    function () {
+
+        // Coming from company switch?
+        if (
+            sessionStorage.getItem(
+                'companySwitching'
+            ) === 'true'
+        ) {
+
+            sessionStorage.removeItem(
+                'companySwitching'
+            );
+
+            return;
+        }
+
+        showPageLoader();
+    }
+);
+
+// =====================================================
 // AUTO HIDE ON PAGE LOAD
 // =====================================================
 
 window.addEventListener('load', () => {
 
-    if (isCompanySwitching) return;
+    if (
+        sessionStorage.getItem(
+            'companySwitching'
+        ) === 'true'
+    ) {
+        return;
+    }
 
     setTimeout(() => {
 
