@@ -1402,6 +1402,27 @@ function dismissHint() {
     margin-bottom: 16px;
 }
 
+
+/* ---- Exit Animation ---- */
+@keyframes hintSlideOut {
+    from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.96);
+    }
+}
+
+.pm-hint-dismissed {
+    animation: hintSlideOut 0.4s ease forwards;
+}
+
+
+
+
 /* ---- Responsive ---- */
 @media (max-width: 768px) {
     .pm-page-header { flex-direction: column; align-items: flex-start; }

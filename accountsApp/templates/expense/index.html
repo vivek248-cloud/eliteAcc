@@ -16,11 +16,53 @@
                 <p class="sp-subtitle">Monitor, filter, and export all your expenses</p>
             </div>
         </div>
-        <div class="sp-header-actions">
-            <a href="{% url 'expense_create' %}" class="sp-btn sp-btn-primary">
-                <i class="bi bi-plus-lg me-2"></i> New Expense
-            </a>
-        </div>
+        <div class="pm-header-right">
+                <!-- Hint Tooltip Chip -->
+                <div class="pm-hint-chip" id="pmHintChip">
+                    <div class="pm-hint-icon-wrap">
+                        <i class="bi bi-cursor-fill"></i>
+                    </div>
+                    <div class="pm-hint-content">
+                        <span class="pm-hint-title">Selection Mode</span>
+                        <span class="pm-hint-desc">Click amount cells to calculate total</span>
+                    </div>
+                    <button class="pm-hint-close" onclick="dismissHint()" title="Dismiss">
+                        <i class="bi bi-x"></i>
+                    </button>
+
+                    <!-- Animated Steps -->
+                    <div class="pm-hint-steps" id="hintSteps">
+                        <div class="pm-hint-step">
+                            <div class="pm-step-icon pm-step-click">
+                                <i class="bi bi-mouse2"></i>
+                            </div>
+                            <span>Click / Drag to select</span>
+                        </div>
+                        <div class="pm-hint-step-divider">
+                            <i class="bi bi-arrow-right"></i>
+                        </div>
+                        <div class="pm-hint-step">
+                            <div class="pm-step-icon pm-step-ctrl">
+                                <i class="bi bi-command"></i>
+                            </div>
+                            <span>Ctrl + Right-click to toggle</span>
+                        </div>
+                        <div class="pm-hint-step-divider">
+                            <i class="bi bi-arrow-right"></i>
+                        </div>
+                        <div class="pm-hint-step">
+                            <div class="pm-step-icon pm-step-undo">
+                                <i class="bi bi-backspace"></i>
+                            </div>
+                            <span>Backspace to undo last</span>
+                        </div>
+                    </div>
+                </div>
+
+                <a href="{% url 'expense_create' %}" class="sp-btn sp-btn-primary sp-btn-sm mt-4">
+                    <i class="bi bi-plus-lg me-2"></i> Add Expense
+                </a>
+            </div>
     </div>
 
     <!-- Floating Total Bar -->
@@ -570,6 +612,30 @@ document.addEventListener('DOMContentLoaded', function () {
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
 });
+
+
+//auto dismiss hint after 8 seconds
+function dismissHint() {
+
+    const chip = document.getElementById(
+        'pmHintChip'
+    );
+
+    if (!chip) return;
+
+    chip.classList.add(
+        'pm-hint-dismissed'
+    );
+
+    setTimeout(() => {
+
+        chip.style.display = 'none';
+
+    }, 400);
+}
+
+
+
 </script>
 
 <!-- ========== STYLES ========== -->
@@ -1332,6 +1398,257 @@ document.addEventListener('DOMContentLoaded', function () {
     animation: fadeInUp 0.3s ease forwards;
 } {% endcomment %}
 
+
+/* ---- Hint Chip ---- */
+.pm-hint-chip {
+    position: relative;
+    background: white;
+    border: 1.5px solid #e0e7ff;
+    border-radius: 14px;
+    padding: 10px 14px 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow:
+        0 4px 6px -1px rgba(79, 70, 229, 0.06),
+        0 0 0 4px rgba(79, 70, 229, 0.04);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    max-width: 520px;
+    animation: hintSlideIn 0.5s ease forwards;
+    overflow: hidden;
+}
+
+.pm-hint-chip::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #4f46e5, #7c3aed, #0ea5e9);
+    border-radius: 14px 14px 0 0;
+}
+
+.pm-hint-chip:hover {
+    border-color: #c7d2fe;
+    box-shadow:
+        0 8px 16px -2px rgba(79, 70, 229, 0.1),
+        0 0 0 4px rgba(79, 70, 229, 0.06);
+    transform: translateY(-1px);
+}
+
+/* Dismiss animation */
+.pm-hint-dismissed {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.96);
+    pointer-events: none;
+}
+
+/* ---- Hint Icon ---- */
+.pm-hint-icon-wrap {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+    border: 1px solid #c7d2fe;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #4f46e5;
+    font-size: 0.95rem;
+    position: relative;
+}
+
+.pm-hint-icon-wrap::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 10px;
+    background: radial-gradient(circle, rgba(79,70,229,0.08), transparent);
+    animation: iconPulse 2s ease-in-out infinite;
+}
+
+@keyframes iconPulse {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.08); }
+}
+
+/* ---- Hint Content ---- */
+.pm-hint-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.pm-hint-title {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #4f46e5;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 1px;
+}
+
+.pm-hint-desc {
+    display: block;
+    font-size: 0.8rem;
+    color: #64748b;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ---- Close Button ---- */
+.pm-hint-close {
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    border: 1px solid #e2e8f0;
+    border-radius: 50%;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+    line-height: 1;
+}
+
+.pm-hint-close:hover {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #dc2626;
+    transform: rotate(90deg);
+}
+
+/* ---- Steps Bar ---- */
+.pm-hint-steps {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #e2e8f0;
+    width: 100%;
+    flex-basis: 100%;
+    order: 10;
+}
+
+/* Make chip wrap steps below */
+.pm-hint-chip {
+    flex-wrap: wrap;
+}
+
+.pm-hint-step {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    color: #475569;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.pm-hint-step-divider {
+    color: #cbd5e1;
+    font-size: 0.65rem;
+    flex-shrink: 0;
+}
+
+.pm-step-icon {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+}
+
+.pm-step-click {
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #bbf7d0;
+}
+
+.pm-step-ctrl {
+    background: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+}
+
+.pm-step-undo {
+    background: #fff7ed;
+    color: #d97706;
+    border: 1px solid #fed7aa;
+}
+
+/* ---- Entry Animation ---- */
+@keyframes hintSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* ---- Exit Animation ---- */
+@keyframes hintSlideOut {
+    from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.96);
+    }
+}
+
+.pm-hint-dismissed {
+    animation: hintSlideOut 0.4s ease forwards;
+}
+
+
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+    .pm-page-header {
+        flex-direction: column;
+    }
+
+    .pm-header-right {
+        align-items: flex-start;
+        width: 100%;
+    }
+
+    .pm-hint-chip {
+        max-width: 100%;
+        width: 100%;
+    }
+
+    .pm-hint-steps {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .pm-hint-step-divider {
+        display: none;
+    }
+
+    .pm-btn-primary {
+        width: 100%;
+    }
+}
 
 </style>
 

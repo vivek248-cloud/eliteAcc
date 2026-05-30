@@ -594,7 +594,7 @@ from zoneinfo import ZoneInfo
 from django.db.models.functions import TruncMonth
 from django.db.models import Avg
 from django.utils.timezone import localtime, now
-
+from django.db.models.functions import TruncMonth
 
 @login_required(login_url='login')
 def home(request):
@@ -920,24 +920,24 @@ def home(request):
     # =========================
     payment_chart = (
         payment_qs
-        .annotate(day=TruncDate('payment_date'))
-        .values('day')
+        .annotate(month=TruncMonth('payment_date'))
+        .values('month')
         .annotate(total=Sum('amount'))
-        .order_by('day')
+        .order_by('month')
     )
 
     expense_chart = (
         expense_qs
-        .annotate(day=TruncDate('expense_date'))
-        .values('day')
+        .annotate(month=TruncMonth('expense_date'))
+        .values('month')
         .annotate(total=Sum('amount'))
-        .order_by('day')
+        .order_by('month')
     )
 
-    payment_labels = [str(p['day']) for p in payment_chart]
+    payment_labels = [str(p['month']) for p in payment_chart]
     payment_values = [float(p['total']) for p in payment_chart]
 
-    expense_labels = [str(e['day']) for e in expense_chart]
+    expense_labels = [str(e['month']) for e in expense_chart]
     expense_values = [float(e['total']) for e in expense_chart]
 
     all_dates = sorted(set(payment_labels + expense_labels))
