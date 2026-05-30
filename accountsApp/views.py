@@ -5580,6 +5580,8 @@ from django.utils.dateparse import parse_date
 from .models import Payment, Client, Bank
 
 
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+
 def payment_index(request):
 
     # 🏢 COMPANY FROM SESSION
@@ -5590,11 +5592,12 @@ def payment_index(request):
     start_date = request.GET.get('start_date')
     end_date = request.GET.get('end_date')
     client_id = request.GET.get('client')
-    mode = request.GET.get('mode')        # cash / cheque
+    mode = request.GET.get('mode')
     bank_id = request.GET.get('bank')
+    page_number = request.GET.get('page', 1)
 
     # =========================
-    # 📊 BASE QUERYSET (COMPANY AWARE)
+    # 📊 BASE QUERYSET
     # =========================
     payments = Payment.objects.filter(
         client__company_id=selected_company_id
@@ -5604,14 +5607,10 @@ def payment_index(request):
     # 📅 DATE FILTERS
     # =========================
     if start_date:
-        payments = payments.filter(
-            payment_date__gte=parse_date(start_date)
-        )
+        payments = payments.filter(payment_date__gte=parse_date(start_date))
 
     if end_date:
-        payments = payments.filter(
-            payment_date__lte=parse_date(end_date)
-        )
+        payments = payments.filter(payment_date__lte=parse_date(end_date))
 
     # =========================
     # 👤 CLIENT FILTER
@@ -5634,34 +5633,44 @@ def payment_index(request):
     payments = payments.order_by('-payment_date', '-id')
 
     # =========================
-    # 📥 DROPDOWN DATA (COMPANY AWARE)
+    # 📄 PAGINATION (10 per page)
     # =========================
-    clients = Client.objects.filter(
-        company_id=selected_company_id
-    )
+    paginator = Paginator(payments, 10)
+
+    try:
+        payments_page = paginator.page(page_number)
+    except PageNotAnInteger:
+        payments_page = paginator.page(1)
+    except EmptyPage:
+        payments_page = paginator.page(paginator.num_pages)
+
+    # =========================
+    # 📥 DROPDOWN DATA
+    # =========================
+    clients = Client.objects.filter(company_id=selected_company_id)
 
     cheque_banks = Bank.objects.filter(
         payments__client__company_id=selected_company_id
-    ).exclude(
-        name__iexact='cash'
-    ).distinct()
+    ).exclude(name__iexact='cash').distinct()
 
     cash_bank = Bank.objects.filter(name__iexact='cash').first()
 
     return render(request, 'payment/index.html', {
-        'payments': payments,
+        'payments': payments_page,
+        'paginator': paginator,
+        'page_obj': payments_page,
+        'total_count': paginator.count,
 
         'clients': clients,
         'banks': cheque_banks,
         'cash_bank': cash_bank,
 
-        'start_date': start_date,
-        'end_date': end_date,
+        'start_date': start_date or '',
+        'end_date': end_date or '',
         'selected_client': client_id,
         'selected_mode': mode,
         'selected_bank': bank_id,
     })
-
 
 
 
