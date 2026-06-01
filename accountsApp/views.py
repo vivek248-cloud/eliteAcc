@@ -2708,24 +2708,25 @@ from django.utils.dateparse import parse_date
 from django.contrib.auth.decorators import login_required
 
 
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+
 @login_required(login_url='login')
 def all_client_index(request):
 
     selected_company_id = request.session.get('selected_company_id')
-
     if not selected_company_id:
         return redirect('dashboard')
 
-    start_date = request.GET.get('start_date')
-    end_date = request.GET.get('end_date')
-    order = request.GET.get('order', 'new')
-    txn_type = request.GET.get('txn_type', 'all')
+    start_date = request.GET.get('start_date', '')
+    end_date   = request.GET.get('end_date', '')
+    order      = request.GET.get('order', 'new')
+    txn_type   = request.GET.get('txn_type', 'all')
+    page_num   = request.GET.get('page', 1)
 
     sd = parse_date(start_date) if start_date else None
-    ed = parse_date(end_date) if end_date else None
+    ed = parse_date(end_date)   if end_date   else None
 
-    rows = []
-
+    rows    = []
     clients = Client.objects.filter(
         company_id=selected_company_id
     ).select_related('company')
@@ -2741,7 +2742,6 @@ def all_client_index(request):
         if sd:
             payments = payments.filter(payment_date__gte=sd)
             expenses = expenses.filter(expense_date__gte=sd)
-
         if ed:
             payments = payments.filter(payment_date__lte=ed)
             expenses = expenses.filter(expense_date__lte=ed)
@@ -2749,122 +2749,127 @@ def all_client_index(request):
         payments = payments.order_by('payment_date', 'id')
         expenses = expenses.order_by('expense_date', 'id')
 
-        running_paid = Decimal('0.00')
+        running_paid  = Decimal('0.00')
         running_spent = Decimal('0.00')
 
-        # PAYMENTS
         for p in payments:
-            before_paid = running_paid
+            before_paid   = running_paid
             running_paid += p.amount
-
             rows.append({
-                'date': p.payment_date,
-                'client': client.name,
-                'company': client.company.name,
-                'budget': client.budget,
+                'date':          p.payment_date,
+                'client':        client.name,
+                'company':       client.company.name,
+                'budget':        client.budget,
                 'previous_paid': before_paid,
-                'paid_now': p.amount,
-                'yet_to_pay': client.budget - running_paid,
-                'total_paid': running_paid,
-                'spend_detail': '—',
-                'salary_info': '—',
-                'spend_amount': Decimal('0.00'),
-                'balance': running_paid - running_spent,
-                'type': 'payment',
+                'paid_now':      p.amount,
+                'yet_to_pay':    client.budget - running_paid,
+                'total_paid':    running_paid,
+                'spend_detail':  '—',
+                'salary_info':   '—',
+                'spend_amount':  Decimal('0.00'),
+                'balance':       running_paid - running_spent,
+                'type':          'payment',
             })
 
-        # EXPENSES
         for e in expenses:
             running_spent += e.amount
 
             if e.category and e.category.name.lower() == 'salary':
-                team_name = e.salary_to.name if e.salary_to else ''
-                worker_name = e.worker_name.name if e.worker_name else ''
-                salary_info = f"{team_name}"
+                team_name   = e.salary_to.name   if e.salary_to   else ''
+                worker_name = e.worker_name.name  if e.worker_name else ''
+                salary_info = team_name
                 if worker_name:
                     salary_info += f" / {worker_name}"
             else:
                 salary_info = '—'
 
             rows.append({
-                'date': e.expense_date,
-                'client': client.name,
-                'company': client.company.name,
-                'budget': client.budget,
+                'date':          e.expense_date,
+                'client':        client.name,
+                'company':       client.company.name,
+                'budget':        client.budget,
                 'previous_paid': running_paid,
-                'paid_now': Decimal('0.00'),
-                'yet_to_pay': client.budget - running_paid,
-                'total_paid': running_paid,
-                'spend_detail': e.description,
-                'salary_info': salary_info,
-                'spend_amount': e.amount,
-                'balance': running_paid - running_spent,
-                'type': 'expense',
+                'paid_now':      Decimal('0.00'),
+                'yet_to_pay':    client.budget - running_paid,
+                'total_paid':    running_paid,
+                'spend_detail':  e.description,
+                'salary_info':   salary_info,
+                'spend_amount':  e.amount,
+                'balance':       running_paid - running_spent,
+                'type':          'expense',
             })
 
     # =========================
-    # TOTAL CALCULATIONS (CORRECT LOCATION)
+    # TOTALS
     # =========================
-
     total_project_value = Decimal('0.00')
-    total_paid = Decimal('0.00')
-    total_spend = Decimal('0.00')
-    total_yet_to_pay = Decimal('0.00')
+    total_paid          = Decimal('0.00')
+    total_spend         = Decimal('0.00')
+    total_yet_to_pay    = Decimal('0.00')
 
     for client in clients:
-
-        client_payments = client.payments.all()
-        client_expenses = client.expenses.all()
+        cp = client.payments.all()
+        ce = client.expenses.all()
 
         if sd:
-            client_payments = client_payments.filter(payment_date__gte=sd)
-            client_expenses = client_expenses.filter(expense_date__gte=sd)
-
+            cp = cp.filter(payment_date__gte=sd)
+            ce = ce.filter(expense_date__gte=sd)
         if ed:
-            client_payments = client_payments.filter(payment_date__lte=ed)
-            client_expenses = client_expenses.filter(expense_date__lte=ed)
+            cp = cp.filter(payment_date__lte=ed)
+            ce = ce.filter(expense_date__lte=ed)
 
-        client_paid_total = client_payments.aggregate(
-            total=Sum('amount')
-        )['total'] or Decimal('0.00')
-
-        client_spend_total = client_expenses.aggregate(
-            total=Sum('amount')
-        )['total'] or Decimal('0.00')
+        client_paid  = cp.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+        client_spend = ce.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
 
         total_project_value += client.budget
-        total_paid += client_paid_total
-        total_spend += client_spend_total
-        total_yet_to_pay += (client.budget - client_paid_total)
+        total_paid          += client_paid
+        total_spend         += client_spend
+        total_yet_to_pay    += (client.budget - client_paid)
 
     grand_balance = total_paid - total_spend
 
     # =========================
-    # FILTER TRANSACTION TYPE
+    # FILTER TYPE
     # =========================
     if txn_type != 'all':
         rows = [r for r in rows if r['type'] == txn_type]
 
+    # =========================
     # SORT
-    rows = sorted(
-        rows,
-        key=lambda x: x['date'],
-        reverse=(order == 'new')
-    )
+    # =========================
+    rows = sorted(rows, key=lambda x: x['date'], reverse=(order == 'new'))
+
+    total_rows = len(rows)
+
+    # =========================
+    # PAGINATE — 20 per page
+    # =========================
+    paginator = Paginator(rows, 20)
+
+    try:
+        page_obj = paginator.page(page_num)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
 
     return render(request, 'client/all_clients_statement.html', {
-        'rows': rows,
-        'start_date': start_date,
-        'end_date': end_date,
-        'order': order,
-        'txn_type': txn_type,
-        'total_project_value': total_project_value,
-        'total_paid': total_paid,
-        'total_spend': total_spend,
-        'total_yet_to_pay': total_yet_to_pay,
-        'grand_balance': grand_balance,
-    })
+        'rows':       page_obj,          # paginated rows
+        'page_obj':   page_obj,
+        'paginator':  paginator,
+        'total_rows': total_rows,
 
+        'start_date': start_date,
+        'end_date':   end_date,
+        'order':      order,
+        'txn_type':   txn_type,
+
+        'total_project_value': total_project_value,
+        'total_paid':          total_paid,
+        'total_spend':         total_spend,
+        'total_yet_to_pay':    total_yet_to_pay,
+        'grand_balance':       grand_balance,
+    })
 
 
 
@@ -5633,9 +5638,9 @@ def payment_index(request):
     payments = payments.order_by('-payment_date', '-id')
 
     # =========================
-    # 📄 PAGINATION (10 per page)
+    # 📄 PAGINATION (20 per page)
     # =========================
-    paginator = Paginator(payments, 10)
+    paginator = Paginator(payments, 20)
 
     try:
         payments_page = paginator.page(page_number)
@@ -8112,7 +8117,7 @@ def expense_index(request):
     # =========================
     paginator = Paginator(
         expenses,
-        10  # 100 records per page
+        20  # 20 records per page
     )
 
     page_number = request.GET.get('page')
@@ -10644,310 +10649,150 @@ from .models import (
 )
 
 
-# @login_required(login_url='login')
-# def activity_view(request):
 
-#     # =====================================================
-#     # COMPANY FROM SESSION
-#     # =====================================================
 
-#     selected_company_id = request.session.get(
-#         'selected_company_id'
-#     )
-
-#     if not selected_company_id:
-#         return redirect('dashboard')
-
-#     # =====================================================
-#     # INDIA TIMEZONE
-#     # =====================================================
-
-#     india_tz = ZoneInfo("Asia/Kolkata")
 
-#     current_time_ist = timezone.now().astimezone(india_tz)
-
-#     today = current_time_ist.date()
 
-#     current_month = current_time_ist.month
-
-#     current_year = current_time_ist.year
-
-#     # =====================================================
-#     # FILTERS
-#     # =====================================================
-
-#     search_query = request.GET.get(
-#         'q',
-#         ''
-#     ).strip()
-
-#     filter_type = request.GET.get(
-#         'filter',
-#         'today'
-#     )
-
-#     log_action = request.GET.get(
-#         'log_action',
-#         'all'
-#     )
-
-#     # =====================================================
-#     # PAYMENTS
-#     # =====================================================
-
-#     payments = Payment.objects.filter(
-#         client__company_id=selected_company_id
-#     ).select_related(
-#         'client',
-#         'bank'
-#     )
-
-#     # =====================================================
-#     # EXPENSES
-#     # =====================================================
-
-#     expenses = Expense.objects.filter(
-#         client__company_id=selected_company_id
-#     ).select_related(
-#         'client',
-#         'category',
-#         'bank'
-#     )
-
-#     # =====================================================
-#     # ACTIVITY LOGS
-#     # =====================================================
-
-#     activity_logs = ActivityLog.objects.all()
-
-#     # =====================================================
-#     # DATE FILTERS
-#     # =====================================================
-
-#     # TODAY
-#     if filter_type == 'today':
-
-#         payments = payments.filter(
-#             payment_date=today
-#         )
-
-#         expenses = expenses.filter(
-#             expense_date=today
-#         )
-
-#         # ✅ FIXED UTC → IST ISSUE
-#         activity_logs = activity_logs.filter(
-#             created_at__year=current_year,
-#             created_at__month=current_month,
-#             created_at__day=today.day
-#         )
-
-#     # MONTH
-#     elif filter_type == 'month':
-
-#         payments = payments.filter(
-#             payment_date__month=current_month,
-#             payment_date__year=current_year
-#         )
-
-#         expenses = expenses.filter(
-#             expense_date__month=current_month,
-#             expense_date__year=current_year
-#         )
-
-#         activity_logs = activity_logs.filter(
-#             created_at__month=current_month,
-#             created_at__year=current_year
-#         )
-
-#     # YEAR
-#     elif filter_type == 'year':
-
-#         payments = payments.filter(
-#             payment_date__year=current_year
-#         )
-
-#         expenses = expenses.filter(
-#             expense_date__year=current_year
-#         )
-
-#         activity_logs = activity_logs.filter(
-#             created_at__year=current_year
-#         )
-
-#     # =====================================================
-#     # ACTION FILTERS
-#     # =====================================================
-
-#     if log_action == 'created':
-
-#         activity_logs = activity_logs.filter(
-#             action__icontains='Created'
-#         )
-
-#     elif log_action == 'updated':
-
-#         activity_logs = activity_logs.filter(
-#             action__icontains='Updated'
-#         )
-
-#     elif log_action == 'deleted':
-
-#         activity_logs = activity_logs.filter(
-#             action__icontains='Deleted'
-#         )
-
-#     # =====================================================
-#     # SEARCH FILTER
-#     # =====================================================
-
-#     if search_query:
-
-#         payments = payments.filter(
-
-#             Q(client__name__icontains=search_query) |
-
-#             Q(bank__name__icontains=search_query) |
-
-#             Q(amount__icontains=search_query)
-#         )
-
-#         expenses = expenses.filter(
-
-#             Q(client__name__icontains=search_query) |
-
-#             Q(category__name__icontains=search_query) |
-
-#             Q(description__icontains=search_query) |
-
-#             Q(amount__icontains=search_query)
-#         )
-
-#         activity_logs = activity_logs.filter(
-
-#             Q(action__icontains=search_query) |
-
-#             Q(description__icontains=search_query) |
-
-#             Q(created_by__username__icontains=search_query) |
-
-#             Q(updated_by__username__icontains=search_query) |
-
-#             Q(deleted_by__username__icontains=search_query) |
-
-#             Q(ip_address__icontains=search_query)
-#         )
-
-#     # =====================================================
-#     # ORDERING
-#     # =====================================================
-
-#     payments = payments.order_by(
-#         '-payment_date',
-#         '-id'
-#     )
-
-#     expenses = expenses.order_by(
-#         '-expense_date',
-#         '-id'
-#     )
-
-#     activity_logs = activity_logs.order_by(
-#         '-created_at',
-#         '-id'
-#     )
-
-#     # =====================================================
-#     # TOTALS
-#     # =====================================================
-
-#     total_income = payments.aggregate(
-#         Sum('amount')
-#     )['amount__sum'] or 0
-
-#     total_expenses = expenses.aggregate(
-#         Sum('amount')
-#     )['amount__sum'] or 0
-
-#     balance = total_income - total_expenses
-
-#     # =====================================================
-#     # PAGE TITLE
-#     # =====================================================
-
-#     if filter_type == 'today':
-
-#         page_title = "Today's Activity"
-
-#     elif filter_type == 'month':
-
-#         page_title = "This Month Activity"
-
-#     elif filter_type == 'year':
-
-#         page_title = "This Year Activity"
-
-#     else:
-
-#         page_title = "Activity"
-
-#     # =====================================================
-#     # RENDER
-#     # =====================================================
-
-#     return render(
-#         request,
-#         'activity/today.html',
-#         {
-
-#             'payments': payments,
-
-#             'expenses': expenses,
-
-#             'activity_logs': activity_logs,
-
-#             'total_income': total_income,
-
-#             'total_expenses': total_expenses,
-
-#             'balance': balance,
-
-#             'today': today,
-
-#             'current_time_ist': current_time_ist,
-
-#             'search_query': search_query,
-
-#             'filter_type': filter_type,
-
-#             'log_action': log_action,
-
-#             'page_title': page_title,
-#         }
-#     )
-
-
+from zoneinfo import ZoneInfo
+from datetime import datetime, time
+
+from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.db.models import Sum, Q
+from django.shortcuts import render, redirect
+from django.utils import timezone
+
+# pip install user-agents
+import user_agents
+
+
+def get_client_ip(request):
+    """Extract real IP from request."""
+    x_forwarded = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded:
+        return x_forwarded.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR', 'Unknown')
+
+
+def parse_user_agent(ua_string):
+    """
+    Parse user-agent string and return
+    structured device/browser/os info.
+    """
+    if not ua_string:
+        return {
+            'browser':       'Unknown Browser',
+            'browser_ver':   '',
+            'os':            'Unknown OS',
+            'os_ver':        '',
+            'device':        'Unknown Device',
+            'device_type':   'desktop',
+            'device_icon':   'bi-monitor',
+            'is_mobile':     False,
+            'is_tablet':     False,
+            'is_pc':         True,
+            'is_bot':        False,
+            'raw':           ua_string or '',
+        }
+
+    ua = user_agents.parse(ua_string)
+
+    # ── Device type ──────────────────────────
+    if ua.is_bot:
+        device_type = 'bot'
+        device_icon = 'bi-robot'
+    elif ua.is_mobile:
+        device_type = 'mobile'
+        device_icon = 'bi-phone'
+    elif ua.is_tablet:
+        device_type = 'tablet'
+        device_icon = 'bi-tablet'
+    else:
+        device_type = 'desktop'
+        device_icon = 'bi-monitor'
+
+    # ── Browser ──────────────────────────────
+    browser     = ua.browser.family or 'Unknown'
+    browser_ver = ua.browser.version_string or ''
+
+    # ── OS ───────────────────────────────────
+    os_name = ua.os.family or 'Unknown'
+    os_ver  = ua.os.version_string or ''
+
+    # ── Device name ──────────────────────────
+    if ua.device.family and ua.device.family.lower() != 'other':
+        device = ua.device.family
+        if ua.device.brand and ua.device.brand.lower() != 'other':
+            device = f"{ua.device.brand} {ua.device.family}"
+    else:
+        device = os_name
+
+    return {
+        'browser':      browser,
+        'browser_ver':  browser_ver,
+        'os':           os_name,
+        'os_ver':       os_ver,
+        'device':       device,
+        'device_type':  device_type,
+        'device_icon':  device_icon,
+        'is_mobile':    ua.is_mobile,
+        'is_tablet':    ua.is_tablet,
+        'is_pc':        ua.is_pc,
+        'is_bot':       ua.is_bot,
+        'raw':          ua_string,
+    }
 
 
 @login_required(login_url='login')
 def activity_view(request):
 
+    # =====================================================
+    # COMPANY FROM SESSION
+    # =====================================================
     selected_company_id = request.session.get('selected_company_id')
     if not selected_company_id:
         return redirect('dashboard')
 
-    india_tz = ZoneInfo("Asia/Kolkata")
+    # =====================================================
+    # INDIA TIMEZONE
+    # =====================================================
+    india_tz         = ZoneInfo("Asia/Kolkata")
     current_time_ist = timezone.now().astimezone(india_tz)
-    today = current_time_ist.date()
-    current_month = current_time_ist.month
-    current_year = current_time_ist.year
+    today            = current_time_ist.date()
+    current_month    = current_time_ist.month
+    current_year     = current_time_ist.year
 
-    # Filters
+    # =====================================================
+    # DATE RANGES
+    # =====================================================
+    start_of_day = timezone.make_aware(datetime.combine(today, time.min))
+    end_of_day   = timezone.make_aware(datetime.combine(today, time.max))
+
+    month_start = timezone.make_aware(datetime(current_year, current_month, 1))
+    month_end   = timezone.make_aware(
+        datetime(current_year + 1, 1, 1)
+        if current_month == 12
+        else datetime(current_year, current_month + 1, 1)
+    )
+
+    year_start = timezone.make_aware(datetime(current_year, 1, 1))
+    year_end   = timezone.make_aware(datetime(current_year + 1, 1, 1))
+
+    # =====================================================
+    # FILTERS FROM GET
+    # =====================================================
     search_query = request.GET.get('q', '').strip()
-    filter_type = request.GET.get('filter', 'today')
-    log_action = request.GET.get('log_action', 'all')
+    filter_type  = request.GET.get('filter', 'today')
+    log_action   = request.GET.get('log_action', 'all')
 
-    # Base querysets
+    # Pagination page numbers (separate for each section)
+    pay_page  = request.GET.get('pay_page',  1)
+    exp_page  = request.GET.get('exp_page',  1)
+    log_page  = request.GET.get('log_page',  1)
+
+    # =====================================================
+    # BASE QUERYSETS
+    # =====================================================
     payments = Payment.objects.filter(
         client__company_id=selected_company_id
     ).select_related('client', 'bank')
@@ -10958,34 +10803,29 @@ def activity_view(request):
 
     activity_logs = ActivityLog.objects.select_related(
         'created_by', 'updated_by', 'deleted_by'
-    ).all()
+    )
 
-    # Date filters
+    # =====================================================
+    # DATE FILTERS
+    # =====================================================
     if filter_type == 'today':
-        payments = payments.filter(payment_date=today)
-        expenses = expenses.filter(expense_date=today)
-        activity_logs = activity_logs.filter(
-            created_at__date=today
-        )
-    elif filter_type == 'month':
-        payments = payments.filter(
-            payment_date__month=current_month,
-            payment_date__year=current_year
-        )
-        expenses = expenses.filter(
-            expense_date__month=current_month,
-            expense_date__year=current_year
-        )
-        activity_logs = activity_logs.filter(
-            created_at__month=current_month,
-            created_at__year=current_year
-        )
-    elif filter_type == 'year':
-        payments = payments.filter(payment_date__year=current_year)
-        expenses = expenses.filter(expense_date__year=current_year)
-        activity_logs = activity_logs.filter(created_at__year=current_year)
+        payments      = payments.filter(payment_date=today)
+        expenses      = expenses.filter(expense_date=today)
+        activity_logs = activity_logs.filter(created_at__range=(start_of_day, end_of_day))
 
-    # Action filter
+    elif filter_type == 'month':
+        payments      = payments.filter(payment_date__month=current_month, payment_date__year=current_year)
+        expenses      = expenses.filter(expense_date__month=current_month, expense_date__year=current_year)
+        activity_logs = activity_logs.filter(created_at__gte=month_start, created_at__lt=month_end)
+
+    elif filter_type == 'year':
+        payments      = payments.filter(payment_date__year=current_year)
+        expenses      = expenses.filter(expense_date__year=current_year)
+        activity_logs = activity_logs.filter(created_at__gte=year_start, created_at__lt=year_end)
+
+    # =====================================================
+    # ACTION FILTER
+    # =====================================================
     if log_action == 'created':
         activity_logs = activity_logs.filter(action__icontains='Created')
     elif log_action == 'updated':
@@ -10993,82 +10833,168 @@ def activity_view(request):
     elif log_action == 'deleted':
         activity_logs = activity_logs.filter(action__icontains='Deleted')
 
-    # Search
+    # =====================================================
+    # SEARCH
+    # =====================================================
     if search_query:
         payments = payments.filter(
             Q(client__name__icontains=search_query) |
-            Q(bank__name__icontains=search_query) |
+            Q(bank__name__icontains=search_query)   |
             Q(amount__icontains=search_query)
         )
         expenses = expenses.filter(
-            Q(client__name__icontains=search_query) |
-            Q(category__name__icontains=search_query) |
-            Q(description__icontains=search_query) |
+            Q(client__name__icontains=search_query)    |
+            Q(category__name__icontains=search_query)  |
+            Q(description__icontains=search_query)     |
             Q(amount__icontains=search_query)
         )
         activity_logs = activity_logs.filter(
-            Q(action__icontains=search_query) |
-            Q(description__icontains=search_query) |
-            Q(created_by__username__icontains=search_query) |
+            Q(action__icontains=search_query)              |
+            Q(description__icontains=search_query)         |
+            Q(created_by__username__icontains=search_query)|
             Q(ip_address__icontains=search_query)
         )
 
-    # Ordering
-    payments = payments.order_by('-payment_date', '-id')
-    expenses = expenses.order_by('-expense_date', '-id')
+    # =====================================================
+    # ORDERING
+    # =====================================================
+    payments      = payments.order_by('-payment_date', '-id')
+    expenses      = expenses.order_by('-expense_date', '-id')
     activity_logs = activity_logs.order_by('-created_at', '-id')
 
-    # Totals
-    total_income = payments.aggregate(Sum('amount'))['amount__sum'] or 0
+    # =====================================================
+    # TOTALS  (before pagination)
+    # =====================================================
+    total_income   = payments.aggregate(Sum('amount'))['amount__sum'] or 0
     total_expenses = expenses.aggregate(Sum('amount'))['amount__sum'] or 0
-    balance = total_income - total_expenses
+    balance        = total_income - total_expenses
 
-    # Action counts for badges
+    # =====================================================
+    # ACTION COUNTS
+    # =====================================================
     all_logs = ActivityLog.objects.all()
+
     if filter_type == 'today':
-        all_logs = all_logs.filter(created_at__date=today)
+        all_logs = all_logs.filter(created_at__range=(start_of_day, end_of_day))
     elif filter_type == 'month':
-        all_logs = all_logs.filter(
-            created_at__month=current_month,
-            created_at__year=current_year
-        )
+        all_logs = all_logs.filter(created_at__gte=month_start, created_at__lt=month_end)
     elif filter_type == 'year':
-        all_logs = all_logs.filter(created_at__year=current_year)
+        all_logs = all_logs.filter(created_at__gte=year_start, created_at__lt=year_end)
 
     action_counts = {
-        'all': all_logs.count(),
+        'all':     all_logs.count(),
         'created': all_logs.filter(action__icontains='Created').count(),
         'updated': all_logs.filter(action__icontains='Updated').count(),
         'deleted': all_logs.filter(action__icontains='Deleted').count(),
     }
 
-    # Page title
+    # =====================================================
+    # PARSE DEVICE INFO FOR EACH ACTIVITY LOG
+    # Attach device_info to each log object dynamically
+    # =====================================================
+    logs_with_device = []
+    for log in activity_logs:
+        ua_string   = getattr(log, 'user_agent', '') or ''
+        device_info = parse_user_agent(ua_string)
+        logs_with_device.append({
+            'log':         log,
+            'device_info': device_info,
+        })
+
+    # =====================================================
+    # PAGINATION — 20 per page each section
+    # =====================================================
+    PER_PAGE = 20
+
+    # Payments
+    pay_paginator = Paginator(payments, PER_PAGE)
+    try:
+        payments_page = pay_paginator.page(pay_page)
+    except PageNotAnInteger:
+        payments_page = pay_paginator.page(1)
+    except EmptyPage:
+        payments_page = pay_paginator.page(pay_paginator.num_pages)
+
+    # Expenses
+    exp_paginator = Paginator(expenses, PER_PAGE)
+    try:
+        expenses_page = exp_paginator.page(exp_page)
+    except PageNotAnInteger:
+        expenses_page = exp_paginator.page(1)
+    except EmptyPage:
+        expenses_page = exp_paginator.page(exp_paginator.num_pages)
+
+    # Activity Logs (list of dicts, not queryset)
+    log_paginator = Paginator(logs_with_device, PER_PAGE)
+    try:
+        logs_page = log_paginator.page(log_page)
+    except PageNotAnInteger:
+        logs_page = log_paginator.page(1)
+    except EmptyPage:
+        logs_page = log_paginator.page(log_paginator.num_pages)
+
+    # =====================================================
+    # CURRENT USER DEVICE
+    # =====================================================
+    current_ip          = get_client_ip(request)
+    current_ua_string   = request.META.get('HTTP_USER_AGENT', '')
+    current_device_info = parse_user_agent(current_ua_string)
+
+    # =====================================================
+    # PAGE TITLE
+    # =====================================================
     titles = {
         'today': "Today's Activity",
         'month': "This Month's Activity",
-        'year': "This Year's Activity",
+        'year':  "This Year's Activity",
     }
     page_title = titles.get(filter_type, "Activity")
 
-    # Current user IP
-    x_forwarded = request.META.get('HTTP_X_FORWARDED_FOR')
-    current_ip = x_forwarded.split(',')[0].strip() if x_forwarded else request.META.get('REMOTE_ADDR', 'Unknown')
-
+    # =====================================================
+    # RENDER
+    # =====================================================
     return render(request, 'activity/today.html', {
-        'payments': payments,
-        'expenses': expenses,
-        'activity_logs': activity_logs,
-        'total_income': total_income,
+
+        # Paginated data
+        'payments':      payments_page,
+        'expenses':      expenses_page,
+        'activity_logs': logs_page,
+
+        # Paginators
+        'pay_paginator': pay_paginator,
+        'exp_paginator': exp_paginator,
+        'log_paginator': log_paginator,
+
+        # Page objects
+        'pay_page_obj': payments_page,
+        'exp_page_obj': expenses_page,
+        'log_page_obj': logs_page,
+
+        # Counts
+        'total_payments_count': pay_paginator.count,
+        'total_expenses_count': exp_paginator.count,
+        'total_logs_count':     log_paginator.count,
+
+        # Totals
+        'total_income':   total_income,
         'total_expenses': total_expenses,
-        'balance': balance,
-        'today': today,
+        'balance':        balance,
+
+        # Meta
+        'today':            today,
         'current_time_ist': current_time_ist,
+
+        # Filters
         'search_query': search_query,
-        'filter_type': filter_type,
-        'log_action': log_action,
-        'page_title': page_title,
+        'filter_type':  filter_type,
+        'log_action':   log_action,
+
+        'page_title':   page_title,
         'action_counts': action_counts,
-        'current_ip': current_ip,
+
+        # Device info
+        'current_ip':          current_ip,
+        'current_device_info': current_device_info,
     })
 
 

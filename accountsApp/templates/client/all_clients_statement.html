@@ -2,378 +2,1145 @@
 {% block title %}All Clients Statement{% endblock %}
 
 {% block content %}
-<div class="space-y-4">
 
-<!-- HEADER -->
-<div class="flex justify-between items-center">
-    <h4 class="fw-bold">All Clients Statement</h4>
+<div class="acs-wrapper">
 
-    <a href="{% url 'all_client_info_pdf' %}?start_date={{ start_date }}&end_date={{ end_date }}&order={{ order }}"
-       class="btn btn-danger">
-        📄 Export PDF
-    </a>
-    <a href="{% url 'all_client_info_excel' %}"
-   class="btn btn-success">
-    Export Excel
-</a>
-</div>
-
-<!-- FILTERS -->
-<form method="get" class="row g-2 mb-3 align-items-end">
-    <div class="col-md-3">
-        <label class="form-label">Type</label>
-        <select name="txn_type" class="form-select">
-            <option value="all" {% if txn_type == 'all' %}selected{% endif %}>All</option>
-            <option value="payment" {% if txn_type == 'payment' %}selected{% endif %}>Payments</option>
-            <option value="expense" {% if txn_type == 'expense' %}selected{% endif %}>Spend</option>
-        </select>
-    </div>
-
-    <div class="col-md-3">
-        <label class="form-label">Start Date</label>
-        <input type="date" name="start_date" value="{{ start_date }}" class="form-control">
-    </div>
-
-    <div class="col-md-3">
-        <label class="form-label">End Date</label>
-        <input type="date" name="end_date" value="{{ end_date }}" class="form-control">
-    </div>
-
-    <div class="col-md-3">
-        <label class="form-label">Order</label>
-        <select name="order" class="form-select">
-            <option value="new" {% if order == 'new' %}selected{% endif %}>New → Old</option>
-            <option value="old" {% if order == 'old' %}selected{% endif %}>Old → New</option>
-        </select>
-    </div>
-
-    <div class="col-md-3 d-flex gap-2">
-        <button class="btn btn-primary w-100">Apply</button>
-        <a href="{% url 'all_clients_statement' %}" class="btn btn-secondary w-100">Reset</a>
-    </div>
-</form>
-
-
-<div class="d-flex justify-content-center mb-3" style="position: sticky; top: 80px; z-index: 1050;">
-    <div class="shadow-lg border-0 rounded-pill px-4 py-2 d-inline-flex align-items-center animate__animated animate__fadeInDown" 
-         style="background: rgba(13, 110, 253, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2) !important;">
-        
-        <div class="bg-white rounded-circle d-flex align-items-center justify-content-center me-3" 
-             style="width: 32px; height: 32px;">
-            <i class="bi bi-calculator-fill text-primary" style="font-size: 1rem;"></i>
+    <!-- ═══════════════════════════════════════
+         PAGE HEADER
+    ═══════════════════════════════════════ -->
+    <div class="acs-page-header">
+        <div class="acs-header-left">
+            <div class="acs-header-icon">
+                <i class="bi bi-journal-text"></i>
+                <div class="acs-icon-ring"></div>
+            </div>
+            <div>
+                <div class="acs-breadcrumb">
+                    <span>Finance</span>
+                    <i class="bi bi-chevron-right"></i>
+                    <span class="acs-breadcrumb-active">All Clients Statement</span>
+                </div>
+                <h4 class="acs-title">Client Statement</h4>
+                <p class="acs-subtitle">Complete transaction ledger across all clients</p>
+            </div>
         </div>
 
-        <div class="text-white">
-            <span class="text-uppercase fw-bold opacity-5 me-2" style="font-size: 0.7rem; letter-spacing: 0.5px;">
-                Selected Total
-            </span>
-            <span class="fs-5 fw-black" style="font-family: 'Monaco', monospace;">
-                ₹ <span id="selectedTotal">0.00</span>
-            </span>
+        <div class="acs-header-actions">
+            <a href="{% url 'all_client_info_pdf' %}?start_date={{ start_date }}&end_date={{ end_date }}&order={{ order }}"
+               class="acs-btn acs-btn-danger">
+                <i class="bi bi-file-earmark-pdf"></i>
+                <span>Export PDF</span>
+            </a>
+            <a href="{% url 'all_client_info_excel' %}" class="acs-btn acs-btn-success">
+                <i class="bi bi-file-earmark-excel"></i>
+                <span>Export Excel</span>
+            </a>
         </div>
     </div>
-</div>
+
+    <!-- ═══════════════════════════════════════
+         FILTER PANEL
+    ═══════════════════════════════════════ -->
+    <div class="acs-filter-card">
+        <div class="acs-filter-header" onclick="toggleAcsFilter()">
+            <div class="d-flex align-items-center gap-3">
+                <div class="acs-filter-icon">
+                    <i class="bi bi-sliders2"></i>
+                </div>
+                <span class="acs-filter-title">Filters & Options</span>
+                <span class="acs-filter-badge" id="acsFilterBadge"></span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="acs-filter-hint" id="acsFilterHint">Click to expand</span>
+                <div class="acs-chevron" id="acsChevron">
+                    <i class="bi bi-chevron-down"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="acs-filter-body" id="acsFilterBody">
+            <form method="get" id="acsFilterForm">
+                <div class="acs-filter-grid">
+
+                    <!-- Type -->
+                    <div class="acs-filter-item">
+                        <label class="acs-filter-label">
+                            <i class="bi bi-tag"></i> Transaction Type
+                        </label>
+                        <div class="acs-type-group">
+                            <label class="acs-type-opt {% if txn_type == 'all' %}acs-type-active{% endif %}">
+                                <input type="radio" name="txn_type" value="all"
+                                    {% if txn_type == 'all' %}checked{% endif %} hidden>
+                                <i class="bi bi-grid-3x3-gap"></i> All
+                            </label>
+                            <label class="acs-type-opt {% if txn_type == 'payment' %}acs-type-active acs-type-payment{% endif %}">
+                                <input type="radio" name="txn_type" value="payment"
+                                    {% if txn_type == 'payment' %}checked{% endif %} hidden>
+                                <i class="bi bi-cash-stack"></i> Payments
+                            </label>
+                            <label class="acs-type-opt {% if txn_type == 'expense' %}acs-type-active acs-type-expense{% endif %}">
+                                <input type="radio" name="txn_type" value="expense"
+                                    {% if txn_type == 'expense' %}checked{% endif %} hidden>
+                                <i class="bi bi-receipt"></i> Spend
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Start Date -->
+                    <div class="acs-filter-item">
+                        <label class="acs-filter-label">
+                            <i class="bi bi-calendar-event"></i> From Date
+                        </label>
+                        <div class="acs-input-wrap">
+                            <i class="bi bi-calendar3 acs-input-icon"></i>
+                            <input type="date" name="start_date"
+                                   value="{{ start_date }}"
+                                   class="acs-input">
+                        </div>
+                    </div>
+
+                    <!-- End Date -->
+                    <div class="acs-filter-item">
+                        <label class="acs-filter-label">
+                            <i class="bi bi-calendar-check"></i> To Date
+                        </label>
+                        <div class="acs-input-wrap">
+                            <i class="bi bi-calendar3 acs-input-icon"></i>
+                            <input type="date" name="end_date"
+                                   value="{{ end_date }}"
+                                   class="acs-input">
+                        </div>
+                    </div>
+
+                    <!-- Order -->
+                    <div class="acs-filter-item">
+                        <label class="acs-filter-label">
+                            <i class="bi bi-sort-down"></i> Sort Order
+                        </label>
+                        <div class="acs-order-group">
+                            <label class="acs-type-opt {% if order == 'new' %}acs-type-active{% endif %}">
+                                <input type="radio" name="order" value="new"
+                                    {% if order == 'new' %}checked{% endif %} hidden>
+                                <i class="bi bi-sort-down"></i> New → Old
+                            </label>
+                            <label class="acs-type-opt {% if order == 'old' %}acs-type-active{% endif %}">
+                                <input type="radio" name="order" value="old"
+                                    {% if order == 'old' %}checked{% endif %} hidden>
+                                <i class="bi bi-sort-up"></i> Old → New
+                            </label>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="acs-filter-actions">
+                    <button type="submit" class="acs-btn acs-btn-primary acs-btn-sm">
+                        <i class="bi bi-search"></i> Apply Filters
+                    </button>
+                    <a href="{% url 'all_clients_statement' %}" class="acs-btn acs-btn-ghost acs-btn-sm">
+                        <i class="bi bi-arrow-counterclockwise"></i> Reset All
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         STATS ROW
+    ═══════════════════════════════════════ -->
+    <div class="acs-stats-row">
+        <div class="acs-stat-card">
+            <div class="acs-stat-icon acs-stat-icon-blue">
+                <i class="bi bi-receipt-cutoff"></i>
+            </div>
+            <div class="acs-stat-body">
+                <span class="acs-stat-value">{{ total_rows }}</span>
+                <span class="acs-stat-label">Total Records</span>
+            </div>
+        </div>
+
+        <div class="acs-stat-card">
+            <div class="acs-stat-icon acs-stat-icon-green">
+                <i class="bi bi-currency-rupee"></i>
+            </div>
+            <div class="acs-stat-body">
+                <span class="acs-stat-value">₹ {{ total_paid|floatformat:0 }}</span>
+                <span class="acs-stat-label">Total Collected</span>
+            </div>
+        </div>
+
+        <div class="acs-stat-card">
+            <div class="acs-stat-icon acs-stat-icon-red">
+                <i class="bi bi-arrow-up-right-circle"></i>
+            </div>
+            <div class="acs-stat-body">
+                <span class="acs-stat-value">₹ {{ total_spend|floatformat:0 }}</span>
+                <span class="acs-stat-label">Total Spent</span>
+            </div>
+        </div>
+
+        <div class="acs-stat-card">
+            <div class="acs-stat-icon {% if grand_balance < 0 %}acs-stat-icon-red{% else %}acs-stat-icon-green{% endif %}">
+                <i class="bi bi-wallet2"></i>
+            </div>
+            <div class="acs-stat-body">
+                <span class="acs-stat-value {% if grand_balance < 0 %}text-danger{% else %}text-success{% endif %}">
+                    ₹ {{ grand_balance|floatformat:0 }}
+                </span>
+                <span class="acs-stat-label">Balance</span>
+            </div>
+        </div>
+
+        <div class="acs-stat-showing ms-auto">
+            <i class="bi bi-eye me-1"></i>
+            Showing &nbsp;
+            <strong> {{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+            of <strong> {{ total_rows }}</strong>
+            &nbsp;&nbsp;
+            Page <strong> {{ page_obj.number }} </strong> of <strong>{{ paginator.num_pages }}</strong>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         FLOATING SELECTED TOTAL
+    ═══════════════════════════════════════ -->
+    <div class="acs-floating-total" id="acsFloatingTotal">
+        <div class="acs-total-inner">
+            <div class="acs-total-icon">
+                <i class="bi bi-calculator-fill"></i>
+            </div>
+            <div class="acs-total-info">
+                <span class="acs-total-label">Selected Total</span>
+                <span class="acs-total-amount">₹ <span id="selectedTotal">0.00</span></span>
+            </div>
+            <div class="acs-total-divider"></div>
+            <div class="acs-total-meta">
+                <span class="acs-total-count"><span id="selectedCount">0</span> items</span>
+                <span class="acs-total-hint"><i class="bi bi-backspace"></i> Undo</span>
+            </div>
+            <button class="acs-total-clear" onclick="clearAllSelections()" title="Clear">
+                <i class="bi bi-x-circle-fill"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         TABLE CARD
+    ═══════════════════════════════════════ -->
+    <div class="acs-table-card">
+
+        <!-- Table Top Bar -->
+        <div class="acs-table-topbar">
+            <div class="acs-table-topbar-left">
+                <i class="bi bi-table me-2"></i>
+                <span>Transaction Ledger</span>
+                <span class="acs-topbar-type-badge acs-type-{{ txn_type }}">
+                    {% if txn_type == 'all' %}All Types
+                    {% elif txn_type == 'payment' %}Payments Only
+                    {% else %}Spend Only{% endif %}
+                </span>
+            </div>
+            <div class="acs-table-topbar-right">
+                <span class="acs-topbar-badge">
+                    <i class="bi bi-clock-history me-1"></i>
+                    {% if order == 'new' %}Latest first{% else %}Oldest first{% endif %}
+                </span>
+            </div>
+        </div>
+
+        <div class="acs-table-responsive custom-scrollbar">
+            <table class="acs-table">
+                <thead>
+                    <tr>
+                        <th><div class="acs-th"><i class="bi bi-hash"></i></div></th>
+                        <th><div class="acs-th"><i class="bi bi-calendar3"></i> Date</div></th>
+                        <th><div class="acs-th"><i class="bi bi-person"></i> Client</div></th>
+                        <th><div class="acs-th"><i class="bi bi-building"></i> Company</div></th>
+                        <th class="text-end"><div class="acs-th justify-content-end"><i class="bi bi-currency-rupee"></i> Project Value</div></th>
+
+                        {% if txn_type != 'expense' %}
+                        <th class="text-end"><div class="acs-th justify-content-end"><i class="bi bi-clock-history"></i> Prev. Paid</div></th>
+                        <th class="text-end"><div class="acs-th justify-content-end"><i class="bi bi-cash-stack"></i> Paid Now</div></th>
+                        <th class="text-end"><div class="acs-th justify-content-end"><i class="bi bi-hourglass-split"></i> Yet To Pay</div></th>
+                        {% endif %}
+
+                        {% if txn_type != 'payment' %}
+                        <th class="text-end"><div class="acs-th justify-content-end"><i class="bi bi-check2-circle"></i> Total Paid</div></th>
+                        <th><div class="acs-th"><i class="bi bi-card-text"></i> Spend Detail</div></th>
+                        <th><div class="acs-th"><i class="bi bi-people"></i> Salary Info</div></th>
+                        <th class="text-end"><div class="acs-th justify-content-end"><i class="bi bi-arrow-up-circle"></i> Spend Amt</div></th>
+                        <th class="text-end"><div class="acs-th justify-content-end"><i class="bi bi-wallet2"></i> Balance</div></th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in rows %}
+                    <tr class="acs-row acs-row-{{ r.type }}" style="animation-delay:{{ forloop.counter0 }}0ms">
+
+                        <!-- Serial -->
+                        <td>
+                            <span class="acs-serial">{{ page_obj.start_index|add:forloop.counter0 }}</span>
+                        </td>
+
+                        <!-- Date -->
+                        <td>
+                            <div class="acs-date-cell">
+                                <span class="acs-date-type-dot acs-dot-{{ r.type }}"></span>
+                                <div>
+                                    <span class="acs-date-main">{{ r.date|date:"d M Y" }}</span>
+                                    <span class="acs-date-day">{{ r.date|date:"l" }}</span>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Client -->
+                        <td>
+                            <div class="acs-client-cell">
+                                <div class="acs-avatar">{{ r.client|first|upper }}</div>
+                                <span class="acs-client-name">{{ r.client }}</span>
+                            </div>
+                        </td>
+
+                        <!-- Company -->
+                        <td>
+                            <span class="acs-company-badge">
+                                <i class="bi bi-building me-1"></i>{{ r.company }}
+                            </span>
+                        </td>
+
+                        <!-- Project Value -->
+                        <td class="text-end selectable-amount" data-amount="{{ r.budget }}" data-col="budget">
+                            <span class="acs-amount">₹ {{ r.budget|floatformat:2 }}</span>
+                        </td>
+
+                        {% if txn_type != 'expense' %}
+                        <!-- Prev Paid -->
+                        <td class="text-end selectable-amount" data-amount="{{ r.previous_paid }}" data-col="previous_paid">
+                            <span class="acs-amount acs-amount-muted">₹ {{ r.previous_paid|floatformat:2 }}</span>
+                        </td>
+
+                        <!-- Paid Now -->
+                        <td class="text-end selectable-amount" data-amount="{{ r.paid_now|default:0 }}" data-col="paid_now">
+                            {% if r.paid_now %}
+                            <span class="acs-amount acs-amount-success">₹ {{ r.paid_now|floatformat:2 }}</span>
+                            {% else %}
+                            <span class="acs-dash">—</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Yet To Pay -->
+                        <td class="text-end selectable-amount" data-amount="{{ r.yet_to_pay }}" data-col="yet_to_pay">
+                            <span class="acs-amount acs-amount-danger">₹ {{ r.yet_to_pay|floatformat:2 }}</span>
+                        </td>
+                        {% endif %}
+
+                        {% if txn_type != 'payment' %}
+                        <!-- Total Paid -->
+                        <td class="text-end selectable-amount" data-amount="{{ r.total_paid }}" data-col="total_paid">
+                            <span class="acs-amount acs-amount-muted">₹ {{ r.total_paid|floatformat:2 }}</span>
+                        </td>
+
+                        <!-- Spend Detail -->
+                        <td>
+                            <span class="acs-detail-text">{{ r.spend_detail }}</span>
+                        </td>
+
+                        <!-- Salary Info -->
+                        <td>
+                            {% if r.salary_info != '—' %}
+                            <span class="acs-salary-badge">
+                                <i class="bi bi-person-badge me-1"></i>{{ r.salary_info }}
+                            </span>
+                            {% else %}
+                            <span class="acs-dash">—</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Spend Amount -->
+                        <td class="text-end selectable-amount" data-amount="{{ r.spend_amount|default:0 }}" data-col="spend_amount">
+                            {% if r.spend_amount %}
+                            <span class="acs-amount acs-amount-danger">₹ {{ r.spend_amount|floatformat:2 }}</span>
+                            {% else %}
+                            <span class="acs-dash">—</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Balance -->
+                        <td class="text-end selectable-amount" data-amount="{{ r.balance }}" data-col="balance">
+                            <span class="acs-amount {% if r.balance < 0 %}acs-amount-danger{% else %}acs-amount-success{% endif %}">
+                                ₹ {{ r.balance|floatformat:2 }}
+                            </span>
+                        </td>
+                        {% endif %}
+
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="13">
+                            <div class="acs-empty">
+                                <div class="acs-empty-icon"><i class="bi bi-inbox-fill"></i></div>
+                                <h5>No Records Found</h5>
+                                <p>Try adjusting your filters or date range</p>
+                                <a href="{% url 'all_clients_statement' %}" class="acs-btn acs-btn-ghost acs-btn-sm">
+                                    <i class="bi bi-arrow-counterclockwise"></i> Reset Filters
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+
+                    <!-- ── TOTALS ROW ── -->
+                    {% if rows %}
+                    <tr class="acs-totals-row">
+                        {% if txn_type == "all" %}
+                        <td colspan="4" class="text-end acs-totals-label">TOTALS</td>
+                        <td class="text-end"><span class="acs-total-val">₹ {{ total_project_value|floatformat:2 }}</span></td>
+                        <td></td>
+                        <td></td>
+                        <td class="text-end acs-amount-danger"><span class="acs-total-val">₹ {{ total_yet_to_pay|floatformat:2 }}</span></td>
+                        <td class="text-end acs-amount-success"><span class="acs-total-val">₹ {{ total_paid|floatformat:2 }}</span></td>
+                        <td></td>
+                        <td></td>
+                        <td class="text-end acs-amount-danger"><span class="acs-total-val">₹ {{ total_spend|floatformat:2 }}</span></td>
+                        <td class="text-end {% if grand_balance < 0 %}acs-amount-danger{% else %}acs-amount-success{% endif %}">
+                            <span class="acs-total-val">₹ {{ grand_balance|floatformat:2 }}</span>
+                        </td>
+
+                        {% elif txn_type == "payment" %}
+                        <td colspan="4" class="text-end acs-totals-label">TOTALS</td>
+                        <td class="text-end"><span class="acs-total-val">₹ {{ total_project_value|floatformat:2 }}</span></td>
+                        <td></td>
+                        <td class="text-end acs-amount-success"><span class="acs-total-val">₹ {{ total_paid|floatformat:2 }}</span></td>
+                        <td class="text-end acs-amount-danger"><span class="acs-total-val">₹ {{ total_yet_to_pay|floatformat:2 }}</span></td>
+
+                        {% elif txn_type == "expense" %}
+                        <td colspan="4" class="text-end acs-totals-label">TOTALS</td>
+                        <td class="text-end"><span class="acs-total-val">₹ {{ total_project_value|floatformat:2 }}</span></td>
+                        <td class="text-end acs-amount-success"><span class="acs-total-val">₹ {{ total_paid|floatformat:2 }}</span></td>
+                        <td></td>
+                        <td></td>
+                        <td class="text-end acs-amount-danger"><span class="acs-total-val">₹ {{ total_spend|floatformat:2 }}</span></td>
+                        <td class="text-end {% if grand_balance < 0 %}acs-amount-danger{% else %}acs-amount-success{% endif %}">
+                            <span class="acs-total-val">₹ {{ grand_balance|floatformat:2 }}</span>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endif %}
+
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ═══════════════════════════════════════
+             PAGINATION
+        ═══════════════════════════════════════ -->
+        {% if page_obj.has_other_pages %}
+        <div class="acs-pagination-wrap">
+
+            <div class="acs-pagination-info">
+                <i class="bi bi-list-ul me-1"></i>
+                Showing &nbsp; <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong> &nbsp;
+                of &nbsp; <strong>{{ total_rows }}</strong> &nbsp;records
+            </div>
+
+            <nav class="acs-pagination">
+
+                <!-- First & Prev -->
+                {% if page_obj.has_previous %}
+                <a href="?page=1&txn_type={{ txn_type }}&start_date={{ start_date }}&end_date={{ end_date }}&order={{ order }}"
+                   class="acs-page-btn acs-page-nav" title="First">
+                    <i class="bi bi-chevron-double-left"></i>
+                </a>
+                <a href="?page={{ page_obj.previous_page_number }}&txn_type={{ txn_type }}&start_date={{ start_date }}&end_date={{ end_date }}&order={{ order }}"
+                   class="acs-page-btn acs-page-nav" title="Previous">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+                {% else %}
+                <span class="acs-page-btn acs-page-nav acs-page-disabled"><i class="bi bi-chevron-double-left"></i></span>
+                <span class="acs-page-btn acs-page-nav acs-page-disabled"><i class="bi bi-chevron-left"></i></span>
+                {% endif %}
+
+                <!-- Page Numbers -->
+                <div class="acs-page-numbers">
+                {% for num in paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <span class="acs-page-btn acs-page-active">{{ num }}</span>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <a href="?page={{ num }}&txn_type={{ txn_type }}&start_date={{ start_date }}&end_date={{ end_date }}&order={{ order }}"
+                           class="acs-page-btn">{{ num }}</a>
+                    {% elif num == 1 or num == paginator.num_pages %}
+                        <a href="?page={{ num }}&txn_type={{ txn_type }}&start_date={{ start_date }}&end_date={{ end_date }}&order={{ order }}"
+                           class="acs-page-btn">{{ num }}</a>
+                    {% elif num == page_obj.number|add:'-3' or num == page_obj.number|add:'3' %}
+                        <span class="acs-page-ellipsis">•••</span>
+                    {% endif %}
+                {% endfor %}
+                </div>
+
+                <!-- Next & Last -->
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}&txn_type={{ txn_type }}&start_date={{ start_date }}&end_date={{ end_date }}&order={{ order }}"
+                   class="acs-page-btn acs-page-nav" title="Next">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+                <a href="?page={{ paginator.num_pages }}&txn_type={{ txn_type }}&start_date={{ start_date }}&end_date={{ end_date }}&order={{ order }}"
+                   class="acs-page-btn acs-page-nav" title="Last">
+                    <i class="bi bi-chevron-double-right"></i>
+                </a>
+                {% else %}
+                <span class="acs-page-btn acs-page-nav acs-page-disabled"><i class="bi bi-chevron-right"></i></span>
+                <span class="acs-page-btn acs-page-nav acs-page-disabled"><i class="bi bi-chevron-double-right"></i></span>
+                {% endif %}
+
+            </nav>
+
+            <div class="acs-pagination-page-info">
+                Page <strong>{{ page_obj.number }}</strong> of <strong>{{ paginator.num_pages }}</strong>
+            </div>
+
+        </div>
+        {% endif %}
+
+    </div><!-- end acs-table-card -->
+
+</div><!-- end acs-wrapper -->
 
 
-<!-- TABLE -->
-<div class="table-responsive">
-<table class="table table-bordered table-sm align-middle">
-<thead class="table-primary">
-<tr>
-    <th>Date</th>
-    <th>Client</th>
-    <th>Company</th>
-    <th>Project Value</th>
-
-    {% if txn_type != 'expense' %}
-        <th>Previously Paid</th>
-        <th>Paid Now</th>
-        <th>Yet To Pay</th>
-    {% endif %}
-
-    {% if txn_type != 'payment' %}
-        <th>Total Paid</th>
-        <th>Spend Details</th>
-        <th>Salary Info</th> 
-        <th>Spend Amount</th>
-        <th>Balance</th>
-    {% endif %}
-</tr>
-</thead>
-
-
-<tbody>
-{% for r in rows %}
-<tr>
-    <td>{{ r.date }}</td>
-    <td>{{ r.client }}</td>
-    <td>{{ r.company }}</td>
-    <td class="text-end selectable-amount" data-amount="{{ r.budget }}">₹ {{ r.budget|floatformat:2 }}</td>
-
-{% if txn_type != 'expense' %}
-<td class="text-end text-muted highlight-cell selectable-amount"
-    data-amount="{{ r.previous_paid }}" data-col="previous_paid">
-    ₹ {{ r.previous_paid|floatformat:2 }}
-</td>
-
-<td class="text-end text-success highlight-cell selectable-amount"
-    data-amount="{{ r.paid_now|default:0 }}" data-col="paid_now">
-    {% if r.paid_now %}₹ {{ r.paid_now|floatformat:2 }}{% else %}—{% endif %}
-</td>
-
-<td class="text-end text-danger highlight-cell selectable-amount"
-    data-amount="{{ r.yet_to_pay }}" data-col="yet_to_pay">
-    ₹ {{ r.yet_to_pay|floatformat:2 }}
-</td>
-{% endif %}
-
-{% if txn_type != 'payment' %}
-<td class="text-end text-muted highlight-cell selectable-amount"
-    data-amount="{{ r.total_paid}}" data-col="total_paid">
-    ₹ {{ r.total_paid|floatformat:2 }}
-</td>
-<td class="highlight-cell3">{{ r.spend_detail }}</td>
-
-<td class="highlight-cell3 text-danger fw-bold">
-    {{ r.salary_info }}
-</td>
-<td class="text-end text-danger highlight-cell3 selectable-amount"
-    data-amount="{{ r.spend_amount|default:0 }}" data-col="spend_amount">
-    {% if r.spend_amount %}₹ {{ r.spend_amount|floatformat:2 }}{% else %}—{% endif %}
-</td>
-
-<td class="text-end fw-bold {% if r.balance < 0 %}text-danger{% else %}text-success{% endif %}
-    highlight-cell3 selectable-amount"
-    data-amount="{{ r.balance }}" data-col="balance">
-    ₹ {{ r.balance|floatformat:2 }}
-</td>
-{% endif %}
-
-</tr>
-{% empty %}
-<tr>
-    <td colspan="12" class="text-center text-muted">No data found</td>
-</tr>
-{% endfor %}
-
-{% if rows %}
-<tr class="table-secondary fw-bold" style="font-size: 1.05rem; border-top: 2px solid rgba(0,0,0,.3);">
-
-{% if txn_type == "all" %}
-
-    <!-- 1-3 -->
-    <td colspan="3" class="text-end">TOTAL</td>
-
-    <!-- 4 Budget -->
-    <td class="text-end">
-        ₹ {{ total_project_value|floatformat:2 }}
-    </td>
-
-    <!-- 5 Previous Paid -->
-    <td></td>
-
-    <!-- 6 Paid Now -->
-    <td></td>
-
-    <!-- 7 Yet To Pay -->
-    <td class="text-end text-danger">
-        ₹ {{ total_yet_to_pay|floatformat:2 }}
-    </td>
-
-    <!-- 8 Total Paid -->
-    <td class="text-end text-success">
-        ₹ {{ total_paid|floatformat:2 }}
-    </td>
-
-    <!-- 9 Spend Detail -->
-    <td></td>
-
-    <!-- 10 Salary Info -->
-    <td></td>
-
-    <!-- 11 Spend Amount -->
-    <td class="text-end text-danger">
-        ₹ {{ total_spend|floatformat:2 }}
-    </td>
-
-    <!-- 12 Balance -->
-    <td class="text-end {% if grand_balance < 0 %}text-danger{% else %}text-success{% endif %}">
-        ₹ {{ grand_balance|floatformat:2 }}
-    </td>
-
-{% elif txn_type == "payment" %}
-
-    <!-- Columns: Date, Client, Company -->
-    <td colspan="3" class="text-end">TOTAL</td>
-
-    <!-- Budget -->
-    <td class="text-end">
-        ₹ {{ total_project_value|floatformat:2 }}
-    </td>
-
-    <!-- Previous Paid -->
-    <td></td>
-
-    <!-- Paid Now -->
-    <td class="text-end text-success">
-        ₹ {{ total_paid|floatformat:2 }}
-    </td>
-
-    <!-- Yet To Pay -->
-    <td class="text-end text-danger">
-        ₹ {{ total_yet_to_pay|floatformat:2 }}
-    </td>
-
-{% elif txn_type == "expense" %}
-
-    <td colspan="3" class="text-end">TOTAL</td>
-
-    <!-- Budget -->
-    <td class="text-end">
-        ₹ {{ total_project_value|floatformat:2 }}
-    </td>
-
-    <!-- Total Paid -->
-    <td class="text-end text-success">
-        ₹ {{ total_paid|floatformat:2 }}
-    </td>
-
-    <!-- Empty for alignment -->
-    <td></td>
-    <td></td>
-
-    <!-- Spend Amount -->
-    <td class="text-end text-danger">
-        ₹ {{ total_spend|floatformat:2 }}
-    </td>
-
-    <!-- Balance -->
-    <td class="text-end {% if grand_balance < 0 %}text-danger{% else %}text-success{% endif %}">
-        ₹ {{ grand_balance|floatformat:2 }}
-    </td>
-
-{% endif %}
-
-</tr>
-{% endif %}
-
-
-</tbody>
-
-</table>
-</div>
-
-</div>
-
-
-
-
+<!-- ═══════════════════════════════════════════════════
+     SCRIPTS
+═══════════════════════════════════════════════════ -->
 <script>
+/* ── Filter Panel ── */
+function toggleAcsFilter() {
+    const body    = document.getElementById('acsFilterBody');
+    const chevron = document.getElementById('acsChevron');
+    const hint    = document.getElementById('acsFilterHint');
+    body.classList.toggle('acs-filter-open');
+    chevron.classList.toggle('acs-chevron-rotated');
+    hint.textContent = body.classList.contains('acs-filter-open')
+        ? 'Click to collapse' : 'Click to expand';
+}
+
 document.addEventListener('DOMContentLoaded', function () {
 
+    /* ── Auto-open if filters active ── */
+    const form = document.getElementById('acsFilterForm');
+    let count = 0;
+    form.querySelectorAll('input[type="date"]').forEach(el => {
+        if (el.value) count++;
+    });
+    const checkedRadios = form.querySelectorAll('input[type="radio"]:checked');
+    checkedRadios.forEach(r => {
+        if ((r.name === 'txn_type' && r.value !== 'all') ||
+            (r.name === 'order'    && r.value !== 'new')) count++;
+    });
+
+    const badge = document.getElementById('acsFilterBadge');
+    if (count > 0) {
+        badge.textContent = count + ' active';
+        badge.classList.add('acs-badge-active');
+        document.getElementById('acsFilterBody').classList.add('acs-filter-open');
+        document.getElementById('acsChevron').classList.add('acs-chevron-rotated');
+        document.getElementById('acsFilterHint').textContent = 'Click to collapse';
+    }
+
+    /* ── Radio styling ── */
+    document.querySelectorAll('.acs-type-opt input').forEach(radio => {
+        radio.addEventListener('change', function () {
+            const group = this.closest('.acs-type-group, .acs-order-group');
+            if (group) {
+                group.querySelectorAll('.acs-type-opt').forEach(l => {
+                    l.classList.remove('acs-type-active','acs-type-payment','acs-type-expense');
+                });
+            }
+            const lbl = this.closest('.acs-type-opt');
+            lbl.classList.add('acs-type-active');
+            if (this.value === 'payment') lbl.classList.add('acs-type-payment');
+            if (this.value === 'expense') lbl.classList.add('acs-type-expense');
+        });
+    });
+
+    /* ── Tooltips ── */
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+        new bootstrap.Tooltip(el);
+    });
+});
+
+/* ── Selection & Total ── */
+document.addEventListener('DOMContentLoaded', function () {
     let total = 0;
+    let selectedCount = 0;
     let isDragging = false;
     let activeColumn = null;
 
-    const totalEl = document.getElementById('selectedTotal');
-
-    // 🧠 STACK FOR UNDO
+    const totalEl     = document.getElementById('selectedTotal');
+    const countEl     = document.getElementById('selectedCount');
+    const floatingBar = document.getElementById('acsFloatingTotal');
     const selectionStack = [];
 
-    function updateTotal(amount, add = true) {
-        total += add ? amount : -amount;
-        totalEl.textContent = total.toFixed(2);
+    function updateUI() {
+        totalEl.textContent  = total.toFixed(2);
+        countEl.textContent  = selectedCount;
+        floatingBar.classList.toggle('acs-total-visible', total !== 0);
     }
 
     function selectCell(cell) {
-        if (!cell.classList.contains('selected')) {
-            cell.classList.add('selected');
-
-            const amount = parseFloat(cell.dataset.amount || 0);
-            updateTotal(amount, true);
-
-            // 🧠 PUSH TO STACK
+        if (!cell.classList.contains('acs-selected')) {
+            cell.classList.add('acs-selected');
+            total += parseFloat(cell.dataset.amount || 0);
+            selectedCount++;
             selectionStack.push(cell);
+            updateUI();
         }
     }
 
     function unselectCell(cell) {
-        if (cell.classList.contains('selected')) {
-            cell.classList.remove('selected');
-
-            const amount = parseFloat(cell.dataset.amount || 0);
-            updateTotal(amount, false);
+        if (cell.classList.contains('acs-selected')) {
+            cell.classList.remove('acs-selected');
+            total -= parseFloat(cell.dataset.amount || 0);
+            selectedCount--;
+            updateUI();
         }
     }
 
+    window.clearAllSelections = function () {
+        document.querySelectorAll('.acs-selected').forEach(c => c.classList.remove('acs-selected'));
+        total = 0;
+        selectedCount = 0;
+        selectionStack.length = 0;
+        updateUI();
+    };
+
     document.querySelectorAll('.selectable-amount').forEach(td => {
-
         const column = td.dataset.col;
-
-        // ❌ Disable right-click menu
         td.addEventListener('contextmenu', e => e.preventDefault());
 
         td.addEventListener('mousedown', function (e) {
-
-            // ✅ CTRL + RIGHT CLICK → TOGGLE
             if (e.ctrlKey && e.button === 2) {
                 e.preventDefault();
-
-                if (this.classList.contains('selected')) {
+                if (this.classList.contains('acs-selected')) {
                     unselectCell(this);
-
-                    // ❌ REMOVE FROM STACK
-                    const index = selectionStack.indexOf(this);
-                    if (index !== -1) selectionStack.splice(index, 1);
-
+                    const i = selectionStack.indexOf(this);
+                    if (i !== -1) selectionStack.splice(i, 1);
                 } else {
                     selectCell(this);
                 }
+                return;
             }
-
-            // 🟢 LEFT CLICK START DRAG
             if (e.button === 0) {
-                isDragging = true;
+                isDragging   = true;
                 activeColumn = column;
                 selectCell(this);
             }
         });
 
-        // 🟢 DRAG OVER SAME COLUMN
         td.addEventListener('mouseenter', function () {
-            if (isDragging && column === activeColumn) {
-                selectCell(this);
-            }
+            if (isDragging && column === activeColumn) selectCell(this);
         });
-
     });
 
-    // 🔚 STOP DRAG
-    document.addEventListener('mouseup', function () {
-        isDragging = false;
-        activeColumn = null;
-    });
+    document.addEventListener('mouseup', () => { isDragging = false; activeColumn = null; });
 
-    // ⌫ BACKSPACE → UNDO LAST SELECTION
     document.addEventListener('keydown', function (e) {
-        if (e.key === 'Backspace') {
-
-            // ❌ Prevent browser back navigation
+        if (e.key === 'Backspace' && document.activeElement.tagName !== 'INPUT') {
             e.preventDefault();
-
-            const lastCell = selectionStack.pop();
-            if (lastCell) {
-                unselectCell(lastCell);
-            }
+            const last = selectionStack.pop();
+            if (last) unselectCell(last);
         }
     });
-
 });
 </script>
 
 
+<!-- ═══════════════════════════════════════════════════
+     STYLES
+═══════════════════════════════════════════════════ -->
+<style>
+/* ── Tokens ── */
+:root {
+    --acs-primary:       #4f46e5;
+    --acs-primary-lt:   #eef2ff;
+    --acs-primary-mid:  #c7d2fe;
+    --acs-primary-dk:   #3730a3;
+    --acs-success:      #059669;
+    --acs-success-lt:   #ecfdf5;
+    --acs-danger:       #dc2626;
+    --acs-danger-lt:    #fef2f2;
+    --acs-warning:      #d97706;
+    --acs-warning-lt:   #fffbeb;
+    --acs-gray-50:      #f8fafc;
+    --acs-gray-100:     #f1f5f9;
+    --acs-gray-200:     #e2e8f0;
+    --acs-gray-300:     #cbd5e1;
+    --acs-gray-400:     #94a3b8;
+    --acs-gray-500:     #64748b;
+    --acs-gray-600:     #475569;
+    --acs-gray-700:     #334155;
+    --acs-gray-800:     #1e293b;
+    --acs-gray-900:     #0f172a;
+    --acs-r-sm:         8px;
+    --acs-r-md:         12px;
+    --acs-r-lg:         16px;
+    --acs-r-xl:         20px;
+    --acs-shadow-sm:    0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.04);
+    --acs-shadow-md:    0 4px 6px -1px rgba(0,0,0,.07), 0 2px 4px -2px rgba(0,0,0,.04);
+    --acs-transition:   all 0.22s cubic-bezier(.4,0,.2,1);
+}
 
+/* ── Wrapper ── */
+.acs-wrapper { max-width: 1600px; margin: 0 auto; padding-bottom: 40px; }
 
+/* ── Page Header ── */
+.acs-page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
 
+.acs-header-left { display: flex; align-items: center; gap: 16px; }
+
+.acs-header-icon {
+    position: relative;
+    width: 54px; height: 54px;
+    background: linear-gradient(135deg, var(--acs-primary), var(--acs-primary-dk));
+    border-radius: var(--acs-r-lg);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 1.4rem;
+    box-shadow: 0 8px 20px rgba(79,70,229,.3);
+    flex-shrink: 0;
+}
+
+.acs-icon-ring {
+    position: absolute; inset: -4px;
+    border: 2px solid rgba(79,70,229,.2);
+    border-radius: calc(var(--acs-r-lg) + 4px);
+    animation: acsRing 2.5s ease-in-out infinite;
+}
+
+@keyframes acsRing {
+    0%,100% { opacity:.4; transform: scale(1); }
+    50%      { opacity:1;  transform: scale(1.04); }
+}
+
+.acs-breadcrumb {
+    display: flex; align-items: center; gap: 5px;
+    font-size: .7rem; color: var(--acs-gray-400);
+    font-weight: 500; text-transform: uppercase; letter-spacing: .05em;
+    margin-bottom: 3px;
+}
+.acs-breadcrumb i { font-size:.55rem; }
+.acs-breadcrumb-active { color: var(--acs-primary); font-weight: 700; }
+
+.acs-title {
+    font-size: 1.55rem; ; color: var(--acs-gray-900);
+    margin: 0 0 3px; letter-spacing: -.03em; line-height: 1.2;
+}
+.acs-subtitle { font-size: .82rem; color: var(--acs-gray-500); margin: 0; }
+
+.acs-header-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+/* ── Buttons ── */
+.acs-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 9px 18px; border-radius: var(--acs-r-md);
+    font-weight: 600; font-size: .855rem; border: none;
+    cursor: pointer; transition: var(--acs-transition);
+    text-decoration: none; white-space: nowrap;
+}
+.acs-btn-primary {
+    background: linear-gradient(135deg, var(--acs-primary), var(--acs-primary-dk));
+    color: white; box-shadow: 0 4px 12px rgba(79,70,229,.28);
+}
+.acs-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(79,70,229,.38); color:white; }
+.acs-btn-danger  { background: linear-gradient(135deg,#dc2626,#b91c1c); color:white; box-shadow:0 4px 12px rgba(220,38,38,.25); }
+.acs-btn-danger:hover { transform:translateY(-2px); color:white; box-shadow:0 8px 22px rgba(220,38,38,.35); }
+.acs-btn-success { background: linear-gradient(135deg,#059669,#047857); color:white; box-shadow:0 4px 12px rgba(5,150,105,.25); }
+.acs-btn-success:hover { transform:translateY(-2px); color:white; box-shadow:0 8px 22px rgba(5,150,105,.35); }
+.acs-btn-ghost { background:white; color:var(--acs-gray-600); border:1.5px solid var(--acs-gray-200); }
+.acs-btn-ghost:hover { background:var(--acs-gray-50); color:var(--acs-gray-800); }
+.acs-btn-sm { padding:8px 14px; font-size:.8rem; border-radius:var(--acs-r-sm); }
+
+/* ── Filter Card ── */
+.acs-filter-card {
+    background: white; border: 1px solid var(--acs-gray-200);
+    border-radius: var(--acs-r-xl); overflow: hidden;
+    box-shadow: var(--acs-shadow-sm); margin-bottom: 16px;
+    transition: box-shadow .3s ease;
+}
+.acs-filter-card:hover { box-shadow: var(--acs-shadow-md); }
+
+.acs-filter-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 15px 20px; cursor: pointer; user-select: none;
+    transition: var(--acs-transition);
+}
+.acs-filter-header:hover { background: var(--acs-gray-50); }
+
+.acs-filter-icon {
+    width: 34px; height: 34px;
+    background: var(--acs-primary-lt); color: var(--acs-primary);
+    border: 1px solid var(--acs-primary-mid); border-radius: var(--acs-r-sm);
+    display: flex; align-items: center; justify-content: center; font-size: .88rem;
+}
+
+.acs-filter-title { font-weight: 700; color: var(--acs-gray-800); font-size: .9rem; }
+
+.acs-filter-badge {
+    font-size: .68rem; font-weight: 700;
+    padding: 2px 8px; border-radius: 10px; display: none;
+}
+.acs-badge-active { display: inline-block; background: var(--acs-primary); color: white; }
+
+.acs-filter-hint { font-size: .72rem; color: var(--acs-gray-400); }
+
+.acs-chevron {
+    width: 28px; height: 28px; background: var(--acs-gray-100);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    color: var(--acs-gray-500); font-size: .75rem; transition: var(--acs-transition);
+}
+.acs-chevron-rotated { transform: rotate(180deg); background: var(--acs-primary-lt); color: var(--acs-primary); }
+
+.acs-filter-body { max-height: 0; overflow: hidden; transition: max-height .4s ease; }
+.acs-filter-open { max-height: 600px; border-top: 1px solid var(--acs-gray-100); }
+
+.acs-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px,1fr));
+    gap: 14px; padding: 20px 20px 14px;
+}
+
+.acs-filter-label {
+    display: flex; align-items: center; gap: 5px;
+    font-size: .69rem; font-weight: 700; color: var(--acs-gray-600);
+    text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px;
+}
+
+.acs-input-wrap { position: relative; }
+.acs-input-icon {
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    color: var(--acs-gray-400); font-size: .78rem; pointer-events: none;
+}
+.acs-input {
+    width: 100%; padding: 9px 12px 9px 32px;
+    border: 1.5px solid var(--acs-gray-200); border-radius: var(--acs-r-sm);
+    font-size: .83rem; color: var(--acs-gray-800); background: white;
+    transition: var(--acs-transition); appearance: none;
+}
+.acs-input:focus { outline: none; border-color: var(--acs-primary); box-shadow: 0 0 0 3px rgba(79,70,229,.1); }
+
+/* Type / Order Toggle */
+.acs-type-group,
+.acs-order-group {
+    display: flex; gap: 4px;
+    background: var(--acs-gray-100);
+    border-radius: var(--acs-r-sm); padding: 3px;
+}
+
+.acs-type-opt {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px;
+    padding: 7px 10px; border-radius: 6px;
+    font-size: .75rem; font-weight: 600; color: var(--acs-gray-500);
+    cursor: pointer; transition: var(--acs-transition); user-select: none; white-space: nowrap;
+}
+.acs-type-opt:hover { color: var(--acs-gray-700); background: white; }
+.acs-type-active { background: white; color: var(--acs-primary); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.acs-type-payment.acs-type-active { color: var(--acs-success); }
+.acs-type-expense.acs-type-active { color: var(--acs-danger); }
+
+.acs-filter-actions { display: flex; gap: 10px; padding: 12px 20px 20px; border-top: 1px solid var(--acs-gray-100); }
+
+/* ── Stats Row ── */
+.acs-stats-row {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 16px; flex-wrap: wrap;
+}
+
+.acs-stat-card {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 16px; background: white;
+    border: 1px solid var(--acs-gray-200); border-radius: var(--acs-r-md);
+    transition: var(--acs-transition);
+}
+.acs-stat-card:hover { transform: translateY(-1px); box-shadow: var(--acs-shadow-sm); }
+
+.acs-stat-icon {
+    width: 34px; height: 34px; border-radius: var(--acs-r-sm);
+    display: flex; align-items: center; justify-content: center; font-size: .9rem;
+}
+.acs-stat-icon-blue   { background: var(--acs-primary-lt); color: var(--acs-primary); }
+.acs-stat-icon-green  { background: var(--acs-success-lt); color: var(--acs-success); }
+.acs-stat-icon-red    { background: var(--acs-danger-lt);  color: var(--acs-danger); }
+
+.acs-stat-body  { display: flex; flex-direction: column; }
+.acs-stat-value { font-size: .9rem; ; color: var(--acs-gray-800); line-height: 1.2; }
+.acs-stat-label { font-size: .67rem; color: var(--acs-gray-500); font-weight: 500; text-transform: uppercase; letter-spacing: .04em; }
+
+.acs-stat-showing {
+    font-size: .78rem; color: var(--acs-gray-500); font-weight: 500;
+    padding: 6px 12px; background: white;
+    border: 1px solid var(--acs-gray-200); border-radius: var(--acs-r-md);
+}
+.acs-stat-showing strong { color: var(--acs-gray-700); }
+
+/* ── Floating Total ── */
+.acs-floating-total {
+    position: sticky; top: 70px; z-index: 1050;
+    display: flex; justify-content: center; margin-bottom: 16px;
+    opacity: 0; transform: translateY(-20px) scale(.96);
+    pointer-events: none; transition: all .35s cubic-bezier(.4,0,.2,1);
+}
+.acs-total-visible { opacity: 1 !important; transform: translateY(0) scale(1) !important; pointer-events: auto !important; }
+
+.acs-total-inner {
+    display: flex; align-items: center; gap: 14px;
+    padding: 10px 20px 10px 14px;
+    background: linear-gradient(135deg, var(--acs-primary), var(--acs-primary-dk));
+    border-radius: 50px;
+    box-shadow: 0 8px 32px rgba(79,70,229,.38), 0 0 0 1px rgba(255,255,255,.15) inset;
+}
+
+.acs-total-icon {
+    width: 36px; height: 36px; background: rgba(255,255,255,.18);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 1rem;
+}
+
+.acs-total-info { display: flex; flex-direction: column; }
+.acs-total-label { font-size: .62rem; color: rgba(255,255,255,.65); text-transform: uppercase; letter-spacing: .07em; font-weight: 700; }
+.acs-total-amount { font-size: 1.22rem; font-weight: 900; color: white; font-family: 'Monaco','Menlo',monospace; letter-spacing: -.02em; }
+
+.acs-total-divider { width: 1px; height: 30px; background: rgba(255,255,255,.2); flex-shrink: 0; }
+
+.acs-total-meta { display: flex; flex-direction: column; }
+.acs-total-count { font-size: .78rem; font-weight: 700; color: rgba(255,255,255,.9); }
+.acs-total-hint  { font-size: .64rem; color: rgba(255,255,255,.5); }
+
+.acs-total-clear {
+    width: 28px; height: 28px;
+    background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,.7); font-size: .95rem; cursor: pointer; padding: 0;
+    transition: var(--acs-transition); flex-shrink: 0;
+}
+.acs-total-clear:hover { background: rgba(255,255,255,.25); color: white; transform: scale(1.1); }
+
+/* ── Table Card ── */
+.acs-table-card {
+    background: white; border: 1px solid var(--acs-gray-200);
+    border-radius: var(--acs-r-xl); overflow: hidden; box-shadow: var(--acs-shadow-md);
+}
+
+.acs-table-topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 13px 20px; background: var(--acs-gray-50);
+    border-bottom: 1px solid var(--acs-gray-100);
+}
+
+.acs-table-topbar-left {
+    display: flex; align-items: center; gap: 8px;
+    font-size: .83rem; font-weight: 700; color: var(--acs-gray-700);
+}
+
+.acs-topbar-type-badge {
+    font-size: .68rem; font-weight: 700; padding: 2px 10px;
+    border-radius: 20px;
+}
+.acs-topbar-type-badge.acs-type-all     { background: var(--acs-primary-lt); color: var(--acs-primary); }
+.acs-topbar-type-badge.acs-type-payment { background: var(--acs-success-lt); color: var(--acs-success); }
+.acs-topbar-type-badge.acs-type-expense { background: var(--acs-danger-lt);  color: var(--acs-danger); }
+
+.acs-topbar-badge {
+    font-size: .7rem; font-weight: 600; color: var(--acs-gray-500);
+    background: white; border: 1px solid var(--acs-gray-200);
+    padding: 4px 10px; border-radius: 20px;
+}
+
+.acs-table-responsive { overflow: auto; max-height: 65vh; }
+
+.custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: var(--acs-gray-300); border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--acs-gray-400); }
+
+/* ── Table ── */
+.acs-table { width: 100%; border-collapse: collapse; font-size: .83rem; }
+
+.acs-table thead { position: sticky; top: 0; z-index: 10; }
+.acs-table thead tr { background: var(--acs-gray-50); border-bottom: 2px solid var(--acs-gray-200); }
+.acs-table thead th { padding: 11px 12px; border: none; background: var(--acs-gray-50); white-space: nowrap; }
+
+.acs-th {
+    display: flex; align-items: center; gap: 5px;
+    font-size: .66rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .07em; color: var(--acs-gray-500);
+}
+
+.acs-table tbody tr { border-bottom: 1px solid var(--acs-gray-100); transition: background .15s ease; }
+.acs-table tbody tr:hover { background: var(--acs-gray-50) !important; }
+.acs-table tbody tr:last-child { border-bottom: none; }
+.acs-table tbody td { padding: 10px 12px; vertical-align: middle; border: none; color: var(--acs-gray-700); }
+
+/* Row type coloring */
+.acs-row-payment { border-left: 3px solid transparent; }
+.acs-row-expense { border-left: 3px solid transparent; }
+.acs-row-payment:hover { background: #f0fdf4 !important; border-left-color: var(--acs-success); }
+.acs-row-expense:hover { background: #fef2f2 !important; border-left-color: var(--acs-danger); }
+
+/* Serial */
+.acs-serial {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; background: var(--acs-gray-100);
+    border-radius: 6px; font-size: .7rem; font-weight: 700; color: var(--acs-gray-500);
+}
+
+/* Date cell */
+.acs-date-cell { display: flex; align-items: center; gap: 8px; }
+.acs-date-type-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.acs-dot-payment { background: var(--acs-success); }
+.acs-dot-expense { background: var(--acs-danger); }
+.acs-date-main { display: block; font-size: .8rem; color: var(--acs-gray-700); white-space: nowrap; }
+.acs-date-day  { display: block; font-size: .66rem; color: var(--acs-gray-400); }
+
+/* Client */
+.acs-client-cell { display: flex; align-items: center; gap: 8px; }
+.acs-avatar {
+    width: 32px; height: 32px; min-width: 32px;
+    background: linear-gradient(135deg,#d1fae5,#a7f3d0);
+    border-radius: 7px; display: flex; align-items: center; justify-content: center;
+     color: #065f46; font-size: .82rem;
+}
+.acs-client-name {  color: var(--acs-gray-800); font-size: .83rem; }
+
+/* Company */
+.acs-company-badge {
+    display: inline-flex; align-items: center;
+    padding: 4px 10px; background: var(--acs-gray-100);
+    border-radius: 6px; font-size: .75rem;  color: var(--acs-gray-600);
+}
+
+/* Amounts */
+.acs-amount         {  font-size: .85rem; font-variant-numeric: tabular-nums; font-family: 'Monaco','Menlo',monospace; }
+.acs-amount-success { color: var(--acs-success); }
+.acs-amount-danger  { color: var(--acs-danger); }
+.acs-amount-muted   { color: var(--acs-gray-500); }
+.acs-dash           { color: var(--acs-gray-300); font-size: 1rem; }
+
+/* Detail / Salary */
+.acs-detail-text { font-size: .78rem; color: var(--acs-gray-600); }
+.acs-salary-badge {
+    display: inline-flex; align-items: center;
+    padding: 3px 9px; background: var(--acs-warning-lt);
+    color: var(--acs-warning); border-radius: 6px;
+    font-size: .72rem; 
+}
+
+/* ── Selectable Cells ── */
+.selectable-amount { cursor: pointer; user-select: none; position: relative; transition: background .15s ease; }
+.selectable-amount:hover { background: #f0fdf4; }
+
+.acs-selected { background: rgba(79,70,229,.06) !important; }
+.acs-selected .acs-amount { color: var(--acs-primary) !important; }
+.acs-selected::before {
+    content: '';
+    position: absolute; left: 0; top: 15%; bottom: 15%;
+    width: 3px; background: linear-gradient(180deg, var(--acs-primary), var(--acs-primary-dk));
+    border-radius: 0 3px 3px 0;
+}
+
+/* ── Totals Row ── */
+.acs-totals-row {
+    background: var(--acs-gray-50) !important;
+    border-top: 2px solid var(--acs-gray-200) !important;
+}
+.acs-totals-label { font-size: .72rem; ; color: var(--acs-gray-500); letter-spacing: .08em; text-transform: uppercase; }
+.acs-total-val { ; font-size: .88rem; font-family: 'Monaco','Menlo',monospace; }
+
+/* ── Empty State ── */
+.acs-empty { text-align: center; padding: 60px 24px; }
+.acs-empty-icon {
+    width: 72px; height: 72px; background: var(--acs-gray-100); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px; font-size: 1.8rem; color: var(--acs-gray-400);
+}
+.acs-empty h5 { ; color: var(--acs-gray-700); margin-bottom: 6px; }
+.acs-empty p  { color: var(--acs-gray-500); font-size: .85rem; margin-bottom: 16px; }
+
+/* ── Pagination ── */
+.acs-pagination-wrap {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 13px 20px; border-top: 1px solid var(--acs-gray-100);
+    background: var(--acs-gray-50); gap: 12px; flex-wrap: wrap;
+}
+
+.acs-pagination-info {
+    font-size: .78rem; color: var(--acs-gray-500); font-weight: 500;
+    display: flex; align-items: center;
+}
+.acs-pagination-info strong { color: var(--acs-gray-700); }
+
+.acs-pagination { display: flex; align-items: center; gap: 4px; }
+.acs-page-numbers { display: flex; align-items: center; gap: 4px; }
+
+.acs-page-btn {
+    min-width: 36px; height: 36px; padding: 0 8px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1.5px solid var(--acs-gray-200); border-radius: var(--acs-r-sm);
+    font-size: .8rem; font-weight: 700; color: var(--acs-gray-600);
+    background: white; text-decoration: none; transition: var(--acs-transition); cursor: pointer;
+}
+.acs-page-btn:hover {
+    background: var(--acs-primary-lt); border-color: var(--acs-primary-mid);
+    color: var(--acs-primary); transform: translateY(-1px); box-shadow: 0 3px 8px rgba(79,70,229,.15);
+}
+.acs-page-active {
+    background: linear-gradient(135deg, var(--acs-primary), var(--acs-primary-dk));
+    border-color: var(--acs-primary-dk); color: white !important;
+    box-shadow: 0 4px 12px rgba(79,70,229,.3); pointer-events: none;
+}
+.acs-page-nav { background: white; }
+.acs-page-disabled { opacity: .3; pointer-events: none; background: var(--acs-gray-50); }
+
+.acs-page-ellipsis {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 28px; height: 36px;
+    font-size: .6rem; color: var(--acs-gray-400); letter-spacing: .1em;
+}
+
+.acs-pagination-page-info {
+    font-size: .78rem; color: var(--acs-gray-500);
+    padding: 6px 12px; background: white;
+    border: 1.5px solid var(--acs-gray-200); border-radius: var(--acs-r-sm);
+}
+.acs-pagination-page-info strong { color: var(--acs-gray-700); }
+
+/* ── Row animation ── */
+.acs-row { animation: acsRowUp .3s ease both; }
+@keyframes acsRowUp {
+    from { opacity: 0; transform: translateY(5px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Responsive ── */
+@media (max-width: 992px) { .acs-stat-showing { display: none; } }
+@media (max-width: 768px) {
+    .acs-page-header { flex-direction: column; align-items: flex-start; }
+    .acs-filter-grid { grid-template-columns: 1fr; }
+    .acs-stats-row   { gap: 8px; }
+    .acs-total-meta, .acs-total-clear { display: none; }
+    .acs-pagination-page-info { display: none; }
+    .acs-pagination-wrap { justify-content: center; }
+}
+@media (max-width: 576px) {
+    .acs-filter-actions { flex-direction: column; }
+    .acs-filter-actions .acs-btn { width: 100%; justify-content: center; }
+    .acs-header-actions { width: 100%; }
+    .acs-header-actions .acs-btn { flex: 1; justify-content: center; }
+}
+</style>
 
 {% endblock %}
