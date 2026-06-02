@@ -246,7 +246,7 @@
                         <!-- Actions -->
                         <td class="text-center">
                             <div class="bh-action-group">
-                                <a href="{% url 'download_backup_file' backup.file_name %}"
+                                <a href="/download-backup/{{ backup.id }}/"
                                    class="bh-action-btn bh-action-download"
                                    title="Download">
                                     <i class="bi bi-cloud-arrow-down"></i>
