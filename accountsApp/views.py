@@ -123,469 +123,6 @@ from zoneinfo import ZoneInfo
 # from django.db.models import Avg
 
 
-# @login_required(login_url='login')
-# def home(request):
-
-#     companies = Company.objects.all().order_by('name')
-
-
-
-#     selected_company_id = request.session.get('selected_company_id')
-#     selected_company = Company.objects.filter(
-#         id=selected_company_id
-#     ).first()
-
-#     selected_bank_id = request.GET.get('bank')
-
-#     start_date = request.GET.get('start_date')
-#     end_date = request.GET.get('end_date')
-
-#     sd = parse_date(start_date) if start_date else None
-#     ed = parse_date(end_date) if end_date else None
-
-#     if not selected_company_id:
-#         return render(request, 'dashboard.html', {
-#             'companies': companies,
-#             'selected_company_id': None,
-#         })
-
-#     # =========================
-#     # BASE QUERYSETS
-#     # =========================
-#     payment_qs = Payment.objects.filter(
-#         client__company_id=selected_company_id
-#     )
-
-#     expense_qs = Expense.objects.filter(
-#         client__company_id=selected_company_id
-#     )
-
-#     if sd:
-#         payment_qs = payment_qs.filter(payment_date__gte=sd)
-#         expense_qs = expense_qs.filter(expense_date__gte=sd)
-
-#     if ed:
-#         payment_qs = payment_qs.filter(payment_date__lte=ed)
-#         expense_qs = expense_qs.filter(expense_date__lte=ed)
-
-#     # =========================
-#     # TOTAL PAYMENTS & EXPENSES
-#     # =========================
-#     totals = payment_qs.aggregate(
-#         total_payments=Sum('amount')
-#     )
-
-#     total_payments = totals['total_payments'] or Decimal('0.00')
-
-#     total_expenses = expense_qs.aggregate(
-#         total=Sum('amount')
-#     )['total'] or Decimal('0.00')
-
-#     # =========================
-#     # RECEIVABLES (NO LOOP)
-#     # =========================
-#     clients = Client.objects.filter(
-#         company_id=selected_company_id
-#     ).annotate(
-#         paid_total=Sum('payments__amount')
-#     )
-
-#     total_balance = Decimal('0.00')
-
-#     for c in clients:
-#         paid = c.paid_total or Decimal('0.00')
-#         total_balance += (c.budget - paid)
-
-#     # =========================
-#     # EXTRA DATA FOR HEALTH SYSTEM
-#     # =========================
-#     total_project_value = Decimal('0.00')
-#     overrun_clients = 0
-#     high_budget_clients = 0
-
-#     for c in clients:
-#         paid = c.paid_total or Decimal('0.00')
-#         spent = c.expenses.aggregate(
-#             total=Sum('amount')
-#         )['total'] or Decimal('0.00')
-
-#         total_project_value += c.budget
-
-#         if spent > c.budget:
-#             overrun_clients += 1
-
-#         if spent > (c.budget * Decimal('0.8')):
-#             high_budget_clients += 1
-
-#     total_clients = clients.count()
-
-
-#     # =========================
-#     # BANKS (COMPANY SAFE)
-#     # =========================
-#     banks = Bank.objects.filter(
-#         company_id=selected_company_id
-#     )
-
-#     for bank in banks:
-
-#         payment_total = bank.payments.filter(
-#             client__company_id=selected_company_id
-#         ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
-
-#         expense_total = bank.expenses.filter(
-#             client__company_id=selected_company_id
-#         ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
-
-#         bank.available_balance = (
-#             bank.opening_balance + payment_total - expense_total
-#         )
-
-#     total_bank = sum((b.available_balance for b in banks), Decimal('0.00'))
-
-#     negative_bank_count = sum(
-#     1 for b in banks if b.available_balance < 0
-# )
-
-
-#     # Selected bank
-#     selected_bank = None
-#     if selected_bank_id:
-#         selected_bank = banks.filter(id=selected_bank_id).first()
-#         display_bank_balance = (
-#             selected_bank.available_balance if selected_bank else Decimal('0.00')
-#         )
-#     else:
-#         display_bank_balance = total_bank
-
-
-
-#     # =========================
-#     # PROFIT
-#     # =========================
-#     total_profit = total_payments - total_expenses
-#     profit_percentage = (
-#         (total_profit / total_payments) * 100
-#         if total_payments > 0 else 0
-#     )
-
-
-
-
-#     # ====================================
-#     # 💎 FINANCIAL HEALTH SCORE (0-100)
-#     # ====================================
-
-#     # 1️⃣ Profit Score (25 max)
-#     if profit_percentage > 30:
-#         profit_score = 25
-#     elif profit_percentage > 15:
-#         profit_score = 18
-#     elif profit_percentage > 5:
-#         profit_score = 10
-#     elif profit_percentage > 0:
-#         profit_score = 5
-#     else:
-#         profit_score = 0
-
-#     # 2️⃣ Cash Ratio Score
-#     cash_ratio = (
-#         total_bank / total_expenses
-#         if total_expenses > 0 else Decimal('0')
-#     )
-
-#     if cash_ratio > 2:
-#         cash_score = 25
-#     elif cash_ratio > 1:
-#         cash_score = 18
-#     elif cash_ratio > 0.5:
-#         cash_score = 10
-#     else:
-#         cash_score = 5
-
-#     # 3️⃣ Receivable Ratio Score
-#     receivable_ratio = (
-#         total_balance / total_project_value
-#         if total_project_value > 0 else Decimal('0')
-#     )
-
-#     if receivable_ratio < Decimal('0.2'):
-#         receivable_score = 25
-#     elif receivable_ratio < Decimal('0.4'):
-#         receivable_score = 18
-#     elif receivable_ratio < Decimal('0.6'):
-#         receivable_score = 10
-#     else:
-#         receivable_score = 5
-
-#     # 4️⃣ Budget Discipline Score
-#     discipline_ratio = (
-#         Decimal(overrun_clients) / Decimal(total_clients)
-#         if total_clients > 0 else Decimal('0')
-#     )
-
-#     if discipline_ratio == 0:
-#         discipline_score = 25
-#     elif discipline_ratio < Decimal('0.1'):
-#         discipline_score = 18
-#     elif discipline_ratio < Decimal('0.3'):
-#         discipline_score = 10
-#     else:
-#         discipline_score = 5
-
-#     health_score = (
-#         profit_score +
-#         cash_score +
-#         receivable_score +
-#         discipline_score
-#     )
-
-#     if health_score >= 75:
-#         health_status = "Stable"
-#     elif health_score >= 50:
-#         health_status = "Moderate Risk"
-#     else:
-#         health_status = "High Risk"
-
-
-
-
-
-
-
-#     # ====================================
-#     # 📊 TOP 5 EXPENSE CATEGORIES
-#     # ====================================
-#     top_categories = (
-#         expense_qs
-#         .values('category__name')
-#         .annotate(total=Sum('amount'))
-#         .order_by('-total')[:5]
-#     )
-
-#     top_category_labels = [
-#         c['category__name'] or "Uncategorized"
-#         for c in top_categories
-#     ]
-
-#     top_category_values = [
-#         float(c['total']) for c in top_categories
-#     ]
-
-
-
-#     # ====================================
-#     # 👷 SALARY DISTRIBUTION BY TEAM
-#     # ====================================
-#     salary_qs = expense_qs.filter(category__name__iexact='salary')
-
-#     salary_by_team = (
-#         salary_qs
-#         .values('salary_to__name')
-#         .annotate(total=Sum('amount'))
-#         .order_by('-total')
-#     )
-
-#     salary_team_labels = [
-#         s['salary_to__name'] or "Unknown"
-#         for s in salary_by_team
-#     ]
-
-#     salary_team_values = [
-#         float(s['total']) for s in salary_by_team
-#     ]
-
-
-
-#     # ====================================
-#     # 📉 MONTHLY EXPENSE TREND
-#     # ====================================
-#     monthly_expenses = (
-#         expense_qs
-#         .annotate(month=TruncMonth('expense_date'))
-#         .values('month')
-#         .annotate(total=Sum('amount'))
-#         .order_by('month')
-#     )
-
-#     monthly_expense_labels = [
-#         m['month'].strftime("%b %Y")
-#         for m in monthly_expenses
-#     ]
-
-#     monthly_expense_values = [
-#         float(m['total']) for m in monthly_expenses
-#     ]
-
-
-
-#     # ====================================
-#     # 🚨 SMART ALERTS (INTELLIGENT VERSION)
-#     # ====================================
-
-#     today = now().date()
-
-#     # ---- Average Payment
-#     avg_payment = payment_qs.aggregate(
-#         avg=Avg('amount')
-#     )['avg'] or Decimal('0.00')
-
-#     large_payments_today = payment_qs.filter(
-#         payment_date=today,
-#         amount__gt=avg_payment
-#     )
-
-#     large_payment_count = large_payments_today.count()
-
-#     # ---- Average Expense
-#     avg_expense = expense_qs.aggregate(
-#         avg=Avg('amount')
-#     )['avg'] or Decimal('0.00')
-
-#     high_expense_today = expense_qs.filter(
-#         expense_date=today,
-#         amount__gt=avg_expense
-#     )
-
-#     high_expense_count = high_expense_today.count()
-
-#     # ---- Negative Bank Alert (already calculated earlier)
-#     # negative_bank_count
-
-#     # ---- Final Alert Count
-#     alert_count = (
-#         large_payment_count +
-#         high_expense_count +
-#         negative_bank_count
-#     )
-
-
-
-#     # =========================
-#     # RECENT DATA
-#     # =========================
-#     recent_payments = payment_qs.select_related(
-#         'client', 'bank'
-#     ).order_by('-payment_date')[:5]
-
-#     recent_expenses = expense_qs.select_related(
-#         'client', 'category'
-#     ).order_by('-expense_date')[:5]
-
-#     # =========================
-#     # RECENT CYCLE TOTAL
-#     # =========================
-#     recent_total = recent_payments.aggregate(
-#         total=Sum('amount')
-#     )['total'] or Decimal('0.00')
-
-#     # =========================
-#     # CURRENT MONTH RECEIVED
-#     # =========================
-#     today = now()
-
-#     monthly_received_total = payment_qs.filter(
-#         payment_date__year=today.year,
-#         payment_date__month=today.month
-#     ).aggregate(
-#         total=Sum('amount')
-#     )['total'] or Decimal('0.00')
-
-#     # =========================
-#     # GRAPH DATA
-#     # =========================
-#     payment_chart = (
-#         payment_qs
-#         .annotate(day=TruncDate('payment_date'))
-#         .values('day')
-#         .annotate(total=Sum('amount'))
-#         .order_by('day')
-#     )
-
-#     expense_chart = (
-#         expense_qs
-#         .annotate(day=TruncDate('expense_date'))
-#         .values('day')
-#         .annotate(total=Sum('amount'))
-#         .order_by('day')
-#     )
-
-#     payment_labels = [str(p['day']) for p in payment_chart]
-#     payment_values = [float(p['total']) for p in payment_chart]
-
-#     expense_labels = [str(e['day']) for e in expense_chart]
-#     expense_values = [float(e['total']) for e in expense_chart]
-
-#     all_dates = sorted(set(payment_labels + expense_labels))
-#     profit_trend_data = []
-
-#     for d in all_dates:
-#         p = payment_values[payment_labels.index(d)] if d in payment_labels else 0
-#         e = expense_values[expense_labels.index(d)] if d in expense_labels else 0
-#         profit_trend_data.append(p - e)
-#     current_date = now()
-
-
-#     return render(request, 'dashboard.html', {
-#         'companies': companies,
-#         'selected_company_id': selected_company_id,
-
-#         'clients': clients,
-#         'banks': banks,
-
-#         'total_bank': total_bank,
-#         'display_bank_balance': display_bank_balance,
-#         'selected_bank': selected_bank,
-#         'selected_bank_id': selected_bank_id,
-
-#         'total_balance': total_balance,
-#         'total_payments': total_payments,
-#         'total_expenses': total_expenses,
-
-#         'recent_payments': recent_payments,
-#         'recent_expenses': recent_expenses,
-
-#         'start_date': start_date,
-#         'end_date': end_date,
-
-#         'total_profit': total_profit,
-#         'profit_percentage': profit_percentage,
-#         'recent_total': recent_total,
-#         'monthly_received_total': monthly_received_total,
-#         'current_date': current_date,
-
-
-
-
-#         'health_score': health_score,
-#         'health_status': health_status,
-#         'expense_category_labels': json.dumps(top_category_labels),
-#         'expense_category_values': json.dumps(top_category_values),
-
-#         'salary_team_labels': json.dumps(salary_team_labels),
-#         'salary_team_values': json.dumps(salary_team_values),
-
-#         'monthly_expense_labels': json.dumps(monthly_expense_labels),
-#         'monthly_expense_values': json.dumps(monthly_expense_values),
-#         'alert_count': alert_count,
-
-#         'large_payment_count': large_payment_count,
-#         'high_expense_count': high_expense_count,
-#         'avg_payment': avg_payment,
-#         'avg_expense': avg_expense,
-#         'negative_bank_count': negative_bank_count,
-
-
-
-
-#         'profit_trend_labels': json.dumps(all_dates),
-#         'profit_trend_values': json.dumps(profit_trend_data),
-
-#         'payment_labels': json.dumps(payment_labels),
-#         'payment_values': json.dumps(payment_values),
-#         'expense_labels': json.dumps(expense_labels),
-#         'expense_values': json.dumps(expense_values),
-#     })
 
 
 
@@ -3531,7 +3068,7 @@ def bank_index(request):
     # =========================
 
     banks = Bank.objects.filter(
-        company_id=selected_company_id
+        company_id=selected_company_id, is_active=True
     )
 
     # =========================
@@ -4115,6 +3652,9 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.utils.dateparse import parse_date
 
 
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+
+
 def bank_log(request, pk):
 
     # 🏢 COMPANY FROM SESSION
@@ -4124,12 +3664,13 @@ def bank_log(request, pk):
 
     bank = get_object_or_404(Bank, pk=pk)
 
-    client_id = request.GET.get('client')
-    start_date = request.GET.get('start_date')
-    end_date = request.GET.get('end_date')
+    client_id  = request.GET.get('client', '')
+    start_date = request.GET.get('start_date', '')
+    end_date   = request.GET.get('end_date', '')
+    page_num   = request.GET.get('page', 1)
 
     # =========================
-    # 📊 BASE QUERYSETS (COMPANY AWARE)
+    # 📊 BASE QUERYSETS
     # =========================
     payments = Payment.objects.filter(
         bank=bank,
@@ -4153,13 +3694,15 @@ def bank_log(request, pk):
     # =========================
     if start_date:
         sd = parse_date(start_date)
-        payments = payments.filter(payment_date__gte=sd)
-        expenses = expenses.filter(expense_date__gte=sd)
+        if sd:
+            payments = payments.filter(payment_date__gte=sd)
+            expenses = expenses.filter(expense_date__gte=sd)
 
     if end_date:
         ed = parse_date(end_date)
-        payments = payments.filter(payment_date__lte=ed)
-        expenses = expenses.filter(expense_date__lte=ed)
+        if ed:
+            payments = payments.filter(payment_date__lte=ed)
+            expenses = expenses.filter(expense_date__lte=ed)
 
     # =========================
     # 🔵 PAYMENTS → CREDIT
@@ -4170,19 +3713,11 @@ def bank_log(request, pk):
         txn_description=Value('Client Payment'),
         category_name=Value('—'),
         credit=F('amount'),
-        debit=Value(
-            None,
-            output_field=DecimalField(max_digits=12, decimal_places=2)
-        ),
+        debit=Value(None, output_field=DecimalField(max_digits=12, decimal_places=2)),
         client_name=F('client__name'),
     ).values(
-        'txn_date',
-        'txn_type',
-        'txn_description',
-        'category_name',
-        'credit',
-        'debit',
-        'client_name',
+        'txn_date', 'txn_type', 'txn_description',
+        'category_name', 'credit', 'debit', 'client_name',
     )
 
     # =========================
@@ -4193,56 +3728,69 @@ def bank_log(request, pk):
         txn_type=Value('Spend'),
         txn_description=F('description'),
         category_name=Coalesce(F('category__name'), Value('—')),
-        credit=Value(
-            None,
-            output_field=DecimalField(max_digits=12, decimal_places=2)
-        ),
+        credit=Value(None, output_field=DecimalField(max_digits=12, decimal_places=2)),
         debit=F('amount'),
         client_name=F('client__name'),
     ).values(
-        'txn_date',
-        'txn_type',
-        'txn_description',
-        'category_name',
-        'credit',
-        'debit',
-        'client_name',
+        'txn_date', 'txn_type', 'txn_description',
+        'category_name', 'credit', 'debit', 'client_name',
     )
 
     # =========================
     # 🔗 MERGE + SORT
     # =========================
-    transactions = sorted(
+    all_transactions = sorted(
         chain(payment_rows, expense_rows),
         key=lambda x: x['txn_date']
     )
 
     # =========================
-    # 💰 RUNNING BALANCE
+    # 💰 RUNNING BALANCE (on full dataset)
     # =========================
-    balance = bank.opening_balance
+    balance      = bank.opening_balance
+    total_credit = Decimal('0.00')
+    total_debit  = Decimal('0.00')
 
-    for row in transactions:
+    for row in all_transactions:
         if row['credit']:
-            balance += row['credit']
+            balance      += row['credit']
+            total_credit += row['credit']
         if row['debit']:
-            balance -= row['debit']
+            balance      -= row['debit']
+            total_debit  += row['debit']
         row['balance'] = balance
 
-    return render(request, 'bank/bank_log.html', {
-        'bank': bank,
-        'logs': transactions,
+    total_count = len(all_transactions)
 
-        # 👇 only company clients
+    # =========================
+    # 📄 PAGINATION — 20 per page
+    # =========================
+    paginator = Paginator(all_transactions, 20)
+
+    try:
+        page_obj = paginator.page(page_num)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
+
+    return render(request, 'bank/bank_log.html', {
+        'bank':         bank,
+        'logs':         page_obj,
+        'page_obj':     page_obj,
+        'paginator':    paginator,
+        'total_count':  total_count,
+        'total_credit': total_credit,
+        'total_debit':  total_debit,
+
         'clients': Client.objects.filter(
             company_id=selected_company_id
         ),
 
         'selected_client': client_id,
-        'start_date': start_date,
-        'end_date': end_date,
+        'start_date':      start_date,
+        'end_date':        end_date,
     })
-
 
 
 
@@ -5652,7 +5200,7 @@ def payment_index(request):
     # =========================
     # 📥 DROPDOWN DATA
     # =========================
-    clients = Client.objects.filter(company_id=selected_company_id)
+    clients = Client.objects.filter(company_id=selected_company_id,is_active=True)
 
     cheque_banks = Bank.objects.filter(
         payments__client__company_id=selected_company_id
@@ -8130,11 +7678,11 @@ def expense_index(request):
     # 📋 DROPDOWN DATA
     # =========================
     clients = Client.objects.filter(
-        company_id=selected_company_id
+        company_id=selected_company_id , is_active=True
     )
 
     categories = ExpenseCategory.objects.filter(
-        company_id=selected_company_id
+        company_id=selected_company_id 
     )
 
     subcategories = ExpenseSubCategory.objects.filter(
@@ -11000,12 +10548,49 @@ def activity_view(request):
 
 
 
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+
+
 @login_required
 def backup_history_view(request):
-    backups = BackupHistory.objects.order_by('-created_at')
+
+    search   = request.GET.get('q', '').strip()
+    page_num = request.GET.get('page', 1)
+
+    backups = BackupHistory.objects.select_related(
+        'created_by'
+    ).order_by('-created_at')
+
+    # Search
+    if search:
+        backups = backups.filter(
+            Q(file_name__icontains=search) |
+            Q(created_by__username__icontains=search)
+        )
+
+    # Stats
+    total_count   = backups.count()
+    total_size_mb = sum(b.file_size_mb or 0 for b in backups)
+    latest_backup = backups.first()
+
+    # Pagination — 15 per page
+    paginator = Paginator(backups, 15)
+
+    try:
+        page_obj = paginator.page(page_num)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
 
     return render(request, 'backup_history.html', {
-        'backups': backups
+        'backups':       page_obj,
+        'page_obj':      page_obj,
+        'paginator':     paginator,
+        'total_count':   total_count,
+        'total_size_mb': total_size_mb,
+        'latest_backup': latest_backup,
+        'search':        search,
     })
 
 from django.http import FileResponse, Http404

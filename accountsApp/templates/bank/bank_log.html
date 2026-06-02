@@ -3,164 +3,765 @@
 
 {% block content %}
 
-<h4 class="mb-3">
-    Bank Log – <span class="text-primary">{{ bank.name }}</span>
-</h4>
+<div class="bl-wrapper">
 
-<!-- 🔍 FILTER FORM -->
-<form method="get" class="row g-3 mb-4 align-items-end">
+    <!-- ═══════════════════════════════════════
+         PAGE HEADER
+    ═══════════════════════════════════════ -->
+    <div class="bl-header">
+        <div class="bl-header-left">
+            <a href="{% url 'bank_index' %}" class="bl-back-btn bg-danger text-white" title="Back">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <div class="bl-header-icon">
+                <i class="bi bi-bank2"></i>
+                
+            </div>
+            <div>
+                <div class="bl-breadcrumb">
+                    <a href="{% url 'bank_index' %}">Banks</a>
+                    <i class="bi bi-chevron-right"></i>
+                    <span>{{ bank.name }}</span>
+                </div>
+                <h1 class="bl-title">{{ bank.name }}</h1>
+                <p class="bl-subtitle">
+                    Transaction ledger & balance history
+                    {% if total_count %}
+                        · {{ total_count }} record{{ total_count|pluralize }}
+                    {% endif %}
+                </p>
+            </div>
+        </div>
 
-    <!-- 👤 CLIENT -->
-    <div class="col-md-3">
-        <label class="form-label">Client</label>
-        <select name="client" class="form-select">
-            <option value="">All Clients</option>
-            {% for c in clients %}
-                <option value="{{ c.id }}"
-                    {% if selected_client == c.id|stringformat:"s" %}selected{% endif %}>
-                    {{ c.name }}
-                </option>
-            {% endfor %}
-        </select>
+        <div class="bl-header-right">
+            <a href="{% url 'bank_log_pdf' bank.id %}?client={{ selected_client }}&start_date={{ start_date }}&end_date={{ end_date }}"
+               class="bl-btn bl-btn-danger">
+                <i class="bi bi-file-earmark-pdf"></i>
+                <span>PDF</span>
+            </a>
+            <a href="{% url 'bank_log_excel' bank.id %}?client={{ selected_client }}&start_date={{ start_date }}&end_date={{ end_date }}"
+               class="bl-btn bl-btn-success">
+                <i class="bi bi-file-earmark-excel"></i>
+                <span>Excel</span>
+            </a>
+        </div>
     </div>
 
-    <!-- 📅 START DATE -->
-    <div class="col-md-3">
-        <label class="form-label">Start Date</label>
-        <input type="date"
-               name="start_date"
-               value="{{ start_date }}"
-               class="form-control">
+    <!-- ═══════════════════════════════════════
+         BALANCE CARD
+    ═══════════════════════════════════════ -->
+    <div class="bl-balance-card">
+        <div class="bl-balance-bg">
+            <div class="bl-balance-orb bl-orb-1"></div>
+            <div class="bl-balance-orb bl-orb-2"></div>
+        </div>
+        <div class="bl-balance-content">
+            <div class="bl-balance-left">
+                <div class="bl-balance-icon">
+                    <i class="bi bi-wallet2"></i>
+                </div>
+                <div>
+                    <span class="bl-balance-label">Available Balance</span>
+                    <h2 class="bl-balance-amount {% if bank.available_balance < 0 %}bl-negative{% endif %}">
+                        ₹ {{ bank.available_balance|floatformat:2 }}
+                    </h2>
+                </div>
+            </div>
+            <div class="bl-balance-right">
+                <div class="bl-balance-stat">
+                    <div class="bl-bstat-icon bl-bstat-credit">
+                        <i class="bi bi-arrow-down-left"></i>
+                    </div>
+                    <div>
+                        <span class="bl-bstat-label">Total Credit</span>
+                        <span class="bl-bstat-value bl-credit-val">
+                            ₹ {{ total_credit|floatformat:2 }}
+                        </span>
+                    </div>
+                </div>
+                <div class="bl-balance-divider"></div>
+                <div class="bl-balance-stat">
+                    <div class="bl-bstat-icon bl-bstat-debit">
+                        <i class="bi bi-arrow-up-right"></i>
+                    </div>
+                    <div>
+                        <span class="bl-bstat-label">Total Debit</span>
+                        <span class="bl-bstat-value bl-debit-val">
+                            ₹ {{ total_debit|floatformat:2 }}
+                        </span>
+                    </div>
+                </div>
+                <div class="bl-balance-divider"></div>
+                <div class="bl-balance-stat">
+                    <div class="bl-bstat-icon bl-bstat-count">
+                        <i class="bi bi-receipt"></i>
+                    </div>
+                    <div>
+                        <span class="bl-bstat-label">Transactions</span>
+                        <span class="bl-bstat-value">{{ total_count }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- 📅 END DATE -->
-    <div class="col-md-3">
-        <label class="form-label">End Date</label>
-        <input type="date"
-               name="end_date"
-               value="{{ end_date }}"
-               class="form-control">
+    <!-- ═══════════════════════════════════════
+         FILTER PANEL
+    ═══════════════════════════════════════ -->
+    <div class="bl-filter-card">
+        <div class="bl-filter-toggle" onclick="toggleBlFilter()">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bl-filter-icon">
+                    <i class="bi bi-sliders2"></i>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="bl-filter-title">Filters</span>
+                    <span class="bl-filter-badge" id="blFilterBadge"></span>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="bl-filter-hint" id="blFilterHint">Click to expand</span>
+                <div class="bl-chevron" id="blChevron">
+                    <i class="bi bi-chevron-down"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bl-filter-body" id="blFilterBody">
+            <form method="get" id="blFilterForm">
+                <div class="bl-filter-grid">
+
+                    <!-- Client -->
+                    <div class="bl-filter-item">
+                        <label class="bl-filter-label">
+                            <i class="bi bi-person-circle"></i> Client
+                        </label>
+                        <div class="bl-select-wrap">
+                            <div class="bl-select-icon"><i class="bi bi-person"></i></div>
+                            <select name="client" class="bl-select">
+                                <option value="">All Clients</option>
+                                {% for c in clients %}
+                                <option value="{{ c.id }}"
+                                    {% if selected_client == c.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ c.name }} ({{c.location }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <i class="bi bi-chevron-down bl-select-arrow"></i>
+                        </div>
+                    </div>
+
+                    <!-- Start Date -->
+                    <div class="bl-filter-item">
+                        <label class="bl-filter-label">
+                            <i class="bi bi-calendar-event"></i> From Date
+                        </label>
+                        <div class="bl-input-wrap">
+                            <div class="bl-input-icon"><i class="bi bi-calendar3"></i></div>
+                            <input type="date" name="start_date" value="{{ start_date }}" class="bl-input">
+                        </div>
+                    </div>
+
+                    <!-- End Date -->
+                    <div class="bl-filter-item">
+                        <label class="bl-filter-label">
+                            <i class="bi bi-calendar-check"></i> To Date
+                        </label>
+                        <div class="bl-input-wrap">
+                            <div class="bl-input-icon"><i class="bi bi-calendar3"></i></div>
+                            <input type="date" name="end_date" value="{{ end_date }}" class="bl-input">
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="bl-filter-actions">
+                    <button type="submit" class="bl-btn bl-btn-primary bl-btn-sm">
+                        <i class="bi bi-search"></i> Apply
+                    </button>
+                    <a href="{% url 'bank_log' bank.id %}" class="bl-btn bl-btn-ghost bl-btn-sm">
+                        <i class="bi bi-arrow-counterclockwise"></i> Reset
+                    </a>
+                </div>
+            </form>
+        </div>
     </div>
 
-    <!-- 🔘 ACTIONS -->
-    <div class="col-md-3 d-flex gap-2">
-        <button class="btn btn-primary w-100">Apply</button>
-        <a href="{% url 'bank_log' bank.id %}"
-           class="btn btn-secondary w-100">
-            Reset
-        </a>
+    <!-- ═══════════════════════════════════════
+         SHOWING INFO
+    ═══════════════════════════════════════ -->
+    {% if total_count %}
+    <div class="bl-showing-bar">
+        <div class="bl-showing-left">
+            <i class="bi bi-eye me-1"></i>
+            Showing
+            <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+            of <strong>{{ total_count }}</strong> transactions
+        </div>
+        <div class="bl-showing-right">
+            Page <strong>{{ page_obj.number }}</strong>
+            of <strong>{{ paginator.num_pages }}</strong>
+        </div>
     </div>
+    {% endif %}
 
-</form>
+    <!-- ═══════════════════════════════════════
+         TRANSACTION TABLE
+    ═══════════════════════════════════════ -->
+    <div class="bl-table-card">
 
-<!-- 📊 BANK SUMMARY -->
-<div class="card mb-3  bg-primary text-white shadow-sm">
-    <div class="card-body text-center">
-        <h6 class="text-white mb-1">Current Available Balance</h6>
-        <h3 class="fw-bold text-white">
-            ₹ {{ bank.available_balance|floatformat:2 }}
-        </h3>
-    </div>
-</div>
+        <!-- Table Header -->
+        <div class="bl-table-topbar">
+            <div class="bl-topbar-left">
+                <i class="bi bi-list-ul me-2"></i>
+                <span>Transaction History</span>
+                <span class="bl-topbar-count">{{ total_count }} entries</span>
+            </div>
+            <div class="bl-topbar-right">
+                <div class="bl-topbar-legend">
+                    <span class="bl-legend-dot bl-legend-credit"></span>
+                    <span>Credit</span>
+                </div>
+                <div class="bl-topbar-legend">
+                    <span class="bl-legend-dot bl-legend-debit"></span>
+                    <span>Debit</span>
+                </div>
+            </div>
+        </div>
 
-<!-- 📋 BANK TRANSACTIONS -->
-<div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
-<table class="table table-bordered table-hover align-middle">
-    <thead class="table-primary sticky-top">
-        <tr>
-            <th>#</th>
-            <th>Date</th>
-            <th>Client</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th class="text-end">Credit</th>
-            <th class="text-end">Debit</th>
-            <th class="text-end">Running Balance</th>
-        </tr>
-    </thead>
+        <!-- Table -->
+        <div class="bl-table-scroll custom-scrollbar">
+            <table class="bl-table">
+                <thead>
+                    <tr>
+                        <th class="bl-th-sno">#</th>
+                        <th><div class="bl-th"><i class="bi bi-calendar3"></i> Date</div></th>
+                        <th><div class="bl-th"><i class="bi bi-person"></i> Client</div></th>
+                        <th><div class="bl-th"><i class="bi bi-tag"></i> Type</div></th>
+                        <th><div class="bl-th"><i class="bi bi-card-text"></i> Description</div></th>
+                        <th class="text-end"><div class="bl-th justify-content-end"><i class="bi bi-arrow-down-left"></i> Credit</div></th>
+                        <th class="text-end"><div class="bl-th justify-content-end"><i class="bi bi-arrow-up-right"></i> Debit</div></th>
+                        <th class="text-end"><div class="bl-th justify-content-end"><i class="bi bi-wallet2"></i> Balance</div></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in logs %}
+                    <tr class="bl-row bl-row-{{ row.txn_type|lower }}"
+                        style="animation-delay: {{ forloop.counter0 }}0ms">
 
-    <tbody>
-        {% for row in logs %}
-        <tr>
-            <td>{{ forloop.counter }}</td>
+                        <!-- Serial (page-aware) -->
+                        <td>
+                            <span class="bl-serial">
+                                {{ page_obj.start_index|add:forloop.counter0 }}
+                            </span>
+                        </td>
 
-            <!-- DATE -->
-            <td>{{ row.txn_date|date:"d M Y" }}</td>
+                        <!-- Date -->
+                        <td>
+                            <div class="bl-date-cell">
+                                <div class="bl-date-icon">
+                                    <i class="bi bi-calendar3"></i>
+                                </div>
+                                <div>
+                                    <span class="bl-date-main">{{ row.txn_date|date:"d M Y" }}</span>
+                                    <span class="bl-date-day">{{ row.txn_date|date:"l" }}</span>
+                                </div>
+                            </div>
+                        </td>
 
-            <!-- CLIENT -->
-            <td>{{ row.client_name }}</td>
+                        <!-- Client -->
+                        <td>
+                            <div class="bl-client-cell">
+                                <div class="bl-client-avatar">
+                                    {{ row.client_name|first|upper }}
+                                </div>
+                                <span class="bl-client-name">{{ row.client_name }}</span>
+                            </div>
+                        </td>
 
-            <!-- TYPE -->
-            <td>
-                <span class="badge
-                    {% if row.txn_type == 'Payment' %}
-                        bg-success
-                    {% else %}
-                        bg-danger
-                    {% endif %}">
-                    {{ row.txn_type }}
+                        <!-- Type -->
+                        <td>
+                            <span class="bl-type-badge bl-type-{{ row.txn_type|lower }}">
+                                <span class="bl-type-dot"></span>
+                                {% if row.txn_type == 'Payment' %}
+                                    <i class="bi bi-arrow-down-left"></i>
+                                {% else %}
+                                    <i class="bi bi-arrow-up-right"></i>
+                                {% endif %}
+                                {{ row.txn_type }}
+                            </span>
+                        </td>
+
+                        <!-- Description -->
+                        <td>
+                            <span class="bl-desc" title="{{ row.txn_description }}">
+                                {{ row.txn_description|truncatewords:8 }}
+                            </span>
+                        </td>
+
+                        <!-- Credit -->
+                        <td class="text-end">
+                            {% if row.credit %}
+                            <div class="bl-amount-cell bl-amount-credit">
+                                <i class="bi bi-plus-circle-fill"></i>
+                                <span>₹ {{ row.credit|floatformat:2 }}</span>
+                            </div>
+                            {% else %}
+                            <span class="bl-dash">—</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Debit -->
+                        <td class="text-end">
+                            {% if row.debit %}
+                            <div class="bl-amount-cell bl-amount-debit">
+                                <i class="bi bi-dash-circle-fill"></i>
+                                <span>₹ {{ row.debit|floatformat:2 }}</span>
+                            </div>
+                            {% else %}
+                            <span class="bl-dash">—</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Running Balance -->
+                        <td class="text-end">
+                            <span class="bl-balance-val {% if row.balance < 0 %}bl-balance-neg{% else %}bl-balance-pos{% endif %}">
+                                ₹ {{ row.balance|floatformat:2 }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8">
+                            <div class="bl-empty">
+                                <div class="bl-empty-illustration">
+                                    <div class="bl-empty-circle bl-ec-1"></div>
+                                    <div class="bl-empty-circle bl-ec-2"></div>
+                                    <div class="bl-empty-icon-wrap">
+                                        <i class="bi bi-inbox-fill"></i>
+                                    </div>
+                                </div>
+                                <h5>No Transactions Found</h5>
+                                <p>Try adjusting your filters or date range</p>
+                                <a href="{% url 'bank_log' bank.id %}" class="bl-btn bl-btn-ghost bl-btn-sm">
+                                    <i class="bi bi-arrow-counterclockwise"></i> Reset Filters
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ═══════════════════════════════════════
+             TABLE FOOTER WITH TOTALS
+        ═══════════════════════════════════════ -->
+        {% if logs %}
+        <div class="bl-table-footer">
+            <div class="bl-footer-left">
+                <span class="bl-footer-info">
+                    <i class="bi bi-list-ul me-1"></i>
+                    <strong>{{ total_count }}</strong> transaction{{ total_count|pluralize }}
                 </span>
-            </td>
+            </div>
+            <div class="bl-footer-right">
+                <div class="bl-footer-stat bl-footer-credit">
+                    <i class="bi bi-plus-circle-fill"></i>
+                    <span>Credit: <strong>₹ {{ total_credit|floatformat:2 }}</strong></span>
+                </div>
+                <div class="bl-footer-stat bl-footer-debit">
+                    <i class="bi bi-dash-circle-fill"></i>
+                    <span>Debit: <strong>₹ {{ total_debit|floatformat:2 }}</strong></span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
-            <!-- DESCRIPTION -->
-            <td>{{ row.txn_description }}</td>
+        <!-- ═══════════════════════════════════════
+             PAGINATION
+        ═══════════════════════════════════════ -->
+        {% if page_obj.has_other_pages %}
+        <div class="bl-pagination-wrap">
 
-            <!-- CREDIT -->
-            <td class="text-end text-success fw-semibold">
-                {% if row.credit %}
-                    ₹ {{ row.credit|floatformat:2 }}
+            <div class="bl-pag-info">
+                Showing
+                <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+                of <strong>{{ total_count }}</strong>
+            </div>
+
+            <nav class="bl-pagination">
+
+                <!-- First & Prev -->
+                {% if page_obj.has_previous %}
+                <a href="?page=1&client={{ selected_client }}&start_date={{ start_date }}&end_date={{ end_date }}"
+                   class="bl-pag-btn bl-pag-nav" title="First">
+                    <i class="bi bi-chevron-double-left"></i>
+                </a>
+                <a href="?page={{ page_obj.previous_page_number }}&client={{ selected_client }}&start_date={{ start_date }}&end_date={{ end_date }}"
+                   class="bl-pag-btn bl-pag-nav" title="Previous">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
                 {% else %}
-                    —
+                <span class="bl-pag-btn bl-pag-nav bl-pag-disabled">
+                    <i class="bi bi-chevron-double-left"></i>
+                </span>
+                <span class="bl-pag-btn bl-pag-nav bl-pag-disabled">
+                    <i class="bi bi-chevron-left"></i>
+                </span>
                 {% endif %}
-            </td>
 
-            <!-- DEBIT -->
-            <td class="text-end text-danger fw-semibold">
-                {% if row.debit %}
-                    ₹ {{ row.debit|floatformat:2 }}
+                <!-- Page Numbers -->
+                <div class="bl-pag-numbers">
+                    {% for num in paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <span class="bl-pag-btn bl-pag-active">{{ num }}</span>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <a href="?page={{ num }}&client={{ selected_client }}&start_date={{ start_date }}&end_date={{ end_date }}"
+                               class="bl-pag-btn">{{ num }}</a>
+                        {% elif num == 1 or num == paginator.num_pages %}
+                            <a href="?page={{ num }}&client={{ selected_client }}&start_date={{ start_date }}&end_date={{ end_date }}"
+                               class="bl-pag-btn">{{ num }}</a>
+                        {% elif num == page_obj.number|add:'-3' or num == page_obj.number|add:'3' %}
+                            <span class="bl-pag-ellipsis">•••</span>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                <!-- Next & Last -->
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}&client={{ selected_client }}&start_date={{ start_date }}&end_date={{ end_date }}"
+                   class="bl-pag-btn bl-pag-nav" title="Next">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+                <a href="?page={{ paginator.num_pages }}&client={{ selected_client }}&start_date={{ start_date }}&end_date={{ end_date }}"
+                   class="bl-pag-btn bl-pag-nav" title="Last">
+                    <i class="bi bi-chevron-double-right"></i>
+                </a>
                 {% else %}
-                    —
+                <span class="bl-pag-btn bl-pag-nav bl-pag-disabled">
+                    <i class="bi bi-chevron-right"></i>
+                </span>
+                <span class="bl-pag-btn bl-pag-nav bl-pag-disabled">
+                    <i class="bi bi-chevron-double-right"></i>
+                </span>
                 {% endif %}
-            </td>
 
-            <!-- RUNNING BALANCE -->
-            <td class="text-end fw-bold
-                {% if row.balance < 0 %}
-                    text-danger
-                {% else %}
-                    text-success
-                {% endif %}">
-                ₹ {{ row.balance|floatformat:2 }}
-            </td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="8" class="text-center text-muted">
-                No transactions found
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
+            </nav>
 
-</table>
-</div>
+            <div class="bl-pag-page-badge">
+                Page <strong>{{ page_obj.number }}</strong>
+                of <strong>{{ paginator.num_pages }}</strong>
+            </div>
 
-<div class="d-flex justify-content-between align-items-center my-3 flex-wrap gap-2">
-    <a href="{% url 'bank_index' %}" class="btn btn-primary">
-        <i class="bi bi-arrow-left"></i> Back to Banks
-    </a>
-    
-    <div class="d-flex gap-2 flex-wrap">
-        <a href="{% url 'bank_log_pdf' bank.id %}?client={{ selected_client }}&start_date={{ start_date }}&end_date={{ end_date }}" 
-           class="btn btn-danger">
-            <i class="bi bi-file-pdf"></i> Export PDF
-        </a>
-        <a href="{% url 'bank_log_excel' bank.id %}?client={{ selected_client }}&start_date={{ start_date }}&end_date={{ end_date }}" 
-           class="btn btn-success">
-            <i class="bi bi-file-earmark-excel"></i> Export Excel
+        </div>
+        {% endif %}
+
+    </div><!-- end bl-table-card -->
+
+    <!-- Mobile Back -->
+    <div class="bl-mobile-nav">
+        <a href="{% url 'bank_index' %}" class="bl-btn bl-btn-ghost">
+            <i class="bi bi-arrow-left"></i> Back to Banks
         </a>
     </div>
+
 </div>
 
+
+<!-- ═══════════════════════════════════════════
+     STYLES
+═══════════════════════════════════════════ -->
+<style>
+:root {
+    --bl-primary:      #4f46e5;
+    --bl-primary-lt:   #eef2ff;
+    --bl-primary-mid:  #c7d2fe;
+    --bl-primary-dk:   #3730a3;
+    --bl-success:      #059669;
+    --bl-success-lt:   #ecfdf5;
+    --bl-danger:       #dc2626;
+    --bl-danger-lt:    #fef2f2;
+    --bl-gray-50:      #f8fafc;
+    --bl-gray-100:     #f1f5f9;
+    --bl-gray-200:     #e2e8f0;
+    --bl-gray-300:     #cbd5e1;
+    --bl-gray-400:     #94a3b8;
+    --bl-gray-500:     #64748b;
+    --bl-gray-600:     #475569;
+    --bl-gray-700:     #334155;
+    --bl-gray-800:     #1e293b;
+    --bl-gray-900:     #0f172a;
+    --bl-r-sm:  8px;
+    --bl-r-md:  12px;
+    --bl-r-lg:  16px;
+    --bl-r-xl:  20px;
+    --bl-shadow-sm: 0 1px 3px rgba(0,0,0,.06);
+    --bl-shadow-md: 0 4px 8px -1px rgba(0,0,0,.07);
+    --bl-shadow-lg: 0 12px 28px -4px rgba(0,0,0,.1);
+    --bl-transition: all 0.22s cubic-bezier(.4,0,.2,1);
+}
+
+.bl-wrapper { max-width:1400px; margin:0 auto; padding-bottom:40px; display:flex; flex-direction:column; gap:18px; }
+
+/* ── Header ── */
+.bl-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.bl-header-left { display:flex; align-items:center; gap:14px; }
+
+.bl-back-btn { width:38px; height:38px; border-radius:var(--bl-r-md); background:white; border:1px solid var(--bl-gray-200); display:flex; align-items:center; justify-content:center; color:var(--bl-gray-500); font-size:.95rem; text-decoration:none; transition:var(--bl-transition); flex-shrink:0; }
+.bl-back-btn:hover { background:var(--bl-primary); color:white; border-color:var(--bl-primary); transform:translateX(-2px); }
+
+.bl-header-icon { position:relative; width:52px; height:52px; background:linear-gradient(135deg,var(--bl-primary),var(--bl-primary-dk)); border-radius:var(--bl-r-lg); display:flex; align-items:center; justify-content:center; color:white; font-size:1.3rem; box-shadow:0 8px 20px rgba(79,70,229,.3); flex-shrink:0; }
+.bl-icon-ring { position:absolute; inset:-4px; border:2px solid rgba(79,70,229,.2); border-radius:calc(var(--bl-r-lg)+4px); animation:blRing 2.5s ease-in-out infinite; }
+@keyframes blRing { 0%,100%{opacity:.4;transform:scale(1);} 50%{opacity:1;transform:scale(1.04);} }
+
+.bl-breadcrumb { display:flex; align-items:center; gap:5px; font-size:.7rem; ; color:var(--bl-gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:3px; }
+.bl-breadcrumb a { color:var(--bl-primary); text-decoration:none; }
+.bl-breadcrumb a:hover { text-decoration:underline; }
+.bl-breadcrumb i { font-size:.55rem; }
+
+.bl-title { font-size:1.5rem; color:var(--bl-gray-900); margin:0 0 3px; letter-spacing:-.03em; }
+.bl-subtitle { font-size:.82rem; color:var(--bl-gray-500); margin:0; }
+
+.bl-header-right { display:flex; gap:8px; flex-wrap:wrap; }
+
+/* ── Buttons ── */
+.bl-btn { display:inline-flex; align-items:center; gap:6px; padding:9px 18px; border-radius:var(--bl-r-md);  font-size:.82rem; border:none; cursor:pointer; transition:var(--bl-transition); text-decoration:none; white-space:nowrap; font-family:inherit; }
+.bl-btn-primary { background:linear-gradient(135deg,var(--bl-primary),var(--bl-primary-dk)); color:white; box-shadow:0 4px 12px rgba(79,70,229,.25); }
+.bl-btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(79,70,229,.35); color:white; }
+.bl-btn-danger { background:linear-gradient(135deg,#dc2626,#b91c1c); color:white; box-shadow:0 4px 10px rgba(220,38,38,.2); }
+.bl-btn-danger:hover { transform:translateY(-1px); color:white; }
+.bl-btn-success { background:linear-gradient(135deg,#059669,#047857); color:white; box-shadow:0 4px 10px rgba(5,150,105,.2); }
+.bl-btn-success:hover { transform:translateY(-1px); color:white; }
+.bl-btn-ghost { background:white; color:var(--bl-gray-600); border:1.5px solid var(--bl-gray-200); }
+.bl-btn-ghost:hover { background:var(--bl-gray-50); color:var(--bl-gray-800); }
+.bl-btn-sm { padding:7px 14px; font-size:.78rem; border-radius:var(--bl-r-sm); }
+
+/* ── Balance Card ── */
+.bl-balance-card { position:relative; background:linear-gradient(135deg,#1e293b,#0f172a); border-radius:var(--bl-r-xl); overflow:hidden; box-shadow:0 12px 40px -8px rgba(15,23,42,.4); }
+.bl-balance-bg { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
+.bl-balance-orb { position:absolute; border-radius:50%; }
+.bl-orb-1 { width:300px; height:300px; top:-100px; right:-80px; background:radial-gradient(circle,rgba(79,70,229,.15),transparent 70%); animation:blOrbFloat 8s ease-in-out infinite; }
+.bl-orb-2 { width:200px; height:200px; bottom:-60px; left:-40px; background:radial-gradient(circle,rgba(6,182,212,.1),transparent 70%); animation:blOrbFloat 6s ease-in-out infinite reverse; }
+@keyframes blOrbFloat { 0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(10px,-10px) scale(1.05);} }
+
+.bl-balance-content { position:relative; z-index:2; display:flex; align-items:center; justify-content:space-between; padding:24px 28px; gap:20px; flex-wrap:wrap; }
+.bl-balance-left { display:flex; align-items:center; gap:16px; }
+.bl-balance-icon { width:52px; height:52px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.08); border-radius:var(--bl-r-lg); display:flex; align-items:center; justify-content:center; color:white; font-size:1.3rem; backdrop-filter:blur(8px); flex-shrink:0; }
+.bl-balance-label { display:block; font-size:.68rem;  color:rgba(255,255,255,.5); text-transform:uppercase; letter-spacing:.07em; margin-bottom:4px; }
+.bl-balance-amount { font-size:1.8rem;  color:white; font-family:'Monaco','Menlo',monospace; letter-spacing:-.02em; margin:0; line-height:1.1; }
+.bl-balance-amount.bl-negative { color:#fca5a5; }
+
+.bl-balance-right { display:flex; align-items:center; gap:20px; }
+.bl-balance-stat { display:flex; align-items:center; gap:10px; }
+.bl-bstat-icon { width:36px; height:36px; border-radius:var(--bl-r-sm); display:flex; align-items:center; justify-content:center; font-size:.85rem; flex-shrink:0; }
+.bl-bstat-credit { background:rgba(5,150,105,.15); color:#6ee7b7; }
+.bl-bstat-debit { background:rgba(220,38,38,.15); color:#fca5a5; }
+.bl-bstat-count { background:rgba(79,70,229,.15); color:#a5b4fc; }
+.bl-bstat-label { display:block; font-size:.6rem;  color:rgba(255,255,255,.4); text-transform:uppercase; letter-spacing:.05em; }
+.bl-bstat-value { display:block; font-size:.88rem;  color:white; font-family:'Monaco','Menlo',monospace; }
+.bl-credit-val { color:#6ee7b7!important; }
+.bl-debit-val { color:#fca5a5!important; }
+.bl-balance-divider { width:1px; height:36px; background:rgba(255,255,255,.1); flex-shrink:0; }
+
+/* ── Filter ── */
+.bl-filter-card { background:white; border:1px solid var(--bl-gray-200); border-radius:var(--bl-r-xl); overflow:hidden; box-shadow:var(--bl-shadow-sm); transition:box-shadow .3s ease; }
+.bl-filter-card:hover { box-shadow:var(--bl-shadow-md); }
+.bl-filter-toggle { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; cursor:pointer; user-select:none; transition:var(--bl-transition); }
+.bl-filter-toggle:hover { background:var(--bl-gray-50); }
+.bl-filter-icon { width:34px; height:34px; background:var(--bl-primary-lt); color:var(--bl-primary); border:1px solid var(--bl-primary-mid); border-radius:var(--bl-r-sm); display:flex; align-items:center; justify-content:center; font-size:.88rem; }
+.bl-filter-title {  color:var(--bl-gray-800); font-size:.88rem; }
+.bl-filter-badge { font-size:.66rem;  padding:2px 8px; border-radius:10px; display:none; }
+.bl-filter-badge.bl-badge-active { display:inline-block; background:var(--bl-primary); color:white; }
+.bl-filter-hint { font-size:.72rem; color:var(--bl-gray-400); }
+.bl-chevron { width:28px; height:28px; background:var(--bl-gray-100); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--bl-gray-500); font-size:.72rem; transition:var(--bl-transition); }
+.bl-chevron.bl-chevron-open { transform:rotate(180deg); background:var(--bl-primary-lt); color:var(--bl-primary); }
+.bl-filter-body { max-height:0; overflow:hidden; transition:max-height .4s ease; }
+.bl-filter-body.bl-filter-open { max-height:400px; border-top:1px solid var(--bl-gray-100); }
+.bl-filter-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:14px; padding:20px 20px 14px; }
+.bl-filter-label { display:flex; align-items:center; gap:5px; font-size:.68rem;  color:var(--bl-gray-600); text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px; }
+.bl-select-wrap,.bl-input-wrap { position:relative; }
+.bl-select-icon,.bl-input-icon { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--bl-gray-400); font-size:.78rem; pointer-events:none; z-index:1; }
+.bl-select,.bl-input { width:100%; padding:9px 32px 9px 32px; border:1.5px solid var(--bl-gray-200); border-radius:var(--bl-r-sm); font-size:.83rem; color:var(--bl-gray-800); background:white; transition:var(--bl-transition); appearance:none; font-family:inherit; }
+.bl-select:focus,.bl-input:focus { outline:none; border-color:var(--bl-primary); box-shadow:0 0 0 3px rgba(79,70,229,.1); }
+.bl-select-arrow { position:absolute; right:10px; top:50%; transform:translateY(-50%); color:var(--bl-gray-400); font-size:.6rem; pointer-events:none; }
+.bl-filter-actions { display:flex; gap:10px; padding:12px 20px 20px; border-top:1px solid var(--bl-gray-100); }
+
+/* ── Showing Bar ── */
+.bl-showing-bar { display:flex; align-items:center; justify-content:space-between; padding:8px 16px; background:white; border:1px solid var(--bl-gray-200); border-radius:var(--bl-r-md); font-size:.78rem; color:var(--bl-gray-500); font-weight:500; }
+.bl-showing-bar strong { color:var(--bl-gray-700); }
+
+/* ── Table Card ── */
+.bl-table-card { background:white; border:1px solid var(--bl-gray-200); border-radius:var(--bl-r-xl); overflow:hidden; box-shadow:var(--bl-shadow-md); }
+.bl-table-topbar { display:flex; align-items:center; justify-content:space-between; padding:13px 20px; background:var(--bl-gray-50); border-bottom:1px solid var(--bl-gray-100); flex-wrap:wrap; gap:10px; }
+.bl-topbar-left { display:flex; align-items:center; gap:6px; font-size:.85rem; font-weight:700; color:var(--bl-gray-700); }
+.bl-topbar-count { font-size:.68rem;  color:var(--bl-gray-400); background:var(--bl-gray-100); padding:2px 9px; border-radius:8px; margin-left:6px; }
+.bl-topbar-right { display:flex; align-items:center; gap:14px; }
+.bl-topbar-legend { display:flex; align-items:center; gap:5px; font-size:.7rem; font-weight:600; color:var(--bl-gray-500); }
+.bl-legend-dot { width:8px; height:8px; border-radius:50%; }
+.bl-legend-credit { background:var(--bl-success); }
+.bl-legend-debit { background:var(--bl-danger); }
+
+/* Scroll */
+.bl-table-scroll { overflow:auto; max-height:60vh; }
+.custom-scrollbar::-webkit-scrollbar { width:5px; height:5px; }
+.custom-scrollbar::-webkit-scrollbar-track { background:transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background:var(--bl-gray-300); border-radius:10px; }
+
+/* Table */
+.bl-table { width:100%; border-collapse:collapse; font-size:.83rem; }
+.bl-table thead { position:sticky; top:0; z-index:10; }
+.bl-table thead tr { background:var(--bl-gray-50); border-bottom:2px solid var(--bl-gray-200); }
+.bl-table thead th { padding:11px 12px; border:none; background:var(--bl-gray-50); white-space:nowrap; }
+.bl-th { display:flex; align-items:center; gap:5px; font-size:.66rem;  text-transform:uppercase; letter-spacing:.07em; color:var(--bl-gray-500); }
+.bl-th-sno { width:44px; text-align:center; }
+.bl-table tbody tr { border-bottom:1px solid var(--bl-gray-100); transition:background .15s ease; animation:blRowUp .3s ease both; }
+@keyframes blRowUp { from{opacity:0;transform:translateY(4px);} to{opacity:1;transform:translateY(0);} }
+.bl-table tbody tr:last-child { border-bottom:none; }
+.bl-row-payment:hover { background:#f0fdf4!important; }
+.bl-row-spend:hover { background:#fef2f2!important; }
+.bl-table tbody td { padding:11px 12px; vertical-align:middle; border:none; color:var(--bl-gray-700); }
+
+.bl-serial { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; background:var(--bl-gray-100); border-radius:7px; font-size:.7rem; font-weight:800; color:var(--bl-gray-500); }
+.bl-date-cell { display:flex; align-items:center; gap:8px; }
+.bl-date-icon { width:30px; height:30px; background:var(--bl-gray-100); border-radius:7px; display:flex; align-items:center; justify-content:center; color:var(--bl-gray-500); font-size:.75rem; flex-shrink:0; }
+.bl-date-main { display:block; font-size:.8rem;  color:var(--bl-gray-700); white-space:nowrap; }
+.bl-date-day { display:block; font-size:.64rem; color:var(--bl-gray-400); font-weight:500; }
+.bl-client-cell { display:flex; align-items:center; gap:8px; }
+.bl-client-avatar { width:30px; height:30px; min-width:30px; background:linear-gradient(135deg,#d1fae5,#a7f3d0); border-radius:7px; display:flex; align-items:center; justify-content:center; font-weight:800; color:#065f46; font-size:.78rem; }
+.bl-client-name {  color:var(--bl-gray-800); font-size:.82rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px; }
+.bl-type-badge { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; font-size:.72rem; font-weight:700; }
+.bl-type-dot { width:6px; height:6px; border-radius:50%; }
+.bl-type-payment { background:var(--bl-success-lt); color:var(--bl-success); border:1px solid rgba(5,150,105,.15); }
+.bl-type-payment .bl-type-dot { background:var(--bl-success); }
+.bl-type-spend { background:var(--bl-danger-lt); color:var(--bl-danger); border:1px solid rgba(220,38,38,.15); }
+.bl-type-spend .bl-type-dot { background:var(--bl-danger); }
+.bl-desc { font-size:.78rem; color:var(--bl-gray-600); max-width:180px; display:inline-block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bl-amount-cell { display:inline-flex; align-items:center; gap:5px; font-size:.85rem; font-weight:800; font-family:'Monaco','Menlo',monospace; justify-content:flex-end; }
+.bl-amount-cell i { font-size:.72rem; }
+.bl-amount-credit { color:var(--bl-success); }
+.bl-amount-debit { color:var(--bl-danger); }
+.bl-dash { color:var(--bl-gray-300); font-size:1rem; }
+.bl-balance-val { font-weight:800; font-size:.88rem; font-family:'Monaco','Menlo',monospace; }
+.bl-balance-pos { color:var(--bl-success); }
+.bl-balance-neg { color:var(--bl-danger); }
+
+/* ── Footer ── */
+.bl-table-footer { display:flex; align-items:center; justify-content:space-between; padding:13px 20px; border-top:1px solid var(--bl-gray-100); background:var(--bl-gray-50); flex-wrap:wrap; gap:10px; }
+.bl-footer-info { font-size:.78rem; color:var(--bl-gray-500); font-weight:500; }
+.bl-footer-info strong { color:var(--bl-gray-700); }
+.bl-footer-right { display:flex; gap:18px; }
+.bl-footer-stat { display:flex; align-items:center; gap:5px; font-size:.78rem; font-weight:600; }
+.bl-footer-credit { color:var(--bl-success); }
+.bl-footer-debit { color:var(--bl-danger); }
+.bl-footer-stat i { font-size:.7rem; }
+.bl-footer-stat strong { font-weight:800; font-family:'Monaco','Menlo',monospace; }
+
+/* ── Pagination ── */
+.bl-pagination-wrap { display:flex; align-items:center; justify-content:space-between; padding:13px 20px; border-top:1px solid var(--bl-gray-100); background:var(--bl-gray-50); gap:12px; flex-wrap:wrap; }
+.bl-pag-info { font-size:.78rem; color:var(--bl-gray-500); font-weight:500; }
+.bl-pag-info strong { color:var(--bl-gray-700); }
+.bl-pagination { display:flex; align-items:center; gap:4px; }
+.bl-pag-numbers { display:flex; align-items:center; gap:4px; }
+.bl-pag-btn { min-width:36px; height:36px; padding:0 8px; display:inline-flex; align-items:center; justify-content:center; border:1.5px solid var(--bl-gray-200); border-radius:var(--bl-r-sm); font-size:.8rem; font-weight:700; color:var(--bl-gray-600); background:white; text-decoration:none; transition:var(--bl-transition); cursor:pointer; }
+.bl-pag-btn:hover { background:var(--bl-primary-lt); border-color:var(--bl-primary-mid); color:var(--bl-primary); transform:translateY(-1px); box-shadow:0 3px 8px rgba(79,70,229,.15); }
+.bl-pag-active { background:linear-gradient(135deg,var(--bl-primary),var(--bl-primary-dk)); border-color:var(--bl-primary-dk); color:white!important; box-shadow:0 4px 12px rgba(79,70,229,.3); pointer-events:none; }
+.bl-pag-nav { background:white; }
+.bl-pag-disabled { opacity:.3; pointer-events:none; background:var(--bl-gray-50); }
+.bl-pag-ellipsis { display:inline-flex; align-items:center; justify-content:center; min-width:28px; height:36px; font-size:.6rem; color:var(--bl-gray-400); letter-spacing:.1em; }
+.bl-pag-page-badge { font-size:.78rem; color:var(--bl-gray-500); font-weight:500; padding:6px 12px; background:white; border:1.5px solid var(--bl-gray-200); border-radius:var(--bl-r-sm); }
+.bl-pag-page-badge strong { color:var(--bl-gray-700); }
+
+/* ── Empty ── */
+.bl-empty { text-align:center; padding:56px 24px; }
+.bl-empty-illustration { position:relative; width:80px; height:80px; margin:0 auto 18px; }
+.bl-empty-circle { position:absolute; border-radius:50%; opacity:.07; }
+.bl-ec-1 { inset:0; background:var(--bl-primary); animation:blEcPulse 3s ease-in-out infinite; }
+.bl-ec-2 { inset:10px; background:var(--bl-success); animation:blEcPulse 3s ease-in-out infinite .5s; }
+@keyframes blEcPulse { 0%,100%{transform:scale(.95);opacity:.06;} 50%{transform:scale(1.05);opacity:.14;} }
+.bl-empty-icon-wrap { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:1.8rem; color:var(--bl-gray-400); background:var(--bl-gray-100); border-radius:50%; }
+.bl-empty h5 { font-size:1rem; font-weight:800; color:var(--bl-gray-700); margin-bottom:6px; }
+.bl-empty p { font-size:.82rem; color:var(--bl-gray-500); margin-bottom:16px; }
+
+/* ── Mobile Nav ── */
+.bl-mobile-nav { display:none; }
+
+/* ── Responsive ── */
+@media (max-width:1024px) { .bl-balance-right{gap:14px;} .bl-balance-divider{height:28px;} }
+
+@media (max-width:768px) {
+    .bl-header { flex-direction:column; align-items:flex-start; }
+    .bl-header-right { width:100%; }
+    .bl-header-right .bl-btn { flex:1; justify-content:center; }
+    .bl-balance-content { flex-direction:column; padding:20px; gap:16px; }
+    .bl-balance-right { width:100%; justify-content:space-between; padding-top:14px; border-top:1px solid rgba(255,255,255,.08); }
+    .bl-balance-amount { font-size:1.5rem; }
+    .bl-filter-grid { grid-template-columns:1fr; }
+    .bl-topbar-right { display:none; }
+    .bl-mobile-nav { display:block; text-align:center; }
+    .bl-mobile-nav .bl-btn { width:100%; justify-content:center; }
+    .bl-back-btn { display:none; }
+    .bl-footer-right { width:100%; justify-content:space-between; }
+    .bl-showing-bar { flex-direction:column; gap:4px; text-align:center; }
+    .bl-pag-page-badge { display:none; }
+    .bl-pagination-wrap { justify-content:center; }
+}
+
+@media (max-width:576px) {
+    .bl-balance-right { flex-direction:column; gap:10px; }
+    .bl-balance-divider { display:none; }
+    .bl-balance-stat { width:100%; padding:8px 12px; background:rgba(255,255,255,.04); border-radius:var(--bl-r-sm); }
+    .bl-balance-amount { font-size:1.3rem; }
+    .bl-filter-actions { flex-direction:column; }
+    .bl-filter-actions .bl-btn { width:100%; justify-content:center; }
+    .bl-desc { max-width:100px; }
+    .bl-client-name { max-width:90px; }
+    .bl-table-footer { flex-direction:column; align-items:flex-start; }
+}
+</style>
+
+
+<!-- ═══════════════════════════════════════════
+     SCRIPTS
+═══════════════════════════════════════════ -->
+<script>
+function toggleBlFilter() {
+    const body = document.getElementById('blFilterBody');
+    const chev = document.getElementById('blChevron');
+    const hint = document.getElementById('blFilterHint');
+
+    body.classList.toggle('bl-filter-open');
+    chev.classList.toggle('bl-chevron-open');
+    hint.textContent = body.classList.contains('bl-filter-open')
+        ? 'Click to collapse' : 'Click to expand';
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    // Auto-open filter if active
+    const form  = document.getElementById('blFilterForm');
+    const badge = document.getElementById('blFilterBadge');
+
+    if (form) {
+        let count = 0;
+        form.querySelectorAll('select, input[type="date"]').forEach(el => {
+            if (el.value && el.value !== '') count++;
+        });
+
+        if (count > 0) {
+            badge.textContent = count + ' active';
+            badge.classList.add('bl-badge-active');
+            document.getElementById('blFilterBody').classList.add('bl-filter-open');
+            document.getElementById('blChevron').classList.add('bl-chevron-open');
+            document.getElementById('blFilterHint').textContent = 'Click to collapse';
+        }
+    }
+
+    // Tooltips
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+        new bootstrap.Tooltip(el);
+    });
+});
+</script>
 
 {% endblock %}

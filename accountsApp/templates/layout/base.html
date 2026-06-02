@@ -988,12 +988,7 @@ document.addEventListener('DOMContentLoaded', function () {
         </aside>
 
         <main class="col-md-10 p-4">
-            <nav aria-label="breadcrumb" class="mb-4">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted">Home</a></li>
-                    <li class="breadcrumb-item active fw-bold" aria-current="page">{{ request.resolver_match.url_name|title }}</li>
-                </ol>
-            </nav>
+
 
             {% if messages %}
                 {% for message in messages %}

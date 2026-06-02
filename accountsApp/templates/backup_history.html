@@ -1,55 +1,588 @@
 {% extends "layout/base.html" %}
+{% block title %}Backup History{% endblock %}
+
 {% block content %}
 
-<div class="container mt-4">
-    <h3 class="fw-bold mb-4">
-        <i class="bi bi-clock-history me-2"></i>Backup History
-    </h3>
+<div class="bh-wrapper">
 
-    {% if backups %}
-    <div class="card shadow-sm border-0 rounded-3">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
+    <!-- ═══════════════════════════════════════
+         PAGE HEADER
+    ═══════════════════════════════════════ -->
+    <div class="bh-header">
+        <div class="bh-header-left">
+            <div class="bh-header-icon">
+                <i class="bi bi-shield-check"></i>
+            </div>
+            <div>
+                <div class="bh-breadcrumb">
+                    <a href="{% url 'dashboard' %}">Dashboard</a>
+                    <i class="bi bi-chevron-right"></i>
+                    <span>Backup History</span>
+                </div>
+                <h1 class="bh-title">Backup History</h1>
+                <p class="bh-subtitle">Database snapshots & recovery points</p>
+            </div>
+        </div>
+
+        <div class="bh-header-right">
+            <a href="/download-backup/{{ backup.id }}/" class="bh-btn bh-btn-primary">
+                <i class="bi bi-cloud-arrow-down"></i>
+                <span>New Backup</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         STAT CARDS
+    ═══════════════════════════════════════ -->
+    <div class="bh-stats-row">
+
+        <!-- Total Backups -->
+        <div class="bh-stat-card">
+            <div class="bh-stat-icon bh-si-blue">
+                <i class="bi bi-archive-fill"></i>
+            </div>
+            <div class="bh-stat-body">
+                <span class="bh-stat-value">{{ total_count }}</span>
+                <span class="bh-stat-label">Total Backups</span>
+            </div>
+        </div>
+
+        <!-- Total Size -->
+        <div class="bh-stat-card">
+            <div class="bh-stat-icon bh-si-purple">
+                <i class="bi bi-hdd-fill"></i>
+            </div>
+            <div class="bh-stat-body">
+                <span class="bh-stat-value">{{ total_size_mb|floatformat:1 }} MB</span>
+                <span class="bh-stat-label">Total Size</span>
+            </div>
+        </div>
+
+        <!-- Last Backup -->
+        <div class="bh-stat-card">
+            <div class="bh-stat-icon bh-si-green">
+                <i class="bi bi-clock-history"></i>
+            </div>
+            <div class="bh-stat-body">
+                {% if latest_backup %}
+                <span class="bh-stat-value">{{ latest_backup.created_at|timesince }} ago</span>
+                {% else %}
+                <span class="bh-stat-value">Never</span>
+                {% endif %}
+                <span class="bh-stat-label">Last Backup</span>
+            </div>
+        </div>
+
+        <!-- Status -->
+        <div class="bh-stat-card">
+            <div class="bh-stat-icon {% if total_count > 0 %}bh-si-green{% else %}bh-si-red{% endif %}">
+                <i class="bi bi-{% if total_count > 0 %}check-circle-fill{% else %}exclamation-triangle-fill{% endif %}"></i>
+            </div>
+            <div class="bh-stat-body">
+                <span class="bh-stat-value {% if total_count > 0 %}bh-text-green{% else %}bh-text-red{% endif %}">
+                    {% if total_count > 0 %}Protected{% else %}No Backups{% endif %}
+                </span>
+                <span class="bh-stat-label">Status</span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         SEARCH BAR
+    ═══════════════════════════════════════ -->
+    <div class="bh-toolbar">
+        <form method="get" class="bh-search-form">
+            <div class="bh-search-wrap">
+                <i class="bi bi-search bh-search-icon"></i>
+                <input type="text"
+                       name="q"
+                       value="{{ search }}"
+                       class="bh-search-input"
+                       placeholder="Search backup files…"
+                       autocomplete="off">
+                {% if search %}
+                <a href="{% url 'backup_history' %}" class="bh-search-clear">
+                    <i class="bi bi-x-circle-fill"></i>
+                </a>
+                {% endif %}
+            </div>
+        </form>
+
+        <div class="bh-toolbar-right">
+            {% if total_count %}
+            <span class="bh-showing-info">
+                <i class="bi bi-eye me-1"></i>
+                <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+                of <strong>{{ total_count }}</strong>
+            </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         BACKUP TABLE
+    ═══════════════════════════════════════ -->
+    <div class="bh-table-card">
+
+        <!-- Table Top Bar -->
+        <div class="bh-table-topbar">
+            <div class="bh-topbar-left">
+                <i class="bi bi-table me-2"></i>
+                <span>Backup Files</span>
+                <span class="bh-topbar-count">{{ total_count }}</span>
+            </div>
+            <div class="bh-topbar-right">
+                <span class="bh-topbar-badge">
+                    <i class="bi bi-sort-down me-1"></i>
+                    Latest first
+                </span>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="bh-table-scroll custom-scrollbar">
+            <table class="bh-table">
+                <thead>
                     <tr>
-                        <th>File Name</th>
-                        <th>Size (MB)</th>
-                        <th>Created By</th>
-                        <th>Date</th>
-                        <th>Download</th>
+                        <th class="bh-th-sno">#</th>
+                        <th>
+                            <div class="bh-th"><i class="bi bi-file-earmark-zip"></i> File Name</div>
+                        </th>
+                        <th>
+                            <div class="bh-th"><i class="bi bi-hdd"></i> Size</div>
+                        </th>
+                        <th>
+                            <div class="bh-th"><i class="bi bi-person"></i> Created By</div>
+                        </th>
+                        <th>
+                            <div class="bh-th"><i class="bi bi-calendar3"></i> Date</div>
+                        </th>
+                        <th class="text-center">
+                            <div class="bh-th justify-content-center"><i class="bi bi-gear"></i> Actions</div>
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for backup in backups %}
-                    <tr>
-                        <td>{{ backup.file_name }}</td>
-                        <td>{{ backup.file_size_mb|floatformat:2 }}</td>
+                    <tr class="bh-row" style="animation-delay:{{ forloop.counter0 }}0ms">
+
+                        <!-- Serial -->
                         <td>
-                            {% if backup.created_by %}
-                                {{ backup.created_by.username }}
-                            {% else %}
-                                <span class="text-muted">Auto (Cron)</span>
+                            <span class="bh-serial">
+                                {{ page_obj.start_index|add:forloop.counter0 }}
+                            </span>
+                        </td>
+
+                        <!-- File Name -->
+                        <td>
+                            <div class="bh-file-cell">
+                                <div class="bh-file-icon">
+                                    <i class="bi bi-file-earmark-zip-fill"></i>
+                                </div>
+                                <div class="bh-file-info">
+                                    <span class="bh-file-name" title="{{ backup.file_name }}">
+                                        {{ backup.file_name }}
+                                    </span>
+                                    <span class="bh-file-ext">.json backup</span>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- Size -->
+                        <td>
+                            <div class="bh-size-cell">
+                                <span class="bh-size-value">{{ backup.file_size_mb|floatformat:2 }}</span>
+                                <span class="bh-size-unit">MB</span>
+                            </div>
+                            <!-- Size bar -->
+                            {% if total_size_mb > 0 %}
+                            <div class="bh-size-bar">
+                                <div class="bh-size-bar-fill"
+                                     style="width: {% widthratio backup.file_size_mb total_size_mb 100 %}%">
+                                </div>
+                            </div>
                             {% endif %}
                         </td>
-                        <td>{{ backup.created_at|date:"d M Y H:i" }}</td>
+
+                        <!-- Created By -->
                         <td>
-                            <a href="/download-backup/{{ backup.id }}/"
-                               class="btn btn-sm btn-dark rounded-pill">
-                                <i class="bi bi-download"></i>
-                            </a>
+                            {% if backup.created_by %}
+                            <div class="bh-user-cell">
+                                <div class="bh-user-avatar">
+                                    {{ backup.created_by.username|first|upper }}
+                                </div>
+                                <div>
+                                    <span class="bh-user-name">{{ backup.created_by.username }}</span>
+                                    <span class="bh-user-role">
+                                        <i class="bi bi-person-badge me-1"></i>
+                                        {% if backup.created_by.is_superuser %}Admin{% else %}User{% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="bh-auto-badge">
+                                <i class="bi bi-robot me-1"></i>
+                                Auto (Cron)
+                            </div>
+                            {% endif %}
+                        </td>
+
+                        <!-- Date -->
+                        <td>
+                            <div class="bh-date-cell">
+                                <div class="bh-date-icon">
+                                    <i class="bi bi-calendar3"></i>
+                                </div>
+                                <div>
+                                    <span class="bh-date-main">{{ backup.created_at|date:"d M Y" }}</span>
+                                    <span class="bh-date-time">{{ backup.created_at|date:"h:i A" }}</span>
+                                </div>
+                            </div>
+                            <span class="bh-date-ago">{{ backup.created_at|timesince }} ago</span>
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="text-center">
+                            <div class="bh-action-group">
+                                <a href="{% url 'download_backup_file' backup.file_name %}"
+                                   class="bh-action-btn bh-action-download"
+                                   title="Download">
+                                    <i class="bi bi-cloud-arrow-down"></i>
+                                </a>
+                                <a href="{% url 'delete_backup_file' backup.file_name %}"
+                                   class="bh-action-btn bh-action-delete"
+                                   title="Delete"
+                                   onclick="return confirm('Delete this backup permanently?')">
+                                    <i class="bi bi-trash3"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6">
+                            <div class="bh-empty">
+                                <div class="bh-empty-illustration">
+                                    <div class="bh-empty-circle bh-ec-1"></div>
+                                    <div class="bh-empty-circle bh-ec-2"></div>
+                                    <div class="bh-empty-icon-wrap">
+                                        <i class="bi bi-cloud-slash-fill"></i>
+                                    </div>
+                                </div>
+                                <h5>No Backups Found</h5>
+                                <p>
+                                    {% if search %}
+                                        No backups matching "{{ search }}"
+                                    {% else %}
+                                        Create your first backup to protect your data
+                                    {% endif %}
+                                </p>
+                                <div class="bh-empty-actions">
+                                    {% if search %}
+                                    <a href="{% url 'backup_history' %}" class="bh-btn bh-btn-ghost bh-btn-sm">
+                                        <i class="bi bi-arrow-counterclockwise"></i> Clear Search
+                                    </a>
+                                    {% endif %}
+                                    <a href="/download-backup/{{ backup.id }}/" class="bh-btn bh-btn-primary bh-btn-sm">
+                                        <i class="bi bi-cloud-arrow-down"></i> Create Backup
+                                    </a>
+                                </div>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-    </div>
 
-    {% else %}
-        <div class="text-center text-muted py-5">
-            No backups found.
+        <!-- ═══════════════════════════════════════
+             PAGINATION
+        ═══════════════════════════════════════ -->
+        {% if page_obj.has_other_pages %}
+        <div class="bh-pagination-wrap">
+
+            <div class="bh-pag-info">
+                Showing
+                <strong>{{ page_obj.start_index }}–{{ page_obj.end_index }}</strong>
+                of <strong>{{ total_count }}</strong> backups
+            </div>
+
+            <nav class="bh-pagination">
+
+                {% if page_obj.has_previous %}
+                <a href="?page=1&q={{ search }}"
+                   class="bh-pag-btn bh-pag-nav" title="First">
+                    <i class="bi bi-chevron-double-left"></i>
+                </a>
+                <a href="?page={{ page_obj.previous_page_number }}&q={{ search }}"
+                   class="bh-pag-btn bh-pag-nav" title="Previous">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+                {% else %}
+                <span class="bh-pag-btn bh-pag-nav bh-pag-disabled"><i class="bi bi-chevron-double-left"></i></span>
+                <span class="bh-pag-btn bh-pag-nav bh-pag-disabled"><i class="bi bi-chevron-left"></i></span>
+                {% endif %}
+
+                <div class="bh-pag-numbers">
+                    {% for num in paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <span class="bh-pag-btn bh-pag-active">{{ num }}</span>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <a href="?page={{ num }}&q={{ search }}"
+                               class="bh-pag-btn">{{ num }}</a>
+                        {% elif num == 1 or num == paginator.num_pages %}
+                            <a href="?page={{ num }}&q={{ search }}"
+                               class="bh-pag-btn">{{ num }}</a>
+                        {% elif num == page_obj.number|add:'-3' or num == page_obj.number|add:'3' %}
+                            <span class="bh-pag-ellipsis">•••</span>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}&q={{ search }}"
+                   class="bh-pag-btn bh-pag-nav" title="Next">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+                <a href="?page={{ paginator.num_pages }}&q={{ search }}"
+                   class="bh-pag-btn bh-pag-nav" title="Last">
+                    <i class="bi bi-chevron-double-right"></i>
+                </a>
+                {% else %}
+                <span class="bh-pag-btn bh-pag-nav bh-pag-disabled"><i class="bi bi-chevron-right"></i></span>
+                <span class="bh-pag-btn bh-pag-nav bh-pag-disabled"><i class="bi bi-chevron-double-right"></i></span>
+                {% endif %}
+
+            </nav>
+
+            <div class="bh-pag-page-badge">
+                Page <strong>{{ page_obj.number }}</strong>
+                of <strong>{{ paginator.num_pages }}</strong>
+            </div>
+
         </div>
-    {% endif %}
+        {% endif %}
+
+    </div><!-- end bh-table-card -->
+
 </div>
+
+
+<!-- ═══════════════════════════════════════════
+     STYLES
+═══════════════════════════════════════════ -->
+<style>
+:root {
+    --bh-primary:     #4f46e5;
+    --bh-primary-lt:  #eef2ff;
+    --bh-primary-mid: #c7d2fe;
+    --bh-primary-dk:  #3730a3;
+    --bh-success:     #059669;
+    --bh-success-lt:  #ecfdf5;
+    --bh-danger:      #dc2626;
+    --bh-danger-lt:   #fef2f2;
+    --bh-purple:      #7c3aed;
+    --bh-purple-lt:   #f5f3ff;
+    --bh-amber:       #d97706;
+    --bh-amber-lt:    #fffbeb;
+    --bh-gray-50:     #f8fafc;
+    --bh-gray-100:    #f1f5f9;
+    --bh-gray-200:    #e2e8f0;
+    --bh-gray-300:    #cbd5e1;
+    --bh-gray-400:    #94a3b8;
+    --bh-gray-500:    #64748b;
+    --bh-gray-600:    #475569;
+    --bh-gray-700:    #334155;
+    --bh-gray-800:    #1e293b;
+    --bh-gray-900:    #0f172a;
+    --bh-r-sm:  8px;
+    --bh-r-md:  12px;
+    --bh-r-lg:  16px;
+    --bh-r-xl:  20px;
+    --bh-shadow-sm: 0 1px 3px rgba(0,0,0,.06);
+    --bh-shadow-md: 0 4px 8px -1px rgba(0,0,0,.07);
+    --bh-transition: all .22s cubic-bezier(.4,0,.2,1);
+}
+
+.bh-wrapper { max-width:1300px; margin:0 auto; padding-bottom:40px; display:flex; flex-direction:column; gap:18px; }
+
+/* ── Header ── */
+.bh-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.bh-header-left { display:flex; align-items:center; gap:14px; }
+
+.bh-header-icon { position:relative; width:52px; height:52px; background:linear-gradient(135deg,var(--bh-primary),var(--bh-primary-dk)); border-radius:var(--bh-r-lg); display:flex; align-items:center; justify-content:center; color:white; font-size:1.3rem; box-shadow:0 8px 20px rgba(79,70,229,.3); flex-shrink:0; }
+.bh-icon-ring { position:absolute; inset:-4px; border:2px solid rgba(79,70,229,.2); border-radius:calc(var(--bh-r-lg)+4px); animation:bhRing 2.5s ease-in-out infinite; }
+@keyframes bhRing { 0%,100%{opacity:.4;transform:scale(1);} 50%{opacity:1;transform:scale(1.04);} }
+
+.bh-breadcrumb { display:flex; align-items:center; gap:5px; font-size:.7rem; font-weight:600; color:var(--bh-gray-400); text-transform:uppercase; letter-spacing:.05em; margin-bottom:3px; }
+.bh-breadcrumb a { color:var(--bh-primary); text-decoration:none; }
+.bh-breadcrumb a:hover { text-decoration:underline; }
+.bh-breadcrumb i { font-size:.55rem; }
+.bh-title { font-size:1.5rem; font-weight:800; color:var(--bh-gray-900); margin:0 0 3px; letter-spacing:-.03em; }
+.bh-subtitle { font-size:.82rem; color:var(--bh-gray-500); margin:0; }
+.bh-header-right { display:flex; gap:8px; flex-wrap:wrap; }
+
+/* ── Buttons ── */
+.bh-btn { display:inline-flex; align-items:center; gap:6px; padding:9px 18px; border-radius:var(--bh-r-md); font-weight:700; font-size:.82rem; border:none; cursor:pointer; transition:var(--bh-transition); text-decoration:none; white-space:nowrap; font-family:inherit; }
+.bh-btn-primary { background:linear-gradient(135deg,var(--bh-primary),var(--bh-primary-dk)); color:white; box-shadow:0 4px 12px rgba(79,70,229,.25); }
+.bh-btn-primary:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(79,70,229,.35); color:white; }
+.bh-btn-ghost { background:white; color:var(--bh-gray-600); border:1.5px solid var(--bh-gray-200); }
+.bh-btn-ghost:hover { background:var(--bh-gray-50); color:var(--bh-gray-800); }
+.bh-btn-sm { padding:7px 14px; font-size:.78rem; border-radius:var(--bh-r-sm); }
+
+/* ── Stats Row ── */
+.bh-stats-row { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; }
+
+.bh-stat-card { display:flex; align-items:center; gap:12px; padding:16px 18px; background:white; border:1px solid var(--bh-gray-200); border-radius:var(--bh-r-lg); transition:var(--bh-transition); position:relative; overflow:hidden; }
+.bh-stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:transparent; }
+.bh-stat-card:nth-child(1)::before { background:linear-gradient(90deg,var(--bh-primary),#818cf8); }
+.bh-stat-card:nth-child(2)::before { background:linear-gradient(90deg,var(--bh-purple),#a78bfa); }
+.bh-stat-card:nth-child(3)::before { background:linear-gradient(90deg,var(--bh-success),#34d399); }
+.bh-stat-card:nth-child(4)::before { background:linear-gradient(90deg,var(--bh-amber),#fbbf24); }
+.bh-stat-card:hover { transform:translateY(-2px); box-shadow:var(--bh-shadow-md); }
+
+.bh-stat-icon { width:42px; height:42px; min-width:42px; border-radius:var(--bh-r-md); display:flex; align-items:center; justify-content:center; font-size:1.1rem; }
+.bh-si-blue   { background:var(--bh-primary-lt); color:var(--bh-primary); }
+.bh-si-purple { background:var(--bh-purple-lt);  color:var(--bh-purple); }
+.bh-si-green  { background:var(--bh-success-lt); color:var(--bh-success); }
+.bh-si-red    { background:var(--bh-danger-lt);  color:var(--bh-danger); }
+
+.bh-stat-body { display:flex; flex-direction:column; }
+.bh-stat-value { font-size:.95rem; font-weight:800; color:var(--bh-gray-800); line-height:1.2; }
+.bh-stat-label { font-size:.67rem; font-weight:600; color:var(--bh-gray-500); text-transform:uppercase; letter-spacing:.04em; }
+.bh-text-green { color:var(--bh-success)!important; }
+.bh-text-red   { color:var(--bh-danger)!important; }
+
+/* ── Toolbar ── */
+.bh-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+
+.bh-search-form { flex:1; max-width:400px; }
+.bh-search-wrap { position:relative; }
+.bh-search-icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--bh-gray-400); font-size:.85rem; pointer-events:none; }
+.bh-search-input { width:100%; padding:9px 36px 9px 36px; border:1.5px solid var(--bh-gray-200); border-radius:var(--bh-r-md); font-size:.83rem; color:var(--bh-gray-800); background:white; transition:var(--bh-transition); font-family:inherit; }
+.bh-search-input:focus { outline:none; border-color:var(--bh-primary); box-shadow:0 0 0 3px rgba(79,70,229,.1); }
+.bh-search-input::placeholder { color:var(--bh-gray-400); }
+.bh-search-clear { position:absolute; right:10px; top:50%; transform:translateY(-50%); color:var(--bh-gray-400); font-size:.9rem; text-decoration:none; transition:var(--bh-transition); }
+.bh-search-clear:hover { color:var(--bh-danger); }
+
+.bh-showing-info { font-size:.78rem; color:var(--bh-gray-500); font-weight:500; }
+.bh-showing-info strong { color:var(--bh-gray-700); }
+
+/* ── Table Card ── */
+.bh-table-card { background:white; border:1px solid var(--bh-gray-200); border-radius:var(--bh-r-xl); overflow:hidden; box-shadow:var(--bh-shadow-md); }
+
+.bh-table-topbar { display:flex; align-items:center; justify-content:space-between; padding:13px 20px; background:var(--bh-gray-50); border-bottom:1px solid var(--bh-gray-100); flex-wrap:wrap; gap:8px; }
+.bh-topbar-left { display:flex; align-items:center; gap:6px; font-size:.85rem; font-weight:700; color:var(--bh-gray-700); }
+.bh-topbar-count { font-size:.68rem; font-weight:700; color:var(--bh-gray-400); background:var(--bh-gray-100); padding:2px 9px; border-radius:8px; margin-left:6px; }
+.bh-topbar-badge { font-size:.7rem; font-weight:600; color:var(--bh-gray-500); background:white; border:1px solid var(--bh-gray-200); padding:4px 10px; border-radius:20px; }
+
+/* Scroll */
+.bh-table-scroll { overflow:auto; }
+.custom-scrollbar::-webkit-scrollbar { width:5px; height:5px; }
+.custom-scrollbar::-webkit-scrollbar-track { background:transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background:var(--bh-gray-300); border-radius:10px; }
+
+/* Table */
+.bh-table { width:100%; border-collapse:collapse; font-size:.83rem; }
+.bh-table thead { position:sticky; top:0; z-index:10; }
+.bh-table thead tr { background:var(--bh-gray-50); border-bottom:2px solid var(--bh-gray-200); }
+.bh-table thead th { padding:11px 12px; border:none; background:var(--bh-gray-50); white-space:nowrap; }
+.bh-th { display:flex; align-items:center; gap:5px; font-size:.66rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--bh-gray-500); }
+.bh-th-sno { width:44px; text-align:center; }
+
+.bh-table tbody tr { border-bottom:1px solid var(--bh-gray-100); transition:background .15s ease; animation:bhRowUp .3s ease both; }
+@keyframes bhRowUp { from{opacity:0;transform:translateY(4px);} to{opacity:1;transform:translateY(0);} }
+.bh-table tbody tr:last-child { border-bottom:none; }
+.bh-table tbody tr:hover { background:var(--bh-gray-50); }
+.bh-table tbody td { padding:12px; vertical-align:middle; border:none; color:var(--bh-gray-700); }
+
+/* Serial */
+.bh-serial { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; background:var(--bh-gray-100); border-radius:7px; font-size:.7rem; font-weight:800; color:var(--bh-gray-500); }
+
+/* File Cell */
+.bh-file-cell { display:flex; align-items:center; gap:10px; }
+.bh-file-icon { width:38px; height:38px; min-width:38px; background:linear-gradient(135deg,var(--bh-amber-lt),#fef3c7); border:1px solid rgba(217,119,6,.15); border-radius:var(--bh-r-md); display:flex; align-items:center; justify-content:center; color:var(--bh-amber); font-size:1.1rem; }
+.bh-file-info { min-width:0; }
+.bh-file-name { display:block; font-size:.82rem; font-weight:700; color:var(--bh-gray-800); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px; }
+.bh-file-ext { display:block; font-size:.64rem; color:var(--bh-gray-400); font-weight:500; }
+
+/* Size Cell */
+.bh-size-cell { display:flex; align-items:baseline; gap:3px; }
+.bh-size-value { font-size:.85rem; font-weight:800; color:var(--bh-gray-700); font-family:'Monaco','Menlo',monospace; }
+.bh-size-unit { font-size:.65rem; font-weight:600; color:var(--bh-gray-400); text-transform:uppercase; }
+
+.bh-size-bar { margin-top:4px; height:3px; background:var(--bh-gray-100); border-radius:10px; overflow:hidden; width:80px; }
+.bh-size-bar-fill { height:100%; background:linear-gradient(90deg,var(--bh-primary),var(--bh-purple)); border-radius:10px; min-width:2px; }
+
+/* User Cell */
+.bh-user-cell { display:flex; align-items:center; gap:8px; }
+.bh-user-avatar { width:30px; height:30px; min-width:30px; background:linear-gradient(135deg,var(--bh-primary-lt),var(--bh-primary-mid)); border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--bh-primary); font-size:.78rem; }
+.bh-user-name { display:block; font-size:.82rem; font-weight:700; color:var(--bh-gray-800); }
+.bh-user-role { display:block; font-size:.62rem; color:var(--bh-gray-400); font-weight:500; }
+
+.bh-auto-badge { display:inline-flex; align-items:center; padding:4px 10px; background:var(--bh-gray-100); border:1px solid var(--bh-gray-200); border-radius:20px; font-size:.72rem; font-weight:600; color:var(--bh-gray-500); }
+
+/* Date Cell */
+.bh-date-cell { display:flex; align-items:center; gap:8px; }
+.bh-date-icon { width:30px; height:30px; background:var(--bh-gray-100); border-radius:7px; display:flex; align-items:center; justify-content:center; color:var(--bh-gray-500); font-size:.75rem; flex-shrink:0; }
+.bh-date-main { display:block; font-size:.8rem; font-weight:700; color:var(--bh-gray-700); white-space:nowrap; }
+.bh-date-time { display:block; font-size:.64rem; color:var(--bh-gray-400); }
+.bh-date-ago { display:block; font-size:.65rem; color:var(--bh-gray-400); font-weight:500; margin-top:3px; }
+
+/* Actions */
+.bh-action-group { display:flex; gap:5px; justify-content:center; }
+.bh-action-btn { width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center; border-radius:var(--bh-r-sm); border:1px solid var(--bh-gray-200); background:white; color:var(--bh-gray-500); font-size:.85rem; transition:var(--bh-transition); text-decoration:none; }
+.bh-action-download:hover { background:var(--bh-primary-lt); color:var(--bh-primary); border-color:var(--bh-primary-mid); transform:translateY(-1px); box-shadow:0 3px 8px rgba(79,70,229,.15); }
+.bh-action-delete:hover { background:var(--bh-danger-lt); color:var(--bh-danger); border-color:rgba(220,38,38,.3); transform:translateY(-1px); box-shadow:0 3px 8px rgba(220,38,38,.15); }
+
+/* ── Empty ── */
+.bh-empty { text-align:center; padding:56px 24px; }
+.bh-empty-illustration { position:relative; width:80px; height:80px; margin:0 auto 18px; }
+.bh-empty-circle { position:absolute; border-radius:50%; opacity:.07; }
+.bh-ec-1 { inset:0; background:var(--bh-primary); animation:bhEcPulse 3s ease-in-out infinite; }
+.bh-ec-2 { inset:10px; background:var(--bh-purple); animation:bhEcPulse 3s ease-in-out infinite .5s; }
+@keyframes bhEcPulse { 0%,100%{transform:scale(.95);opacity:.06;} 50%{transform:scale(1.05);opacity:.14;} }
+.bh-empty-icon-wrap { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:1.8rem; color:var(--bh-gray-400); background:var(--bh-gray-100); border-radius:50%; }
+.bh-empty h5 { font-size:1rem; font-weight:800; color:var(--bh-gray-700); margin-bottom:6px; }
+.bh-empty p { font-size:.82rem; color:var(--bh-gray-500); margin-bottom:16px; }
+.bh-empty-actions { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+
+/* ── Pagination ── */
+.bh-pagination-wrap { display:flex; align-items:center; justify-content:space-between; padding:13px 20px; border-top:1px solid var(--bh-gray-100); background:var(--bh-gray-50); gap:12px; flex-wrap:wrap; }
+.bh-pag-info { font-size:.78rem; color:var(--bh-gray-500); font-weight:500; }
+.bh-pag-info strong { color:var(--bh-gray-700); }
+.bh-pagination { display:flex; align-items:center; gap:4px; }
+.bh-pag-numbers { display:flex; align-items:center; gap:4px; }
+.bh-pag-btn { min-width:36px; height:36px; padding:0 8px; display:inline-flex; align-items:center; justify-content:center; border:1.5px solid var(--bh-gray-200); border-radius:var(--bh-r-sm); font-size:.8rem; font-weight:700; color:var(--bh-gray-600); background:white; text-decoration:none; transition:var(--bh-transition); cursor:pointer; }
+.bh-pag-btn:hover { background:var(--bh-primary-lt); border-color:var(--bh-primary-mid); color:var(--bh-primary); transform:translateY(-1px); box-shadow:0 3px 8px rgba(79,70,229,.15); }
+.bh-pag-active { background:linear-gradient(135deg,var(--bh-primary),var(--bh-primary-dk)); border-color:var(--bh-primary-dk); color:white!important; box-shadow:0 4px 12px rgba(79,70,229,.3); pointer-events:none; }
+.bh-pag-nav { background:white; }
+.bh-pag-disabled { opacity:.3; pointer-events:none; background:var(--bh-gray-50); }
+.bh-pag-ellipsis { display:inline-flex; align-items:center; justify-content:center; min-width:28px; height:36px; font-size:.6rem; color:var(--bh-gray-400); letter-spacing:.1em; }
+.bh-pag-page-badge { font-size:.78rem; color:var(--bh-gray-500); font-weight:500; padding:6px 12px; background:white; border:1.5px solid var(--bh-gray-200); border-radius:var(--bh-r-sm); }
+.bh-pag-page-badge strong { color:var(--bh-gray-700); }
+
+/* ── Responsive ── */
+@media (max-width:768px) {
+    .bh-header { flex-direction:column; align-items:flex-start; }
+    .bh-header-right { width:100%; }
+    .bh-header-right .bh-btn { flex:1; justify-content:center; }
+    .bh-stats-row { grid-template-columns:1fr 1fr; }
+    .bh-toolbar { flex-direction:column; align-items:stretch; }
+    .bh-search-form { max-width:100%; }
+    .bh-toolbar-right { text-align:center; }
+    .bh-file-name { max-width:140px; }
+    .bh-pag-page-badge { display:none; }
+    .bh-pagination-wrap { justify-content:center; }
+}
+
+@media (max-width:576px) {
+    .bh-stats-row { grid-template-columns:1fr; }
+    .bh-file-name { max-width:100px; }
+    .bh-size-bar { display:none; }
+}
+</style>
 
 {% endblock %}
